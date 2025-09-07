@@ -1,0 +1,139 @@
+asyncapi: 2.6.0
+info:
+  title: QPay Payment Webhook Events
+  version: 1.0.0
+  description: Webhook events from QPay Mongolia payment gateway
+
+servers:
+  production:
+    url: https://api.example.com/webhooks/qpay
+    protocol: https
+    description: Production webhook endpoint
+
+channels:
+  payment.completed:
+    publish:
+      summary: Payment completed successfully
+      message:
+        name: PaymentCompleted
+        contentType: application/json
+        headers:
+          type: object
+          properties:
+            X-QPay-Signature:
+              type: string
+              description: HMAC-SHA256 signature for verification
+            X-QPay-Event-Id:
+              type: string
+              description: Unique event ID for idempotency
+            X-QPay-Timestamp:
+              type: string
+              format: date-time
+        payload:
+          type: object
+          required: [invoice_id, payment_id, amount, status, paid_at]
+          properties:
+            invoice_id:
+              type: string
+              description: QPay invoice ID
+            payment_id:
+              type: string
+              description: QPay payment ID
+            amount:
+              type: number
+              description: Payment amount in MNT
+            status:
+              type: string
+              enum: [completed]
+            payment_method:
+              type: string
+              enum: [card, qpay_wallet, bank_transfer]
+            customer:
+              type: object
+              properties:
+                phone:
+                  type: string
+                email:
+                  type: string
+                name:
+                  type: string
+            metadata:
+              type: object
+              properties:
+                tenant_id:
+                  type: string
+                  format: uuid
+                member_telegram_id:
+                  type: integer
+                  format: int64
+                plan_id:
+                  type: string
+                  format: uuid
+            paid_at:
+              type: string
+              format: date-time
+
+  payment.failed:
+    publish:
+      summary: Payment failed
+      message:
+        name: PaymentFailed
+        contentType: application/json
+        headers:
+          $ref: '#/channels/payment.completed/publish/message/headers'
+        payload:
+          type: object
+          required: [invoice_id, amount, status, error]
+          properties:
+            invoice_id:
+              type: string
+            amount:
+              type: number
+            status:
+              type: string
+              enum: [failed]
+            error:
+              type: object
+              properties:
+                code:
+                  type: string
+                message:
+                  type: string
+            metadata:
+              $ref: '#/channels/payment.completed/publish/message/payload/properties/metadata'
+
+  payment.refunded:
+    publish:
+      summary: Payment refunded
+      message:
+        name: PaymentRefunded
+        contentType: application/json
+        headers:
+          $ref: '#/channels/payment.completed/publish/message/headers'
+        payload:
+          type: object
+          required: [payment_id, refund_id, amount, status]
+          properties:
+            payment_id:
+              type: string
+            refund_id:
+              type: string
+            amount:
+              type: number
+              description: Refund amount in MNT
+            status:
+              type: string
+              enum: [refunded]
+            reason:
+              type: string
+            refunded_at:
+              type: string
+              format: date-time
+
+components:
+  securitySchemes:
+    webhookSignature:
+      type: httpApiKey
+      in: header
+      name: X-QPay-Signature
+      description: HMAC-SHA256 signature verification

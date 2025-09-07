@@ -1,0 +1,355 @@
+openapi: 3.0.0
+info:
+  title: Telegram Bot Management API
+  version: 1.0.0
+  description: API for managing Telegram bots and groups
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+
+paths:
+  /bots:
+    get:
+      summary: List tenant's bots
+      tags: [Bots]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Bots retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bots:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Bot'
+
+    post:
+      summary: Create new bot
+      tags: [Bots]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bot_token, bot_name]
+              properties:
+                bot_token:
+                  type: string
+                  description: Telegram bot token from BotFather
+                bot_name:
+                  type: string
+                profile_picture:
+                  type: string
+                  format: base64
+      responses:
+        201:
+          description: Bot created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bot'
+
+  /bots/{bot_id}:
+    get:
+      summary: Get bot details
+      tags: [Bots]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Bot details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bot'
+
+    patch:
+      summary: Update bot configuration
+      tags: [Bots]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bot_name:
+                  type: string
+                profile_picture:
+                  type: string
+                  format: base64
+                settings:
+                  type: object
+      responses:
+        200:
+          description: Bot updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bot'
+
+  /bots/{bot_id}/groups:
+    get:
+      summary: List bot's groups
+      tags: [Groups]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Groups retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groups:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TelegramGroup'
+
+    post:
+      summary: Connect group to bot
+      tags: [Groups]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [telegram_chat_id, group_name]
+              properties:
+                telegram_chat_id:
+                  type: integer
+                  format: int64
+                group_name:
+                  type: string
+                group_type:
+                  type: string
+                  enum: [channel, group, supergroup]
+      responses:
+        201:
+          description: Group connected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramGroup'
+
+  /bots/{bot_id}/messages:
+    get:
+      summary: List bot message templates
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Messages retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BotMessage'
+
+    post:
+      summary: Create message template
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message_type, content]
+              properties:
+                message_type:
+                  type: string
+                  enum: [welcome, expiry_reminder, expired, payment_confirm, custom]
+                template_key:
+                  type: string
+                content:
+                  type: string
+                  description: Message content with {{variables}}
+                variables:
+                  type: object
+                  description: Available variables for substitution
+      responses:
+        201:
+          description: Message created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotMessage'
+
+  /bots/{bot_id}/commands:
+    post:
+      summary: Execute bot command
+      tags: [Commands]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [command, target_user_id]
+              properties:
+                command:
+                  type: string
+                  enum: [ban, unban, extend, stats]
+                target_user_id:
+                  type: integer
+                  format: int64
+                  description: Telegram user ID
+                group_id:
+                  type: string
+                  format: uuid
+                parameters:
+                  type: object
+                  description: Command-specific parameters
+      responses:
+        200:
+          description: Command executed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  result:
+                    type: object
+
+components:
+  schemas:
+    Bot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bot_username:
+          type: string
+        bot_name:
+          type: string
+        profile_picture_url:
+          type: string
+        is_active:
+          type: boolean
+        webhook_url:
+          type: string
+        settings:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    TelegramGroup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        telegram_chat_id:
+          type: integer
+          format: int64
+        group_name:
+          type: string
+        group_type:
+          type: string
+          enum: [channel, group, supergroup]
+        is_active:
+          type: boolean
+        member_count:
+          type: integer
+        synced_at:
+          type: string
+          format: date-time
+
+    BotMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        message_type:
+          type: string
+        template_key:
+          type: string
+        content:
+          type: string
+        variables:
+          type: object
+        is_active:
+          type: boolean
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
