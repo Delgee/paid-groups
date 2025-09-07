@@ -37,87 +37,88 @@
 ## Phase 3.1: Setup (Foundation)
 
 ### Project Initialization
-- [ ] T001 Create project structure: backend/, frontend/, worker/ directories
-- [ ] T002 Initialize NestJS backend with TypeScript configuration in backend/
-- [ ] T003 Initialize Next.js 14 frontend with App Router in frontend/
-- [ ] T004 Initialize worker service with BullMQ in worker/
-- [ ] T005 [P] Setup Docker Compose with PostgreSQL 15 and Redis 7
-- [ ] T006 [P] Configure ESLint and Prettier for all projects
-- [ ] T007 [P] Setup environment variables (.env.example for all services)
-- [ ] T008 Create shared types package in packages/shared-types/
+- [x] T001 Create project structure: backend/, frontend/, worker/ directories
+- [x] T002 Initialize NestJS backend with TypeScript configuration in backend/
+- [x] T003 Initialize Next.js 14 frontend with App Router in frontend/
+- [x] T004 Initialize worker service with BullMQ in worker/
+- [x] T005 [P] Setup Docker Compose with PostgreSQL 15 and Redis 7
+- [x] T006 [P] Configure ESLint and Prettier for all projects
+- [x] T007 [P] Setup environment variables (.env.example for all services)
+- [x] T008 Create shared types package in packages/shared-types/
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
 ### Contract Tests - Authentication API
-- [ ] T009 [P] Contract test POST /v1/auth/register in backend/tests/contract/auth/register.spec.ts
-- [ ] T010 [P] Contract test POST /v1/auth/login in backend/tests/contract/auth/login.spec.ts
-- [ ] T011 [P] Contract test POST /v1/auth/refresh in backend/tests/contract/auth/refresh.spec.ts
-- [ ] T012 [P] Contract test GET /v1/auth/me in backend/tests/contract/auth/me.spec.ts
+- [x] T009 [P] Contract test POST /v1/auth/register in backend/tests/contract/auth/register.spec.ts
+- [x] T010 [P] Contract test POST /v1/auth/login in backend/tests/contract/auth/login.spec.ts
+- [x] T011 [P] Contract test POST /v1/auth/refresh in backend/tests/contract/auth/refresh.spec.ts
+- [x] T012 [P] Contract test GET /v1/auth/me in backend/tests/contract/auth/me.spec.ts
+- [x] T013 [P] Contract test POST /v1/auth/logout in backend/tests/contract/auth/logout.spec.ts
 
 ### Contract Tests - Bot Management API
-- [ ] T013 [P] Contract test GET /v1/bots in backend/tests/contract/bots/list.spec.ts
-- [ ] T014 [P] Contract test POST /v1/bots in backend/tests/contract/bots/create.spec.ts
-- [ ] T015 [P] Contract test GET /v1/bots/{id}/groups in backend/tests/contract/bots/groups.spec.ts
-- [ ] T016 [P] Contract test POST /v1/bots/{id}/messages in backend/tests/contract/bots/messages.spec.ts
+- [x] T014 [P] Contract test GET /v1/bots in backend/tests/contract/bots/list.spec.ts
+- [x] T015 [P] Contract test POST /v1/bots in backend/tests/contract/bots/create.spec.ts
+- [x] T016 [P] Contract test GET /v1/bots/{id} in backend/tests/contract/bots/get.spec.ts
+- [x] T017 [P] Contract test POST /v1/bots/{id}/messages in backend/tests/contract/bots/messages.spec.ts
 
 ### Contract Tests - Payment Webhooks
-- [ ] T017 [P] Contract test QPay payment.completed webhook in backend/tests/contract/webhooks/payment-completed.spec.ts
-- [ ] T018 [P] Contract test QPay payment.failed webhook in backend/tests/contract/webhooks/payment-failed.spec.ts
+- [x] T018 [P] Contract test QPay payment.completed webhook in backend/tests/contract/webhooks/payment-completed.spec.ts
+- [x] T019 [P] Contract test QPay payment.failed webhook in backend/tests/contract/webhooks/payment-failed.spec.ts
 
 ### Integration Tests - Critical User Flows
-- [ ] T019 [P] Integration test: Tenant registration flow in backend/tests/integration/tenant-registration.spec.ts
-- [ ] T020 [P] Integration test: Bot creation and group connection in backend/tests/integration/bot-setup.spec.ts
-- [ ] T021 [P] Integration test: Payment processing to membership grant in backend/tests/integration/payment-flow.spec.ts
-- [ ] T022 [P] Integration test: Membership expiration workflow in backend/tests/integration/membership-lifecycle.spec.ts
-- [ ] T023 [P] Integration test: Multi-tenant data isolation in backend/tests/integration/tenant-isolation.spec.ts
+- [x] T020 [P] Integration test: Tenant registration flow in backend/tests/integration/tenant-registration.spec.ts
+- [x] T021 [P] Integration test: Bot creation and group connection in backend/tests/integration/bot-setup.spec.ts
+- [x] T022 [P] Integration test: Payment processing to membership grant in backend/tests/integration/payment-flow.spec.ts
+- [x] T023 [P] Integration test: Membership expiration workflow in backend/tests/integration/membership-lifecycle.spec.ts
+- [x] T024 [P] Integration test: Multi-tenant data isolation in backend/tests/integration/tenant-isolation.spec.ts
 
 ## Phase 3.3: Core Implementation - Database & Models
 
 ### Database Setup
-- [ ] T024 Create database migration system in backend/src/database/migrations/
-- [ ] T025 Migration: Create tenants table with RLS in backend/src/database/migrations/001-tenants.ts
-- [ ] T026 Migration: Create users table with tenant_id in backend/src/database/migrations/002-users.ts
-- [ ] T027 Migration: Create telegram_bots table in backend/src/database/migrations/003-telegram-bots.ts
-- [ ] T028 Migration: Create telegram_groups table in backend/src/database/migrations/004-telegram-groups.ts
-- [ ] T029 Migration: Create membership_plans table in backend/src/database/migrations/005-membership-plans.ts
-- [ ] T030 Migration: Create members table in backend/src/database/migrations/006-members.ts
-- [ ] T031 Migration: Create memberships table in backend/src/database/migrations/007-memberships.ts
-- [ ] T032 Migration: Create payments table in backend/src/database/migrations/008-payments.ts
-- [ ] T033 Migration: Create audit_logs table in backend/src/database/migrations/009-audit-logs.ts
-- [ ] T034 Setup Row Level Security policies in backend/src/database/migrations/010-rls-policies.ts
+- [ ] T025 Create database migration system in backend/src/database/migrations/
+- [ ] T026 Migration: Create tenants table with RLS in backend/src/database/migrations/001-tenants.ts
+- [ ] T027 Migration: Create users table with tenant_id in backend/src/database/migrations/002-users.ts
+- [ ] T028 Migration: Create telegram_bots table in backend/src/database/migrations/003-telegram-bots.ts
+- [ ] T029 Migration: Create telegram_groups table in backend/src/database/migrations/004-telegram-groups.ts
+- [ ] T030 Migration: Create membership_plans table in backend/src/database/migrations/005-membership-plans.ts
+- [ ] T031 Migration: Create members table in backend/src/database/migrations/006-members.ts
+- [ ] T032 Migration: Create memberships table in backend/src/database/migrations/007-memberships.ts
+- [ ] T033 Migration: Create payments table in backend/src/database/migrations/008-payments.ts
+- [ ] T034 Migration: Create audit_logs table in backend/src/database/migrations/009-audit-logs.ts
+- [ ] T035 Setup Row Level Security policies in backend/src/database/migrations/010-rls-policies.ts
 
 ### Entity Models
-- [ ] T035 [P] Tenant entity model in backend/src/modules/tenant/entities/tenant.entity.ts
-- [ ] T036 [P] User entity model in backend/src/modules/auth/entities/user.entity.ts
-- [ ] T037 [P] TelegramBot entity model in backend/src/modules/bot/entities/telegram-bot.entity.ts
-- [ ] T038 [P] TelegramGroup entity model in backend/src/modules/bot/entities/telegram-group.entity.ts
-- [ ] T039 [P] MembershipPlan entity model in backend/src/modules/membership/entities/membership-plan.entity.ts
-- [ ] T040 [P] Member entity model in backend/src/modules/membership/entities/member.entity.ts
-- [ ] T041 [P] Membership entity model in backend/src/modules/membership/entities/membership.entity.ts
-- [ ] T042 [P] Payment entity model in backend/src/modules/payment/entities/payment.entity.ts
+- [ ] T036 [P] Tenant entity model in backend/src/modules/tenant/entities/tenant.entity.ts
+- [ ] T037 [P] User entity model in backend/src/modules/auth/entities/user.entity.ts
+- [ ] T038 [P] TelegramBot entity model in backend/src/modules/bot/entities/telegram-bot.entity.ts
+- [ ] T039 [P] TelegramGroup entity model in backend/src/modules/bot/entities/telegram-group.entity.ts
+- [ ] T040 [P] MembershipPlan entity model in backend/src/modules/membership/entities/membership-plan.entity.ts
+- [ ] T041 [P] Member entity model in backend/src/modules/membership/entities/member.entity.ts
+- [ ] T042 [P] Membership entity model in backend/src/modules/membership/entities/membership.entity.ts
+- [ ] T043 [P] Payment entity model in backend/src/modules/payment/entities/payment.entity.ts
 
 ## Phase 3.4: Core Implementation - Services & Business Logic
 
 ### Authentication Module
-- [ ] T043 JWT authentication service in backend/src/modules/auth/services/auth.service.ts
-- [ ] T044 JWT auth guard in backend/src/common/guards/jwt-auth.guard.ts
-- [ ] T045 Tenant context guard in backend/src/common/guards/tenant.guard.ts
-- [ ] T046 Auth controller with register/login endpoints in backend/src/modules/auth/auth.controller.ts
+- [ ] T044 JWT authentication service in backend/src/modules/auth/services/auth.service.ts
+- [ ] T045 JWT auth guard in backend/src/common/guards/jwt-auth.guard.ts
+- [ ] T046 Tenant context guard in backend/src/common/guards/tenant.guard.ts
+- [ ] T047 Auth controller with register/login endpoints in backend/src/modules/auth/auth.controller.ts
 
 ### Tenant Management Module
-- [ ] T047 Tenant service with CRUD operations in backend/src/modules/tenant/services/tenant.service.ts
-- [ ] T048 Tenant isolation interceptor in backend/src/common/interceptors/tenant.interceptor.ts
-- [ ] T049 Tenant controller in backend/src/modules/tenant/tenant.controller.ts
+- [ ] T048 Tenant service with CRUD operations in backend/src/modules/tenant/services/tenant.service.ts
+- [ ] T049 Tenant isolation interceptor in backend/src/common/interceptors/tenant.interceptor.ts
+- [ ] T050 Tenant controller in backend/src/modules/tenant/tenant.controller.ts
 
 ### Bot Management Module
-- [ ] T050 Telegram bot service in backend/src/modules/bot/services/telegram-bot.service.ts
-- [ ] T051 Telegraph bot framework setup in backend/src/modules/bot/services/bot-framework.service.ts
-- [ ] T052 Bot webhook handler in backend/src/modules/bot/services/webhook.service.ts
-- [ ] T053 Bot controller with CRUD endpoints in backend/src/modules/bot/bot.controller.ts
-- [ ] T054 Group management service in backend/src/modules/bot/services/group.service.ts
+- [ ] T051 Telegram bot service in backend/src/modules/bot/services/telegram-bot.service.ts
+- [ ] T052 Telegraph bot framework setup in backend/src/modules/bot/services/bot-framework.service.ts
+- [ ] T053 Bot webhook handler in backend/src/modules/bot/services/webhook.service.ts
+- [ ] T054 Bot controller with CRUD endpoints in backend/src/modules/bot/bot.controller.ts
+- [ ] T055 Group management service in backend/src/modules/bot/services/group.service.ts
 
 ### Payment Processing Module
-- [ ] T055 QPay integration service in backend/src/modules/payment/services/qpay.service.ts
+- [ ] T056 QPay integration service in backend/src/modules/payment/services/qpay.service.ts
 - [ ] T056 Payment webhook controller in backend/src/modules/payment/webhook.controller.ts
 - [ ] T057 Webhook signature verification in backend/src/modules/payment/guards/webhook.guard.ts
 - [ ] T058 Payment processing queue in worker/src/queues/payment.queue.ts
