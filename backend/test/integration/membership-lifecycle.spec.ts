@@ -6,7 +6,6 @@ import { AppModule } from '../../src/app.module';
 describe('Membership Expiration Workflow (Integration)', () => {
   let app: INestApplication;
   let accessToken: string;
-  let testUser: any;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({

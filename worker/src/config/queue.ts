@@ -1,6 +1,10 @@
 import Bull from 'bull';
 import Redis from 'ioredis';
 import { createLogger } from './logger';
+import { processPayment } from '../jobs/payment-processor';
+import { checkExpiration } from '../jobs/membership-expiration';
+import { aggregateData } from '../jobs/analytics-aggregation';
+import { sendNotification } from '../jobs/notification-sender';
 
 const logger = createLogger();
 
@@ -22,10 +26,10 @@ export async function initializeQueues() {
   logger.info('Initializing job queues...');
 
   // Setup queue processors
-  queues.payment.process('process-payment', require('../jobs/payment-processor').processPayment);
-  queues.membership.process('check-expiration', require('../jobs/membership-expiration').checkExpiration);
-  queues.analytics.process('aggregate-data', require('../jobs/analytics-aggregation').aggregateData);
-  queues.notification.process('send-notification', require('../jobs/notification-sender').sendNotification);
+  queues.payment.process('process-payment', processPayment);
+  queues.membership.process('check-expiration', checkExpiration);
+  queues.analytics.process('aggregate-data', aggregateData);
+  queues.notification.process('send-notification', sendNotification);
 
   // Global error handling
   Object.values(queues).forEach(queue => {

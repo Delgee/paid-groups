@@ -12,7 +12,6 @@ describe('GET /v1/bots (Contract)', () => {
     company_name: string;
   };
   let accessToken: string;
-  let createdBotId: string;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({

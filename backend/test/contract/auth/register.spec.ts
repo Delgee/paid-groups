@@ -147,7 +147,7 @@ describe('POST /v1/auth/register (Contract)', () => {
         company_name: 'Test Company',
       };
 
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .post('/v1/auth/register')
         .send(registerData)
         .expect(201)

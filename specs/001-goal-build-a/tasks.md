@@ -75,27 +75,27 @@
 ## Phase 3.3: Core Implementation - Database & Models
 
 ### Database Setup
-- [ ] T025 Create database migration system in backend/src/database/migrations/
-- [ ] T026 Migration: Create tenants table with RLS in backend/src/database/migrations/001-tenants.ts
-- [ ] T027 Migration: Create users table with tenant_id in backend/src/database/migrations/002-users.ts
-- [ ] T028 Migration: Create telegram_bots table in backend/src/database/migrations/003-telegram-bots.ts
-- [ ] T029 Migration: Create telegram_groups table in backend/src/database/migrations/004-telegram-groups.ts
-- [ ] T030 Migration: Create membership_plans table in backend/src/database/migrations/005-membership-plans.ts
-- [ ] T031 Migration: Create members table in backend/src/database/migrations/006-members.ts
-- [ ] T032 Migration: Create memberships table in backend/src/database/migrations/007-memberships.ts
-- [ ] T033 Migration: Create payments table in backend/src/database/migrations/008-payments.ts
-- [ ] T034 Migration: Create audit_logs table in backend/src/database/migrations/009-audit-logs.ts
-- [ ] T035 Setup Row Level Security policies in backend/src/database/migrations/010-rls-policies.ts
+- [x] T025 Create database migration system in backend/src/database/migrations/
+- [x] T026 Migration: Create tenants table with RLS in backend/src/database/migrations/001-tenants.ts
+- [x] T027 Migration: Create users table with tenant_id in backend/src/database/migrations/002-users.ts
+- [x] T028 Migration: Create telegram_bots table in backend/src/database/migrations/003-telegram-bots.ts
+- [x] T029 Migration: Create telegram_groups table in backend/src/database/migrations/004-telegram-groups.ts
+- [x] T030 Migration: Create membership_plans table in backend/src/database/migrations/005-membership-plans.ts
+- [x] T031 Migration: Create members table in backend/src/database/migrations/006-members.ts
+- [x] T032 Migration: Create memberships table in backend/src/database/migrations/007-memberships.ts
+- [x] T033 Migration: Create payments table in backend/src/database/migrations/008-payments.ts
+- [x] T034 Migration: Create audit_logs table in backend/src/database/migrations/009-audit-logs.ts
+- [x] T035 Setup Row Level Security policies in backend/src/database/migrations/010-rls-policies.ts
 
 ### Entity Models
-- [ ] T036 [P] Tenant entity model in backend/src/modules/tenant/entities/tenant.entity.ts
-- [ ] T037 [P] User entity model in backend/src/modules/auth/entities/user.entity.ts
-- [ ] T038 [P] TelegramBot entity model in backend/src/modules/bot/entities/telegram-bot.entity.ts
-- [ ] T039 [P] TelegramGroup entity model in backend/src/modules/bot/entities/telegram-group.entity.ts
-- [ ] T040 [P] MembershipPlan entity model in backend/src/modules/membership/entities/membership-plan.entity.ts
-- [ ] T041 [P] Member entity model in backend/src/modules/membership/entities/member.entity.ts
-- [ ] T042 [P] Membership entity model in backend/src/modules/membership/entities/membership.entity.ts
-- [ ] T043 [P] Payment entity model in backend/src/modules/payment/entities/payment.entity.ts
+- [x] T036 [P] Tenant entity model in backend/src/modules/tenant/entities/tenant.entity.ts
+- [x] T037 [P] User entity model in backend/src/modules/auth/entities/user.entity.ts
+- [x] T038 [P] TelegramBot entity model in backend/src/modules/bot/entities/telegram-bot.entity.ts
+- [x] T039 [P] TelegramGroup entity model in backend/src/modules/bot/entities/telegram-group.entity.ts
+- [x] T040 [P] MembershipPlan entity model in backend/src/modules/membership/entities/membership-plan.entity.ts
+- [x] T041 [P] Member entity model in backend/src/modules/membership/entities/member.entity.ts
+- [x] T042 [P] Membership entity model in backend/src/modules/membership/entities/membership.entity.ts
+- [x] T043 [P] Payment entity model in backend/src/modules/payment/entities/payment.entity.ts
 
 ## Phase 3.4: Core Implementation - Services & Business Logic
 
