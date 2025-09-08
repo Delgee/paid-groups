@@ -4,6 +4,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './modules/auth/auth.module';
+import { TenantModule } from './modules/tenant/tenant.module';
+import { BotModule } from './modules/bot/bot.module';
+import { MembershipModule } from './modules/membership/membership.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -34,6 +39,11 @@ import { AppService } from './app.service';
         },
       }),
     }),
+    AuthModule,
+    TenantModule,
+    BotModule,
+    MembershipModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
