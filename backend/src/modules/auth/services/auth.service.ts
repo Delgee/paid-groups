@@ -25,6 +25,7 @@ export interface RefreshTokenDto {
 export interface AuthResponse {
   access_token: string;
   refresh_token: string;
+  expires_in: number;
   user: {
     id: string;
     email: string;
@@ -32,6 +33,10 @@ export interface AuthResponse {
     role: UserRole;
     tenant_id: string;
     is_active: boolean;
+    permissions: string[];
+    last_login_at?: Date;
+    created_at: Date;
+    updated_at: Date;
   };
 }
 
@@ -47,7 +52,7 @@ export class AuthService {
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const existingUser = await this.userRepository.findOne({
-      where: { email: registerDto.email },
+      where: { email: registerDto.email.toLowerCase() },
     });
 
     if (existingUser) {
@@ -70,7 +75,7 @@ export class AuthService {
     // Create owner user
     const user = this.userRepository.create({
       tenant_id: savedTenant.id,
-      email: registerDto.email,
+      email: registerDto.email.toLowerCase(),
       password_hash,
       name: registerDto.name,
       role: UserRole.OWNER,
@@ -94,13 +99,16 @@ export class AuthService {
         role: savedUser.role,
         tenant_id: savedUser.tenant_id,
         is_active: savedUser.is_active,
+        permissions: this.getUserPermissions(savedUser.role),
+        created_at: savedUser.created_at,
+        updated_at: savedUser.updated_at,
       },
     };
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
     const user = await this.userRepository.findOne({
-      where: { email: loginDto.email },
+      where: { email: loginDto.email.toLowerCase() },
     });
 
     if (!user || !user.is_active) {
@@ -117,6 +125,11 @@ export class AuthService {
       last_login_at: new Date(),
     });
 
+    // Fetch updated user
+    const updatedUser = await this.userRepository.findOne({
+      where: { id: user.id },
+    });
+
     // Generate tokens
     const tokens = await this.generateTokens(user);
     
@@ -126,12 +139,16 @@ export class AuthService {
     return {
       ...tokens,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        tenant_id: user.tenant_id,
-        is_active: user.is_active,
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        tenant_id: updatedUser.tenant_id,
+        is_active: updatedUser.is_active,
+        permissions: this.getUserPermissions(updatedUser.role),
+        last_login_at: updatedUser.last_login_at,
+        created_at: updatedUser.created_at,
+        updated_at: updatedUser.updated_at,
       },
     };
   }
@@ -166,6 +183,9 @@ export class AuthService {
           role: user.role,
           tenant_id: user.tenant_id,
           is_active: user.is_active,
+          permissions: this.getUserPermissions(user.role),
+          created_at: user.created_at,
+          updated_at: user.updated_at,
         },
       };
     } catch (error) {
@@ -203,7 +223,26 @@ export class AuthService {
       { expiresIn: '7d' }
     );
 
-    return { access_token, refresh_token };
+    return { 
+      access_token, 
+      refresh_token, 
+      expires_in: 900 // 15 minutes in seconds
+    };
+  }
+
+  private getUserPermissions(role: UserRole): string[] {
+    switch (role) {
+      case UserRole.SUPER_ADMIN:
+        return ['*']; // All permissions
+      case UserRole.OWNER:
+        return ['tenant:read', 'tenant:write', 'bots:*', 'members:*', 'payments:*'];
+      case UserRole.ADMIN:
+        return ['bots:read', 'bots:write', 'members:*'];
+      case UserRole.MEMBER:
+        return ['profile:read', 'profile:write'];
+      default:
+        return [];
+    }
   }
 
   private async saveRefreshToken(userId: string, refresh_token: string) {

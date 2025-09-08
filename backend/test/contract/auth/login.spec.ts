@@ -1,7 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../../src/app.module';
+import { TestSetupHelper } from '../../helpers/test-setup.helper';
 
 describe('POST /v1/auth/login (Contract)', () => {
   let app: INestApplication;
@@ -13,13 +12,8 @@ describe('POST /v1/auth/login (Contract)', () => {
   };
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await TestSetupHelper.createTestApp();
+    await TestSetupHelper.cleanupDatabase();
 
     // Create a test user for login tests
     testUser = {
@@ -35,7 +29,7 @@ describe('POST /v1/auth/login (Contract)', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    await TestSetupHelper.closeApp(app);
   });
 
   describe('Valid login request', () => {
