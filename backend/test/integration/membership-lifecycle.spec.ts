@@ -29,7 +29,6 @@ describe('Membership Expiration Workflow (Integration)', () => {
       .send(registrationData);
 
     accessToken = registerResponse.body.access_token;
-    testUser = registerResponse.body.user;
   });
 
   afterEach(async () => {
@@ -75,7 +74,9 @@ describe('Membership Expiration Workflow (Integration)', () => {
         .expect(200);
 
       expect(expirationCheckResponse.body.checked_count).toBeGreaterThan(0);
-      expect(expirationCheckResponse.body.expiring_soon_count).toBeGreaterThan(0);
+      expect(expirationCheckResponse.body.expiring_soon_count).toBeGreaterThan(
+        0,
+      );
     });
 
     it('should send expiration reminders', async () => {
@@ -96,7 +97,9 @@ describe('Membership Expiration Workflow (Integration)', () => {
       const membershipData = {
         member_id: memberResponse.body.id,
         status: 'active',
-        expires_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: new Date(
+          Date.now() + 2 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
       };
 
       await request(app.getHttpServer())
@@ -160,7 +163,9 @@ describe('Membership Expiration Workflow (Integration)', () => {
         .expect(200);
 
       expect(firstTenantMembers.body.members).toHaveLength(1);
-      expect(firstTenantMembers.body.members[0].id).toBe(firstTenantMember.body.id);
+      expect(firstTenantMembers.body.members[0].id).toBe(
+        firstTenantMember.body.id,
+      );
 
       // Second tenant should only see their members
       const secondTenantMembers = await request(app.getHttpServer())
@@ -169,7 +174,9 @@ describe('Membership Expiration Workflow (Integration)', () => {
         .expect(200);
 
       expect(secondTenantMembers.body.members).toHaveLength(1);
-      expect(secondTenantMembers.body.members[0].id).toBe(secondTenantMember.body.id);
+      expect(secondTenantMembers.body.members[0].id).toBe(
+        secondTenantMember.body.id,
+      );
 
       // Cross-tenant access should fail
       await request(app.getHttpServer())

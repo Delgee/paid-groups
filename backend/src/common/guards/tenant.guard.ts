@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
+import { User } from '../../modules/auth/entities/user.entity';
 
 export const TENANT_KEY = 'tenant';
 export const TenantId = () => {
@@ -20,7 +21,7 @@ export class TenantGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
-    const user = request['user'];
+    const user = request['user'] as User;
 
     if (!user || !user.tenant_id) {
       throw new ForbiddenException('Tenant context is required');

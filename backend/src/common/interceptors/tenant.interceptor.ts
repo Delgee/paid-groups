@@ -35,7 +35,7 @@ export class TenantInterceptor implements NestInterceptor {
       this.dataSource
         .query(`SET LOCAL app.current_tenant = $1`, [tenantId])
         .then(() => {
-          observer.next();
+          observer.next(null);
           observer.complete();
         })
         .catch(error => {

@@ -30,9 +30,7 @@ describe('GET /v1/bots (Contract)', () => {
       company_name: 'Test Company',
     };
 
-    await request(app.getHttpServer())
-      .post('/v1/auth/register')
-      .send(testUser);
+    await request(app.getHttpServer()).post('/v1/auth/register').send(testUser);
 
     const loginResponse = await request(app.getHttpServer())
       .post('/v1/auth/login')
@@ -44,17 +42,13 @@ describe('GET /v1/bots (Contract)', () => {
     accessToken = loginResponse.body.access_token;
 
     // Create a test bot for the list tests
-    const botResponse = await request(app.getHttpServer())
+    await request(app.getHttpServer())
       .post('/v1/bots')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         bot_token: 'test-bot-token-123',
         bot_name: 'Test Bot',
       });
-
-    if (botResponse.status === 201) {
-      createdBotId = botResponse.body.id;
-    }
   });
 
   afterEach(async () => {
@@ -75,7 +69,7 @@ describe('GET /v1/bots (Contract)', () => {
       // If we have bots, validate structure
       if (response.body.bots.length > 0) {
         const bot = response.body.bots[0];
-        
+
         // Required bot properties
         expect(bot).toHaveProperty('id');
         expect(bot).toHaveProperty('bot_username');
@@ -143,7 +137,7 @@ describe('GET /v1/bots (Contract)', () => {
       // All returned bots should belong to the same tenant
       if (response.body.bots.length > 0) {
         const firstBotTenantId = response.body.bots[0].tenant_id;
-        response.body.bots.forEach(bot => {
+        response.body.bots.forEach((bot) => {
           expect(bot.tenant_id).toBe(firstBotTenantId);
         });
       }
@@ -159,7 +153,9 @@ describe('GET /v1/bots (Contract)', () => {
         for (let i = 0; i < response.body.bots.length - 1; i++) {
           const currentBot = new Date(response.body.bots[i].created_at);
           const nextBot = new Date(response.body.bots[i + 1].created_at);
-          expect(currentBot.getTime()).toBeGreaterThanOrEqual(nextBot.getTime());
+          expect(currentBot.getTime()).toBeGreaterThanOrEqual(
+            nextBot.getTime(),
+          );
         }
       }
     });
@@ -218,7 +214,7 @@ describe('GET /v1/bots (Contract)', () => {
 
       if (response.body.bots.length > 0) {
         const bot = response.body.bots[0];
-        
+
         // Required fields should be present and not null/undefined
         expect(bot.id).toBeTruthy();
         expect(bot.bot_name).toBeTruthy();
