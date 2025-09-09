@@ -3,12 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TelegramBot } from '../entities/telegram-bot.entity';
 import { TelegramGroup } from '../entities/telegram-group.entity';
-import { Member } from '../../membership/entities/member.entity';
-import { Membership } from '../../membership/entities/membership.entity';
 import { TelegramApiService } from './telegram-api.service';
 import { MemberService } from '../../membership/services/member.service';
 import { MembershipService } from '../../membership/services/membership.service';
-import { Context as TelegrafContext } from 'telegraf';
 
 export interface TelegramUpdate {
   update_id: number;
@@ -234,7 +231,6 @@ export class WebhookService {
    */
   private async handleTextCommand(bot: TelegramBot, message: any): Promise<void> {
     const text = message.text.toLowerCase().trim();
-    const chatId = message.chat.id;
     const userId = message.from.id;
 
     // Handle common commands
@@ -442,8 +438,10 @@ If you need help, please contact our support team.
   private async handleSubscriptionCallback(
     bot: TelegramBot, 
     chatId: number, 
-    userId: number, 
-    planId: string
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _userId: number, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _planId: string
   ): Promise<void> {
     // This would typically redirect to payment processing
     await this.telegramApiService.sendMessage(
@@ -486,7 +484,8 @@ Use /status to check your membership details.
   /**
    * Set tenant context for database operations
    */
-  private async setTenantContext(tenantId: string): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async setTenantContext(_tenantId: string): Promise<void> {
     // This should be implemented based on your RLS setup
     // For now, we'll assume the context is set at the request level
   }
@@ -494,7 +493,8 @@ Use /status to check your membership details.
   /**
    * Validate webhook signature (if needed)
    */
-  validateWebhookSignature(body: string, signature: string, botToken: string): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  validateWebhookSignature(_body: string, _signature: string, _botToken: string): boolean {
     // Telegram doesn't require webhook signature validation like other services
     // The security comes from the secret URL path that includes the bot token
     return true;

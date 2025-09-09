@@ -107,7 +107,8 @@ export class MembershipPlanService {
     active_memberships: number;
     total_revenue: number;
   }> {
-    const plan = await this.findById(tenantId, planId);
+    // Verify plan exists and belongs to tenant
+    await this.findById(tenantId, planId);
 
     const stats = await this.planRepository.query(`
       SELECT 

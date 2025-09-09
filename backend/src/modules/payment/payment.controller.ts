@@ -27,7 +27,8 @@ export class PaymentController {
     @Req() req: Request,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
-    @Query('status') status?: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Query('status') _status?: string,
   ): Promise<{
     payments: Payment[];
     total: number;

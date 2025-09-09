@@ -200,7 +200,8 @@ export class MemberService {
   /**
    * Handle member leaving a group
    */
-  async handleMemberLeft(memberId: string, chatId: number): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async handleMemberLeft(memberId: string, _chatId: number): Promise<void> {
     // Update member status or log the event
     // This could be extended to handle membership cleanup
     const member = await this.memberRepository.findOne({

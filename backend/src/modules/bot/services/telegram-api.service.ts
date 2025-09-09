@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Telegraf } from 'telegraf';
-import { TelegramBot } from '../entities/telegram-bot.entity';
 
 export interface TelegramUser {
   id: number;

@@ -49,11 +49,11 @@ export class PaymentProcessor {
 
   @Process('send-payment-notification')
   async handlePaymentNotification(job: Job<PaymentNotificationData>) {
-    this.logger.log(`Processing payment notification job: ${job.id}`);
+    this.logger.info(`Processing payment notification job: ${job.id}`);
     
     try {
       const { paymentId, type } = job.data;
-      const payment = await this.paymentService.findById(paymentId);
+      await this.paymentService.findById(paymentId);
       
       // TODO: Implement Telegram notification sending
       // This would typically:
@@ -61,10 +61,10 @@ export class PaymentProcessor {
       // 2. Send appropriate message based on payment status
       // 3. Include payment details and membership information
       
-      this.logger.log(`Payment notification sent for payment ${paymentId} (${type})`);
+      this.logger.info(`Payment notification sent for payment ${paymentId} (${type})`);
       
     } catch (error) {
-      this.logger.error(`Failed to send payment notification for job ${job.id}:`, error);
+      this.logger.error(`Failed to send payment notification for job ${job.id}:`, error.message);
       // Don't re-throw notification errors to avoid infinite retries
     }
   }

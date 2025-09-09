@@ -326,7 +326,8 @@ export class MembershipService {
   /**
    * Get active membership plans for a tenant
    */
-  async getActivePlansForTenant(tenantId: string): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getActivePlansForTenant(_tenantId: string): Promise<any[]> {
     // This would be implemented by the MembershipPlanService
     // For now, return empty array
     return [];
