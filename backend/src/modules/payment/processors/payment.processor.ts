@@ -1,6 +1,6 @@
 import { Process, Processor } from '@nestjs/bull';
-import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
+import { PaymentLogger } from '../../../common/logger/application-loggers';
 import { PaymentService, ProcessPaymentCompletedData, ProcessPaymentFailedData } from '../services/payment.service';
 
 interface PaymentNotificationData {
@@ -10,19 +10,26 @@ interface PaymentNotificationData {
 
 @Processor('payment-processing')
 export class PaymentProcessor {
-  private readonly logger = new Logger(PaymentProcessor.name);
+  private readonly logger = new PaymentLogger();
 
   constructor(private readonly paymentService: PaymentService) {}
 
   @Process('process-payment-completed')
   async handlePaymentCompleted(job: Job<ProcessPaymentCompletedData>) {
-    this.logger.log(`Processing payment completed job: ${job.id}`);
+    this.logger.queueJobStarted('process-payment-completed', job.id.toString(), job.data.qpayPaymentId);
+    const startTime = Date.now();
     
     try {
       await this.paymentService.processPaymentCompleted(job.data);
-      this.logger.log(`Successfully processed payment completed job: ${job.id}`);
+      const duration = Date.now() - startTime;
+      this.logger.queueJobCompleted('process-payment-completed', job.id.toString(), duration);
     } catch (error) {
-      this.logger.error(`Failed to process payment completed job ${job.id}:`, error);
+      this.logger.queueJobFailed(
+        'process-payment-completed', 
+        job.id.toString(), 
+        error.message,
+        job.attemptsMade
+      );
       throw error; // Re-throw to trigger retry mechanism
     }
   }

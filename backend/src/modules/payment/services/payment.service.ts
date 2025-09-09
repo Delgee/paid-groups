@@ -1,4 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PaymentLogger } from '../../../common/logger/application-loggers';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InjectQueue } from '@nestjs/bull';
@@ -34,7 +35,7 @@ export interface ProcessPaymentFailedData {
 
 @Injectable()
 export class PaymentService {
-  private readonly logger = new Logger(PaymentService.name);
+  private readonly logger = new PaymentLogger();
 
   constructor(
     @InjectRepository(Payment)
@@ -75,7 +76,12 @@ export class PaymentService {
   }
 
   async queuePaymentCompleted(data: ProcessPaymentCompletedData): Promise<void> {
-    this.logger.log(`Queuing payment completed processing for payment ${data.qpayPaymentId}`);
+    this.logger.info(`Queuing payment completed processing for payment ${data.qpayPaymentId}`, {
+      paymentId: data.qpayPaymentId,
+      tenantId: data.tenantId,
+      memberId: data.memberId,
+      amount: data.amount,
+    });
     
     await this.paymentQueue.add('process-payment-completed', data, {
       attempts: 3,
@@ -103,7 +109,7 @@ export class PaymentService {
   }
 
   async processPaymentCompleted(data: ProcessPaymentCompletedData): Promise<void> {
-    this.logger.log(`Processing completed payment: ${data.qpayPaymentId}`);
+    this.logger.paymentProcessed(data.qpayPaymentId, 'processing', data.amount, data.currency);
 
     try {
       // Check if payment already exists

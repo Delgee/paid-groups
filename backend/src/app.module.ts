@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -11,6 +12,9 @@ import { BotModule } from './modules/bot/bot.module';
 import { MembershipModule } from './modules/membership/membership.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { HealthModule } from './modules/health/health.module';
+import { LoggerModule } from './common/logger/logger.module';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 
 @Module({
   imports: [
@@ -42,6 +46,7 @@ import { HealthModule } from './modules/health/health.module';
       }),
     }),
     ScheduleModule.forRoot(),
+    LoggerModule,
     AuthModule,
     TenantModule,
     BotModule,
@@ -50,6 +55,18 @@ import { HealthModule } from './modules/health/health.module';
     HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RequestContextMiddleware)
+      .forRoutes('*');
+  }
+}
