@@ -74,6 +74,9 @@ export class Membership {
   @Column({ type: 'text', nullable: true })
   cancellation_reason: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  last_warning_sent_at: Date;
+
   @Column({ type: 'jsonb', default: {} })
   metadata: Record<string, any>;
 

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TelegramBot } from '../entities/telegram-bot.entity';
 import { TelegramGroup } from '../entities/telegram-group.entity';
+import { TelegramApiService } from './telegram-api.service';
 
 export interface CreateBotDto {
   bot_token: string;
@@ -30,6 +31,7 @@ export class TelegramBotService {
     private botRepository: Repository<TelegramBot>,
     @InjectRepository(TelegramGroup)
     private groupRepository: Repository<TelegramGroup>,
+    private telegramApiService: TelegramApiService,
   ) {}
 
   async create(tenantId: string, createBotDto: CreateBotDto): Promise<TelegramBot> {
@@ -42,8 +44,15 @@ export class TelegramBotService {
       throw new ConflictException('Bot with this token already exists');
     }
 
+    // Verify bot token with Telegram API
+    const botInfo = await this.telegramApiService.verifyBotToken(createBotDto.bot_token);
+    if (!botInfo) {
+      throw new ConflictException('Invalid bot token');
+    }
+
     const bot = this.botRepository.create({
       ...createBotDto,
+      bot_username: createBotDto.bot_username || botInfo.username,
       tenant_id: tenantId,
       is_active: true,
       settings: createBotDto.settings || {},
@@ -109,11 +118,31 @@ export class TelegramBotService {
       throw new ConflictException('Group already connected');
     }
 
+    // Verify group exists and bot has access
+    const chatInfo = await this.telegramApiService.getChatInfo(
+      bot.bot_token,
+      parseInt(groupData.group_id)
+    );
+    
+    if (!chatInfo) {
+      throw new ConflictException('Cannot access group with this bot token');
+    }
+
+    // Check if bot is admin in the group
+    const isAdmin = await this.telegramApiService.isBotAdminInChat(
+      bot.bot_token,
+      parseInt(groupData.group_id)
+    );
+
+    if (!isAdmin) {
+      throw new ConflictException('Bot must be an administrator in the group');
+    }
+
     const group = this.groupRepository.create({
       telegram_chat_id: parseInt(groupData.group_id),
-      group_name: groupData.group_name,
-      group_type: groupData.group_type as any,
-      member_count: groupData.member_count || 0,
+      group_name: chatInfo.title || groupData.group_name,
+      group_type: chatInfo.type as any,
+      member_count: chatInfo.member_count || 0,
       bot_id: bot.id,
       tenant_id: tenantId,
       is_active: true,
@@ -157,8 +186,9 @@ export class TelegramBotService {
     tenantId: string,
     botId: string,
     groupId: string,
-    message: string
-  ): Promise<void> {
+    message: string,
+    options?: { parse_mode?: 'HTML' | 'Markdown' }
+  ): Promise<boolean> {
     const bot = await this.findById(tenantId, botId);
     
     const group = await this.groupRepository.findOne({
@@ -173,7 +203,67 @@ export class TelegramBotService {
       throw new NotFoundException(`Group with ID ${groupId} not found`);
     }
 
-    // TODO: Implement actual Telegram API call using Telegraph
-    console.log(`Sending message to group ${group.telegram_chat_id}: ${message}`);
+    return this.telegramApiService.sendMessage(
+      bot.bot_token,
+      group.telegram_chat_id,
+      message,
+      options
+    );
+  }
+
+  async kickMember(
+    tenantId: string,
+    botId: string,
+    groupId: string,
+    userId: number
+  ): Promise<boolean> {
+    const bot = await this.findById(tenantId, botId);
+    
+    const group = await this.groupRepository.findOne({
+      where: { 
+        id: groupId, 
+        bot_id: bot.id,
+        tenant_id: tenantId 
+      },
+    });
+
+    if (!group) {
+      throw new NotFoundException(`Group with ID ${groupId} not found`);
+    }
+
+    return this.telegramApiService.kickChatMember(
+      bot.bot_token,
+      group.telegram_chat_id,
+      userId
+    );
+  }
+
+  async generateInviteLink(
+    tenantId: string,
+    botId: string,
+    groupId: string,
+    expireDate?: Date,
+    memberLimit?: number
+  ): Promise<string | null> {
+    const bot = await this.findById(tenantId, botId);
+    
+    const group = await this.groupRepository.findOne({
+      where: { 
+        id: groupId, 
+        bot_id: bot.id,
+        tenant_id: tenantId 
+      },
+    });
+
+    if (!group) {
+      throw new NotFoundException(`Group with ID ${groupId} not found`);
+    }
+
+    return this.telegramApiService.generateInviteLink(
+      bot.bot_token,
+      group.telegram_chat_id,
+      expireDate,
+      memberLimit
+    );
   }
 }

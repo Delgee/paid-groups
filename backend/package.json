@@ -24,6 +24,7 @@
     "seed:run": "ts-node ./src/database/seeds/run-seeds.ts"
   },
   "dependencies": {
+    "@nestjs/axios": "^4.0.1",
     "@nestjs/bull": "^10.0.1",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.1.1",
@@ -31,9 +32,10 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.2",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/schedule": "^6.0.0",
     "@nestjs/swagger": "^7.1.17",
     "@nestjs/typeorm": "^10.0.1",
-    "axios": "^1.6.2",
+    "axios": "^1.11.0",
     "bcrypt": "^5.1.1",
     "bull": "^4.12.2",
     "class-transformer": "^0.5.1",

@@ -45,8 +45,8 @@ export class MembershipPlan {
   @Column({ default: 0 })
   trial_days: number;
 
-  @Column({ type: 'jsonb', default: [] })
-  features: string[];
+  @Column({ type: 'jsonb', default: {} })
+  features: Record<string, any>;
 
   @Column({ default: true })
   is_active: boolean;

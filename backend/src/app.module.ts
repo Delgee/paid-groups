@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -9,6 +10,7 @@ import { TenantModule } from './modules/tenant/tenant.module';
 import { BotModule } from './modules/bot/bot.module';
 import { MembershipModule } from './modules/membership/membership.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -39,11 +41,13 @@ import { PaymentModule } from './modules/payment/payment.module';
         },
       }),
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     TenantModule,
     BotModule,
     MembershipModule,
     PaymentModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
