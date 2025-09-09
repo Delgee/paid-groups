@@ -30,6 +30,7 @@
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "cookies-next": "^4.2.1",
     "date-fns": "^2.30.0",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.294.0",

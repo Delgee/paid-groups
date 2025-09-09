@@ -133,15 +133,15 @@
 ## Phase 3.5: Frontend Implementation
 
 ### Authentication Pages
-- [ ] T064 [P] Login page component in frontend/app/(auth)/login/page.tsx
-- [ ] T065 [P] Register page component in frontend/app/(auth)/register/page.tsx
-- [ ] T066 [P] Auth layout with redirect logic in frontend/app/(auth)/layout.tsx
+- [x] T064 [P] Login page component in frontend/app/(auth)/login/page.tsx
+- [x] T065 [P] Register page component in frontend/app/(auth)/register/page.tsx
+- [x] T066 [P] Auth layout with redirect logic in frontend/app/(auth)/layout.tsx
 
 ### Dashboard Core
-- [ ] T067 Dashboard layout with sidebar in frontend/app/(dashboard)/layout.tsx
-- [ ] T068 Dashboard overview page in frontend/app/(dashboard)/page.tsx
-- [ ] T069 [P] API client service with auth in frontend/lib/api/client.ts
-- [ ] T070 [P] Auth context provider in frontend/components/providers/auth-provider.tsx
+- [x] T067 Dashboard layout with sidebar in frontend/app/(dashboard)/layout.tsx
+- [x] T068 Dashboard overview page in frontend/app/(dashboard)/page.tsx
+- [x] T069 [P] API client service with auth in frontend/lib/api/client.ts
+- [x] T070 [P] Auth context provider in frontend/components/providers/auth-provider.tsx
 
 ### Bot Management UI
 - [ ] T071 Bots list page in frontend/app/(dashboard)/bots/page.tsx
