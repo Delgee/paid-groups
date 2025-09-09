@@ -71,6 +71,52 @@ export interface TelegramGroup {
   updated_at: string;
 }
 
+export interface Member {
+  id: string;
+  telegram_user_id: number;
+  username?: string;
+  first_name: string;
+  last_name?: string;
+  phone_number?: string;
+  is_bot: boolean;
+  is_active: boolean;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  memberships?: Membership[];
+}
+
+export interface MembershipPlan {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  currency: string;
+  duration_days: number;
+  is_active: boolean;
+  features?: string[];
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Membership {
+  id: string;
+  member_id: string;
+  plan_id: string;
+  group_id: string;
+  status: 'active' | 'expired' | 'cancelled' | 'pending';
+  started_at?: string;
+  expires_at?: string;
+  payment_id?: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  member?: Member;
+  plan?: MembershipPlan;
+  group?: TelegramGroup;
+}
+
 class ApiClient {
   private instance: AxiosInstance;
   private refreshTokenPromise: Promise<string> | null = null;
@@ -243,6 +289,69 @@ class ApiClient {
     data: { message_type: string; content: string; variables?: Record<string, string> }
   ): Promise<any> {
     const response = await this.instance.post(`/v1/bots/${botId}/messages`, data);
+    return response.data;
+  }
+
+  // Member management methods
+  async getMembers(params?: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    status?: string;
+    group_id?: string;
+  }): Promise<{ members: Member[]; total: number }> {
+    const response = await this.instance.get<{ members: Member[]; total: number }>('/v1/members', {
+      params
+    });
+    return response.data;
+  }
+
+  async getMember(id: string): Promise<Member> {
+    const response = await this.instance.get<Member>(`/v1/members/${id}`);
+    return response.data;
+  }
+
+  // Membership management methods
+  async getMemberships(params?: {
+    limit?: number;
+    offset?: number;
+    member_id?: string;
+    group_id?: string;
+    status?: string;
+  }): Promise<{ memberships: Membership[]; total: number }> {
+    const response = await this.instance.get<{ memberships: Membership[]; total: number }>('/v1/memberships', {
+      params
+    });
+    return response.data;
+  }
+
+  // Membership plans methods
+  async getMembershipPlans(): Promise<{ plans: MembershipPlan[] }> {
+    const response = await this.instance.get<{ plans: MembershipPlan[] }>('/v1/membership-plans');
+    return response.data;
+  }
+
+  async createMembershipPlan(data: {
+    name: string;
+    description?: string;
+    price: number;
+    currency: string;
+    duration_days: number;
+    features?: string[];
+  }): Promise<MembershipPlan> {
+    const response = await this.instance.post<MembershipPlan>('/v1/membership-plans', data);
+    return response.data;
+  }
+
+  async updateMembershipPlan(id: string, data: Partial<{
+    name: string;
+    description?: string;
+    price: number;
+    duration_days: number;
+    features?: string[];
+    is_active: boolean;
+  }>): Promise<MembershipPlan> {
+    const response = await this.instance.put<MembershipPlan>(`/v1/membership-plans/${id}`, data);
     return response.data;
   }
 
