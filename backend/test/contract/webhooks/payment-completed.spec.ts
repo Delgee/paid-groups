@@ -1,24 +1,18 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { AppModule } from '../../../src/app.module';
+import { TestSetupHelper } from '../../helpers/test-setup.helper';
 import * as crypto from 'crypto';
+import * as request from 'supertest';
 
 describe('POST /v1/webhooks/qpay/payment-completed (Contract)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await TestSetupHelper.createTestApp();
+    await TestSetupHelper.cleanupDatabase();
   });
 
   afterEach(async () => {
-    await app.close();
+    await TestSetupHelper.closeApp(app);
   });
 
   const createSignature = (payload: string, secret: string) => {

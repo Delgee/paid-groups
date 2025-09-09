@@ -1,7 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../../src/app.module';
+import { TestSetupHelper } from '../../helpers/test-setup.helper';
 
 describe('POST /v1/bots (Contract)', () => {
   let app: INestApplication;
@@ -14,13 +13,8 @@ describe('POST /v1/bots (Contract)', () => {
   let accessToken: string;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await TestSetupHelper.createTestApp();
+    await TestSetupHelper.cleanupDatabase();
 
     // Create and login a test user
     testUser = {
@@ -30,9 +24,7 @@ describe('POST /v1/bots (Contract)', () => {
       company_name: 'Test Company',
     };
 
-    await request(app.getHttpServer())
-      .post('/v1/auth/register')
-      .send(testUser);
+    await request(app.getHttpServer()).post('/v1/auth/register').send(testUser);
 
     const loginResponse = await request(app.getHttpServer())
       .post('/v1/auth/login')
@@ -45,7 +37,7 @@ describe('POST /v1/bots (Contract)', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    await TestSetupHelper.closeApp(app);
   });
 
   describe('Valid bot creation request', () => {
@@ -96,7 +88,8 @@ describe('POST /v1/bots (Contract)', () => {
       const botData = {
         bot_token: 'valid-telegram-bot-token-456',
         bot_name: 'Bot With Picture',
-        profile_picture: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+        profile_picture:
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
       };
 
       const response = await request(app.getHttpServer())

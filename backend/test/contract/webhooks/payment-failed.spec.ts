@@ -1,24 +1,18 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestSetupHelper } from '../../helpers/test-setup.helper';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../../src/app.module';
 import * as crypto from 'crypto';
 
 describe('POST /v1/webhooks/qpay/payment-failed (Contract)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await TestSetupHelper.createTestApp();
+    await TestSetupHelper.cleanupDatabase();
   });
 
   afterEach(async () => {
-    await app.close();
+    await TestSetupHelper.closeApp(app);
   });
 
   const createSignature = (payload: string, secret: string) => {
@@ -43,7 +37,10 @@ describe('POST /v1/webhooks/qpay/payment-failed (Contract)', () => {
       };
 
       const payloadString = JSON.stringify(webhookPayload);
-      const signature = createSignature(payloadString, process.env.QPAY_WEBHOOK_SECRET || 'test-secret');
+      const signature = createSignature(
+        payloadString,
+        process.env.QPAY_WEBHOOK_SECRET || 'test-secret',
+      );
 
       const response = await request(app.getHttpServer())
         .post('/v1/webhooks/qpay/payment-failed')

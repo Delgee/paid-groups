@@ -100,35 +100,35 @@
 ## Phase 3.4: Core Implementation - Services & Business Logic
 
 ### Authentication Module
-- [ ] T044 JWT authentication service in backend/src/modules/auth/services/auth.service.ts
-- [ ] T045 JWT auth guard in backend/src/common/guards/jwt-auth.guard.ts
-- [ ] T046 Tenant context guard in backend/src/common/guards/tenant.guard.ts
-- [ ] T047 Auth controller with register/login endpoints in backend/src/modules/auth/auth.controller.ts
+- [x] T044 JWT authentication service in backend/src/modules/auth/services/auth.service.ts
+- [x] T045 JWT auth guard in backend/src/common/guards/jwt-auth.guard.ts
+- [x] T046 Tenant context guard in backend/src/common/guards/tenant.guard.ts
+- [x] T047 Auth controller with register/login endpoints in backend/src/modules/auth/auth.controller.ts
 
 ### Tenant Management Module
-- [ ] T048 Tenant service with CRUD operations in backend/src/modules/tenant/services/tenant.service.ts
-- [ ] T049 Tenant isolation interceptor in backend/src/common/interceptors/tenant.interceptor.ts
-- [ ] T050 Tenant controller in backend/src/modules/tenant/tenant.controller.ts
+- [x] T048 Tenant service with CRUD operations in backend/src/modules/tenant/services/tenant.service.ts
+- [x] T049 Tenant isolation interceptor in backend/src/common/interceptors/tenant.interceptor.ts
+- [x] T050 Tenant controller in backend/src/modules/tenant/tenant.controller.ts
 
 ### Bot Management Module
-- [ ] T051 Telegram bot service in backend/src/modules/bot/services/telegram-bot.service.ts
-- [ ] T052 Telegraph bot framework setup in backend/src/modules/bot/services/bot-framework.service.ts
+- [x] T051 Telegram bot service in backend/src/modules/bot/services/telegram-bot.service.ts
+- [x] T052 Telegraph bot framework setup in backend/src/modules/bot/services/bot-framework.service.ts
 - [ ] T053 Bot webhook handler in backend/src/modules/bot/services/webhook.service.ts
-- [ ] T054 Bot controller with CRUD endpoints in backend/src/modules/bot/bot.controller.ts
-- [ ] T055 Group management service in backend/src/modules/bot/services/group.service.ts
+- [x] T054 Bot controller with CRUD endpoints in backend/src/modules/bot/bot.controller.ts
+- [x] T055 Group management service in backend/src/modules/bot/services/group.service.ts
 
 ### Payment Processing Module
-- [ ] T056 QPay integration service in backend/src/modules/payment/services/qpay.service.ts
-- [ ] T056 Payment webhook controller in backend/src/modules/payment/webhook.controller.ts
-- [ ] T057 Webhook signature verification in backend/src/modules/payment/guards/webhook.guard.ts
+- [x] T056 QPay integration service in backend/src/modules/payment/services/qpay.service.ts
+- [x] T056 Payment webhook controller in backend/src/modules/payment/webhook.controller.ts
+- [x] T057 Webhook signature verification in backend/src/modules/payment/guards/webhook.guard.ts
 - [ ] T058 Payment processing queue in worker/src/queues/payment.queue.ts
-- [ ] T059 Idempotency middleware in backend/src/common/middleware/idempotency.middleware.ts
+- [x] T059 Idempotency middleware in backend/src/common/middleware/idempotency.middleware.ts
 
 ### Membership Management Module
-- [ ] T060 Membership service with lifecycle management in backend/src/modules/membership/services/membership.service.ts
-- [ ] T061 Membership expiration job in worker/src/jobs/membership-expiration.job.ts
-- [ ] T062 Member management service in backend/src/modules/membership/services/member.service.ts
-- [ ] T063 Membership plan service in backend/src/modules/membership/services/plan.service.ts
+- [x] T060 Membership service with lifecycle management in backend/src/modules/membership/services/membership.service.ts
+- [x] T061 Membership expiration job in backend/src/modules/membership/jobs/membership-expiration.job.ts
+- [x] T062 Member management service in backend/src/modules/membership/services/member.service.ts
+- [x] T063 Membership plan service in backend/src/modules/membership/services/membership-plan.service.ts
 
 ## Phase 3.5: Frontend Implementation
 
@@ -165,7 +165,7 @@
 - [ ] T081 [P] Structured logging with Winston in backend/src/common/logging/logger.service.ts
 - [ ] T082 [P] Request/response logging middleware in backend/src/common/middleware/logging.middleware.ts
 - [ ] T083 [P] Error handling filter in backend/src/common/filters/http-exception.filter.ts
-- [ ] T084 [P] Health check endpoints in backend/src/health/health.controller.ts
+- [x] T084 [P] Health check endpoints in backend/src/modules/health/health.controller.ts
 
 ## Phase 3.7: Polish & Documentation
 

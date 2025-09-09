@@ -1,7 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { TestSetupHelper } from '../../helpers/test-setup.helper';
 import * as request from 'supertest';
-import { AppModule } from '../../../src/app.module';
 
 describe('GET /v1/bots/{id}/groups (Contract)', () => {
   let app: INestApplication;
@@ -15,13 +14,8 @@ describe('GET /v1/bots/{id}/groups (Contract)', () => {
   let testBotId: string;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await TestSetupHelper.createTestApp();
+    await TestSetupHelper.cleanupDatabase();
 
     // Create and login a test user
     testUser = {
@@ -67,7 +61,7 @@ describe('GET /v1/bots/{id}/groups (Contract)', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    await TestSetupHelper.closeApp(app);
   });
 
   describe('Valid authenticated request', () => {

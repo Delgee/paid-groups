@@ -1,7 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
+
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../src/app.module';
+import { TestSetupHelper } from '../helpers/test-setup.helper';
 
 describe('Multi-Tenant Data Isolation (Integration)', () => {
   let app: INestApplication;
@@ -11,13 +11,8 @@ describe('Multi-Tenant Data Isolation (Integration)', () => {
   let tenant2User: any;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await TestSetupHelper.createTestApp();
+    await TestSetupHelper.cleanupDatabase();
 
     // Create first tenant
     const tenant1Data = {
@@ -54,7 +49,7 @@ describe('Multi-Tenant Data Isolation (Integration)', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    await TestSetupHelper.closeApp(app);
   });
 
   describe('Bot isolation', () => {

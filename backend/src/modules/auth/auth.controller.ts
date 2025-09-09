@@ -69,6 +69,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
@@ -79,6 +80,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout user' })
@@ -106,8 +108,10 @@ export class AuthController {
       role: user.role,
       tenant_id: user.tenant_id,
       is_active: user.is_active,
+      permissions: this.authService.getUserPermissions(user.role),
       last_login_at: user.last_login_at,
       created_at: user.created_at,
+      updated_at: user.updated_at,
     };
   }
 }

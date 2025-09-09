@@ -1,7 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { TestSetupHelper } from '../../helpers/test-setup.helper';
 import * as request from 'supertest';
-import { AppModule } from '../../../src/app.module';
 
 describe('POST /v1/auth/refresh (Contract)', () => {
   let app: INestApplication;
@@ -14,13 +13,8 @@ describe('POST /v1/auth/refresh (Contract)', () => {
   let validRefreshToken: string;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await TestSetupHelper.createTestApp();
+    await TestSetupHelper.cleanupDatabase();
 
     // Create and login a test user to get a valid refresh token
     testUser = {
@@ -30,9 +24,7 @@ describe('POST /v1/auth/refresh (Contract)', () => {
       company_name: 'Test Company',
     };
 
-    await request(app.getHttpServer())
-      .post('/v1/auth/register')
-      .send(testUser);
+    await request(app.getHttpServer()).post('/v1/auth/register').send(testUser);
 
     const loginResponse = await request(app.getHttpServer())
       .post('/v1/auth/login')
@@ -45,7 +37,7 @@ describe('POST /v1/auth/refresh (Contract)', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    await TestSetupHelper.closeApp(app);
   });
 
   describe('Valid refresh request', () => {
@@ -92,7 +84,9 @@ describe('POST /v1/auth/refresh (Contract)', () => {
       expect(typeof response.body.user.tenant_id).toBe('string');
       expect(typeof response.body.user.is_active).toBe('boolean');
       expect(Array.isArray(response.body.user.permissions)).toBe(true);
-      expect(['owner', 'admin', 'moderator']).toContain(response.body.user.role);
+      expect(['owner', 'admin', 'moderator']).toContain(
+        response.body.user.role,
+      );
       expect(response.body.user.is_active).toBe(true);
     });
 
@@ -115,8 +109,12 @@ describe('POST /v1/auth/refresh (Contract)', () => {
         .send({ refresh_token: firstRefresh.body.refresh_token })
         .expect(200);
 
-      expect(secondRefresh.body.refresh_token).not.toBe(firstRefresh.body.refresh_token);
-      expect(secondRefresh.body.access_token).not.toBe(firstRefresh.body.access_token);
+      expect(secondRefresh.body.refresh_token).not.toBe(
+        firstRefresh.body.refresh_token,
+      );
+      expect(secondRefresh.body.access_token).not.toBe(
+        firstRefresh.body.access_token,
+      );
     });
   });
 
@@ -148,7 +146,8 @@ describe('POST /v1/auth/refresh (Contract)', () => {
     it('should return 401 for expired refresh token', async () => {
       // This test assumes we have a way to create expired tokens or wait for expiration
       // For now, we'll test with a malformed token that looks expired
-      const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNTE2MjM5MDIyfQ.invalid-signature';
+      const expiredToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNTE2MjM5MDIyfQ.invalid-signature';
 
       const response = await request(app.getHttpServer())
         .post('/v1/auth/refresh')

@@ -1,7 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
+
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../src/app.module';
+import { TestSetupHelper } from '../helpers/test-setup.helper';
 import * as crypto from 'crypto';
 
 describe('Payment Processing to Membership Grant Flow (Integration)', () => {
@@ -13,13 +13,8 @@ describe('Payment Processing to Membership Grant Flow (Integration)', () => {
   let planId: string;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await TestSetupHelper.createTestApp();
+    await TestSetupHelper.cleanupDatabase();
 
     // Setup complete tenant with bot, group, and plan
     const registrationData = {
@@ -75,7 +70,7 @@ describe('Payment Processing to Membership Grant Flow (Integration)', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    await TestSetupHelper.closeApp(app);
   });
 
   const createWebhookSignature = (payload: string) => {

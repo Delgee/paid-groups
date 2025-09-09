@@ -1,7 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../src/app.module';
+import { TestSetupHelper } from '../helpers/test-setup.helper';
 
 describe('Bot Setup Flow (Integration)', () => {
   let app: INestApplication;
@@ -9,13 +8,8 @@ describe('Bot Setup Flow (Integration)', () => {
   let testUser: any;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await TestSetupHelper.createTestApp();
+    await TestSetupHelper.cleanupDatabase();
 
     // Register and login a test user
     const registrationData = {
@@ -34,7 +28,7 @@ describe('Bot Setup Flow (Integration)', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    await TestSetupHelper.closeApp(app);
   });
 
   describe('Complete bot setup and group connection flow', () => {

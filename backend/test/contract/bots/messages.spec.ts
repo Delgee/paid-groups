@@ -1,7 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { TestSetupHelper } from '../../helpers/test-setup.helper';
 import * as request from 'supertest';
-import { AppModule } from '../../../src/app.module';
 
 describe('POST /v1/bots/{id}/messages (Contract)', () => {
   let app: INestApplication;
@@ -9,13 +8,8 @@ describe('POST /v1/bots/{id}/messages (Contract)', () => {
   let testBotId: string;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await TestSetupHelper.createTestApp();
+    await TestSetupHelper.cleanupDatabase();
 
     // Setup user and bot
     const testUser = {
@@ -25,9 +19,7 @@ describe('POST /v1/bots/{id}/messages (Contract)', () => {
       company_name: 'Test Company',
     };
 
-    await request(app.getHttpServer())
-      .post('/v1/auth/register')
-      .send(testUser);
+    await request(app.getHttpServer()).post('/v1/auth/register').send(testUser);
 
     const loginResponse = await request(app.getHttpServer())
       .post('/v1/auth/login')
@@ -47,7 +39,7 @@ describe('POST /v1/bots/{id}/messages (Contract)', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    await TestSetupHelper.closeApp(app);
   });
 
   describe('Valid message creation', () => {
@@ -66,7 +58,10 @@ describe('POST /v1/bots/{id}/messages (Contract)', () => {
 
       expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('bot_id', testBotId);
-      expect(response.body).toHaveProperty('message_type', messageData.message_type);
+      expect(response.body).toHaveProperty(
+        'message_type',
+        messageData.message_type,
+      );
       expect(response.body).toHaveProperty('content', messageData.content);
       expect(response.body).toHaveProperty('variables', messageData.variables);
       expect(response.body).toHaveProperty('is_active', true);

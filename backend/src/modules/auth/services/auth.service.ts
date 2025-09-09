@@ -171,7 +171,7 @@ export class AuthService {
       // Generate new tokens
       const tokens = await this.generateTokens(user);
       
-      // Save new refresh token
+      // Save new refresh token (this invalidates the old one)
       await this.saveRefreshToken(user.id, tokens.refresh_token);
 
       return {
@@ -214,12 +214,23 @@ export class AuthService {
       role: user.role,
     };
 
-    const access_token = this.jwtService.sign(payload, {
-      expiresIn: '15m',
-    });
+    const access_token = this.jwtService.sign(
+      { 
+        ...payload, 
+        iat: Math.floor(Date.now() / 1000),
+        jti: Date.now().toString() + Math.random().toString(36).substr(2, 5)
+      }, 
+      {
+        expiresIn: '15m',
+      }
+    );
 
     const refresh_token = this.jwtService.sign(
-      { sub: user.id, type: 'refresh' },
+      { 
+        sub: user.id, 
+        type: 'refresh', 
+        jti: Date.now().toString() + Math.random().toString(36).substr(2, 9) // unique token ID
+      },
       { expiresIn: '7d' }
     );
 
@@ -230,7 +241,7 @@ export class AuthService {
     };
   }
 
-  private getUserPermissions(role: UserRole): string[] {
+  getUserPermissions(role: UserRole): string[] {
     switch (role) {
       case UserRole.SUPER_ADMIN:
         return ['*']; // All permissions
