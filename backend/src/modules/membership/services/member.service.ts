@@ -6,9 +6,21 @@ import { Member } from '../entities/member.entity';
 export interface CreateMemberDto {
   telegram_user_id: number;
   telegram_username?: string;
+  username?: string;
   first_name: string;
   last_name?: string;
   phone_number?: string;
+  is_bot?: boolean;
+  tenant_id?: string;
+}
+
+export interface CreateOrUpdateMemberDto {
+  telegram_user_id: number;
+  username?: string;
+  first_name: string;
+  last_name?: string;
+  is_bot?: boolean;
+  tenant_id: string;
 }
 
 export interface UpdateMemberDto {
@@ -132,5 +144,73 @@ export class MemberService {
       expired: expiredQuery,
       trial: trialQuery,
     };
+  }
+
+  /**
+   * Create or update member (for webhook processing)
+   */
+  async createOrUpdateMember(data: CreateOrUpdateMemberDto): Promise<Member> {
+    // Try to find existing member
+    const existingMember = await this.memberRepository.findOne({
+      where: {
+        telegram_user_id: data.telegram_user_id,
+        tenant_id: data.tenant_id,
+      },
+    });
+
+    if (existingMember) {
+      // Update existing member
+      Object.assign(existingMember, {
+        username: data.username || existingMember.username,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        is_bot: data.is_bot ?? existingMember.is_bot,
+        updated_at: new Date(),
+      });
+
+      return await this.memberRepository.save(existingMember);
+    } else {
+      // Create new member
+      const newMember = this.memberRepository.create({
+        telegram_user_id: data.telegram_user_id,
+        username: data.username,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        is_bot: data.is_bot || false,
+        tenant_id: data.tenant_id,
+      });
+
+      return await this.memberRepository.save(newMember);
+    }
+  }
+
+  /**
+   * Find member by Telegram user ID
+   */
+  async findByTelegramUserId(telegramUserId: number, tenantId: string): Promise<Member | null> {
+    return await this.memberRepository.findOne({
+      where: {
+        telegram_user_id: telegramUserId,
+        tenant_id: tenantId,
+      },
+      relations: ['memberships'],
+    });
+  }
+
+  /**
+   * Handle member leaving a group
+   */
+  async handleMemberLeft(memberId: string, chatId: number): Promise<void> {
+    // Update member status or log the event
+    // This could be extended to handle membership cleanup
+    const member = await this.memberRepository.findOne({
+      where: { id: memberId },
+    });
+
+    if (member) {
+      // You could update last_seen, log the event, etc.
+      member.updated_at = new Date();
+      await this.memberRepository.save(member);
+    }
   }
 }

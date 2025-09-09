@@ -23,5 +23,6 @@
       "@/modules/*": ["src/modules/*"],
       "@/database/*": ["src/database/*"]
     }
-  }
+  },
+  "exclude": ["src/workers/**/*"]
 }

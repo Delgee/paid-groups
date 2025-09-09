@@ -117,7 +117,6 @@ export class MembershipService {
         group_id: groupId, 
         tenant_id: tenantId,
         status: MembershipStatus.ACTIVE,
-        expires_at: LessThan(new Date()),
       },
       relations: ['member', 'plan'],
       order: { expires_at: 'ASC' },
@@ -285,5 +284,51 @@ export class MembershipService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + durationDays);
     return expiresAt;
+  }
+
+  /**
+   * Check if member has valid membership for a specific group
+   */
+  async hasValidMembershipForGroup(memberId: string, groupId: string): Promise<boolean> {
+    const membership = await this.membershipRepository.findOne({
+      where: {
+        member_id: memberId,
+        group_id: groupId,
+        status: MembershipStatus.ACTIVE,
+      },
+    });
+
+    if (!membership) {
+      return false;
+    }
+
+    // Check if not expired
+    if (membership.expires_at && new Date() > membership.expires_at) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Get active memberships for a member
+   */
+  async getActiveMembershipsForMember(memberId: string): Promise<Membership[]> {
+    return await this.membershipRepository.find({
+      where: {
+        member_id: memberId,
+        status: MembershipStatus.ACTIVE,
+      },
+      relations: ['plan', 'group', 'member'],
+    });
+  }
+
+  /**
+   * Get active membership plans for a tenant
+   */
+  async getActivePlansForTenant(tenantId: string): Promise<any[]> {
+    // This would be implemented by the MembershipPlanService
+    // For now, return empty array
+    return [];
   }
 }

@@ -7,14 +7,12 @@ import {
   HttpStatus,
   BadRequestException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import * as crypto from 'crypto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Payment, PaymentStatus } from './entities/payment.entity';
-import { Member } from '../membership/entities/member.entity';
-import { Membership, MembershipStatus } from '../membership/entities/membership.entity';
+import { PaymentService } from './services/payment.service';
+import { PaymentStatus } from './entities/payment.entity';
 
 interface QPayWebhookPayload {
   event_type: 'payment.completed' | 'payment.failed' | 'payment.pending';
@@ -43,14 +41,9 @@ interface QPayWebhookPayload {
 @ApiTags('Webhooks')
 @Controller('webhooks')
 export class WebhookController {
-  constructor(
-    @InjectRepository(Payment)
-    private paymentRepository: Repository<Payment>,
-    @InjectRepository(Member)
-    private memberRepository: Repository<Member>,
-    @InjectRepository(Membership)
-    private membershipRepository: Repository<Membership>,
-  ) {}
+  private readonly logger = new Logger(WebhookController.name);
+
+  constructor(private readonly paymentService: PaymentService) {}
 
   @Post('qpay')
   @HttpCode(HttpStatus.OK)
@@ -62,17 +55,18 @@ export class WebhookController {
     @Body() payload: QPayWebhookPayload,
     @Headers('x-qpay-signature') signature: string,
   ) {
+    this.logger.log(`Received QPay webhook: ${payload.event_type} for payment ${payload.data.payment_id}`);
+
     // Verify webhook signature
     if (!this.verifyWebhookSignature(payload, signature)) {
       throw new UnauthorizedException('Invalid webhook signature');
     }
 
     // Check for idempotency
-    const existingPayment = await this.paymentRepository.findOne({
-      where: { qpay_payment_id: payload.data.payment_id },
-    });
-
-    if (existingPayment) {
+    const existingPayment = await this.paymentService.findByQPayPaymentId(payload.data.payment_id);
+    
+    if (existingPayment && existingPayment.status !== 'pending') {
+      this.logger.log(`Payment ${payload.data.payment_id} already processed with status: ${existingPayment.status}`);
       return { success: true, message: 'Payment already processed' };
     }
 
@@ -91,6 +85,7 @@ export class WebhookController {
         throw new BadRequestException(`Unknown event type: ${payload.event_type}`);
     }
 
+    this.logger.log(`Successfully queued processing for payment ${payload.data.payment_id}`);
     return { success: true };
   }
 
@@ -104,7 +99,7 @@ export class WebhookController {
     return computedSignature === signature;
   }
 
-  private async handlePaymentCompleted(payload: QPayWebhookPayload) {
+  private async handlePaymentCompleted(payload: QPayWebhookPayload): Promise<void> {
     const { data } = payload;
     
     // Get tenant and member from metadata
@@ -116,103 +111,58 @@ export class WebhookController {
       throw new BadRequestException('Missing required metadata');
     }
 
-    // Create payment record
-    const payment = this.paymentRepository.create({
-      tenant_id: tenantId,
-      member_id: memberId,
-      amount_mnt: data.amount,
+    // Queue the payment processing
+    await this.paymentService.queuePaymentCompleted({
+      paymentId: '', // Will be generated in processor
+      qpayPaymentId: data.payment_id,
+      invoiceId: data.invoice_id,
+      amount: data.amount,
       currency: data.currency,
-      status: PaymentStatus.COMPLETED,
-      qpay_payment_id: data.payment_id,
-      qpay_invoice_id: data.invoice_id,
-      metadata: data.metadata,
+      tenantId,
+      memberId,
+      planId,
+      metadata: data.metadata || {},
     });
-
-    await this.paymentRepository.save(payment);
-
-    // Create or update membership
-    const member = await this.memberRepository.findOne({
-      where: { id: memberId, tenant_id: tenantId },
-    });
-
-    if (!member) {
-      throw new BadRequestException('Member not found');
-    }
-
-    // Find existing membership or create new one
-    let membership = await this.membershipRepository.findOne({
-      where: { 
-        member_id: memberId,
-        plan_id: planId,
-      },
-    });
-
-    const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + 1); // Add 1 month
-
-    if (membership) {
-      // Extend existing membership
-      membership.expires_at = expiresAt;
-      membership.status = MembershipStatus.ACTIVE;
-      // TODO: Add last_payment_id field to Membership entity
-    } else {
-      // Create new membership
-      membership = this.membershipRepository.create({
-        tenant_id: tenantId,
-        member_id: memberId,
-        group_id: '', // TODO: Get group_id from context
-        plan_id: planId,
-        status: MembershipStatus.ACTIVE,
-        starts_at: new Date(),
-        expires_at: expiresAt,
-        auto_renew: false,
-      });
-    }
-
-    await this.membershipRepository.save(membership);
-
-    // TODO: Send confirmation message to member via Telegram
   }
 
-  private async handlePaymentFailed(payload: QPayWebhookPayload) {
+  private async handlePaymentFailed(payload: QPayWebhookPayload): Promise<void> {
     const { data } = payload;
     
     const tenantId = data.metadata?.tenant_id;
     const memberId = data.metadata?.member_id;
 
     if (!tenantId || !memberId) {
+      this.logger.warn(`Payment failed webhook missing required metadata: ${data.payment_id}`);
       return; // Skip if no metadata
     }
 
-    // Create payment record with failed status
-    const payment = this.paymentRepository.create({
-      tenant_id: tenantId,
-      member_id: memberId,
-      amount_mnt: data.amount,
+    // Queue the payment failure processing
+    await this.paymentService.queuePaymentFailed({
+      paymentId: '', // Will be generated in processor
+      qpayPaymentId: data.payment_id,
+      invoiceId: data.invoice_id,
+      amount: data.amount,
       currency: data.currency,
-      status: PaymentStatus.FAILED,
-      qpay_payment_id: data.payment_id,
-      qpay_invoice_id: data.invoice_id,
-      metadata: data.metadata,
+      tenantId,
+      memberId,
+      failureReason: 'Payment failed via webhook',
+      metadata: data.metadata || {},
     });
-
-    await this.paymentRepository.save(payment);
-
-    // TODO: Send failure notification to member
   }
 
-  private async handlePaymentPending(payload: QPayWebhookPayload) {
+  private async handlePaymentPending(payload: QPayWebhookPayload): Promise<void> {
     const { data } = payload;
     
     const tenantId = data.metadata?.tenant_id;
     const memberId = data.metadata?.member_id;
 
     if (!tenantId || !memberId) {
+      this.logger.warn(`Payment pending webhook missing required metadata: ${data.payment_id}`);
       return; // Skip if no metadata
     }
 
-    // Create payment record with pending status
-    const payment = this.paymentRepository.create({
+    // Create payment record directly for pending status (no queue needed)
+    await this.paymentService.createPayment({
       tenant_id: tenantId,
       member_id: memberId,
       amount_mnt: data.amount,
@@ -220,9 +170,7 @@ export class WebhookController {
       status: PaymentStatus.PENDING,
       qpay_payment_id: data.payment_id,
       qpay_invoice_id: data.invoice_id,
-      metadata: data.metadata,
+      metadata: data.metadata || {},
     });
-
-    await this.paymentRepository.save(payment);
   }
 }

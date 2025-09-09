@@ -249,4 +249,20 @@ export class TelegramApiService {
       this.bots.delete(botToken);
     }
   }
+
+
+  async answerCallbackQuery(
+    botToken: string, 
+    callbackQueryId: string, 
+    text?: string
+  ): Promise<boolean> {
+    try {
+      const bot = this.getBotInstance(botToken);
+      await bot.telegram.answerCbQuery(callbackQueryId, text);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to answer callback query ${callbackQueryId}: ${error.message}`);
+      return false;
+    }
+  }
 }
