@@ -24,13 +24,20 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
+
+  // Detect client-side rendering
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const isAuthenticated = !!user && apiClient.isAuthenticated();
 
   const fetchUser = async () => {
     try {
-      if (!apiClient.isAuthenticated()) {
+      // Only check auth on client side
+      if (!isClient || !apiClient.isAuthenticated()) {
         setUser(null);
         setIsLoading(false);
         return;
@@ -41,15 +48,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Failed to fetch user:', error);
       setUser(null);
-      // Don't redirect here as the API client will handle logout
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUser();
-  }, []);
+    if (isClient) {
+      fetchUser();
+    }
+  }, [isClient]);
 
   const login = async (credentials: LoginCredentials) => {
     try {
@@ -59,9 +67,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Redirect to dashboard after successful login
       router.push('/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setUser(null);
-      throw new Error(error.response?.data?.message || 'Login failed');
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -75,9 +84,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Redirect to dashboard after successful registration
       router.push('/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       setUser(null);
-      throw new Error(error.response?.data?.message || 'Registration failed');
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
