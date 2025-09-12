@@ -6,7 +6,8 @@ import { LoggerService } from './logger.service';
 
 export class AuthLogger extends LoggerService {
   constructor() {
-    super('Auth');
+    super();
+    this.setContext('Auth');
   }
 
   loginAttempt(userId: string, email: string, success: boolean, ip?: string) {
@@ -39,7 +40,8 @@ export class AuthLogger extends LoggerService {
 
 export class PaymentLogger extends LoggerService {
   constructor() {
-    super('Payment');
+    super();
+    this.setContext('Payment');
   }
 
   webhookReceived(source: string, eventType: string, paymentId: string, tenantId?: string) {
@@ -87,7 +89,8 @@ export class PaymentLogger extends LoggerService {
 
 export class BotLogger extends LoggerService {
   constructor() {
-    super('Bot');
+    super();
+    this.setContext('Bot');
   }
 
   webhookProcessed(botToken: string, updateId: number, updateType: string, chatId?: number) {
@@ -138,7 +141,8 @@ export class BotLogger extends LoggerService {
 
 export class MembershipLogger extends LoggerService {
   constructor() {
-    super('Membership');
+    super();
+    this.setContext('Membership');
   }
 
   membershipCreated(membershipId: string, memberId: string, planId: string, expiresAt: Date) {
@@ -179,7 +183,8 @@ export class MembershipLogger extends LoggerService {
 
 export class SecurityLogger extends LoggerService {
   constructor() {
-    super('Security');
+    super();
+    this.setContext('Security');
   }
 
   rateLimitExceeded(ip: string, endpoint: string, limit: number) {

@@ -14,8 +14,8 @@ export class LoggerService implements NestLoggerService {
   private context?: string;
   private metadata: LogContext = {};
 
-  constructor(context?: string) {
-    this.context = context;
+  constructor() {
+    // Context can be set via setContext method
   }
 
   setContext(context: string): void {
@@ -214,6 +214,7 @@ export class LoggerService implements NestLoggerService {
  * Factory function to create a logger with context
  */
 export function createLogger(context: string): LoggerService {
-  const logger = new LoggerService(context);
+  const logger = new LoggerService();
+  logger.setContext(context);
   return logger;
 }

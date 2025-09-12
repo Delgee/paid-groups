@@ -30,7 +30,8 @@ export class LoggingInterceptor implements NestInterceptor {
     request['requestId'] = requestId;
     
     // Set request metadata
-    const loggerWithMeta = new LoggerService('HTTP');
+    const loggerWithMeta = new LoggerService();
+    loggerWithMeta.setContext('HTTP');
     loggerWithMeta.setRequestId(requestId);
     
     // Extract tenant and user info if available

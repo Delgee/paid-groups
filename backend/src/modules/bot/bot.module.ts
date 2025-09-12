@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BotController } from './bot.controller';
 import { BotWebhookController } from './webhook.controller';
@@ -12,7 +12,7 @@ import { MembershipModule } from '../membership/membership.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([TelegramBot, TelegramGroup]),
-    MembershipModule,
+    forwardRef(() => MembershipModule),
   ],
   controllers: [BotController, BotWebhookController],
   providers: [TelegramBotService, TelegramApiService, WebhookService],

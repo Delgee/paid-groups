@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MemberController } from './member.controller';
 import { MembershipController } from './membership.controller';
@@ -16,7 +16,7 @@ import { BotModule } from '../bot/bot.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Member, Membership, MembershipPlan, TelegramBot]),
-    BotModule,
+    forwardRef(() => BotModule),
   ],
   controllers: [MemberController, MembershipController, MembershipPlanController],
   providers: [MemberService, MembershipService, MembershipPlanService, MembershipExpirationJob],
