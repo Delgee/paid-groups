@@ -2,16 +2,13 @@ import {
   Injectable,
   ExecutionContext,
   UnauthorizedException,
+  CanActivate,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { JwtService } from '@nestjs/jwt';
+import { verify } from 'jsonwebtoken';
 import { Request } from 'express';
 
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private jwtService: JwtService) {
-    super();
-  }
+export class JwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -22,7 +19,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     try {
-      const payload = this.jwtService.verify(token);
+      const secret = process.env.JWT_SECRET || 'your-super-secret-jwt-key-minimum-32-characters';
+      const payload = verify(token, secret) as { user_id: string; tenant_id?: string };
       request['user'] = payload;
       
       // Set tenant context for RLS
