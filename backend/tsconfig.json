@@ -24,5 +24,6 @@
       "@/database/*": ["src/database/*"]
     }
   },
-  "exclude": ["src/workers/**/*"]
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist", "src/workers/**/*"]
 }

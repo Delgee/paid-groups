@@ -16,3 +16,4 @@ pnpm-debug.log*
 *.swo
 *.tsbuildinfo
 *.log
+frontend/.next/cache/eslint/*
