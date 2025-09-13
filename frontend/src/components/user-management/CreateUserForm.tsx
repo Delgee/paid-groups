@@ -124,7 +124,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
           <FormField
             control={form.control}
             name="email"
-            render={({ field }: { field: { name: string; value: string; onChange: (value: string) => void; onBlur: () => void } }) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Email Address</FormLabel>
                 <FormControl>
@@ -144,7 +144,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
           <FormField
             control={form.control}
             name="password"
-            render={({ field }: { field: { name: string; value: string; onChange: (value: string) => void; onBlur: () => void } }) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
@@ -167,7 +167,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
           <FormField
             control={form.control}
             name="name"
-            render={({ field }: { field: { name: string; value: string; onChange: (value: string) => void; onBlur: () => void } }) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Full Name</FormLabel>
                 <FormControl>
@@ -186,7 +186,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
           <FormField
             control={form.control}
             name="role"
-            render={({ field }: { field: { name: string; value: string; onChange: (value: string) => void; onBlur: () => void } }) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Role</FormLabel>
                 <Select
