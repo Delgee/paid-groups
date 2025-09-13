@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,6 +25,7 @@ import { Loader2 } from 'lucide-react';
 import {
   CreateUserRequest,
   CreateUserRequestSchema,
+  CreateUserResponse,
   UserRole,
   usersApi,
   ApiClientError,
@@ -53,7 +53,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
 
   const createUserMutation = useMutation({
     mutationFn: usersApi.createUser.bind(usersApi),
-    onSuccess: (data) => {
+    onSuccess: (data: CreateUserResponse) => {
       toast({
         title: 'User created successfully',
         description: `${data.role.charAt(0).toUpperCase() + data.role.slice(1)} user ${data.name} has been created.`,
@@ -75,7 +75,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
         Object.entries(fieldErrors).forEach(([field, message]) => {
           form.setError(field as keyof CreateUserRequest, {
             type: 'server',
-            message,
+            message: message as string,
           });
         });
       } else if (error.isDuplicateError) {
@@ -124,7 +124,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
           <FormField
             control={form.control}
             name="email"
-            render={({ field }) => (
+            render={({ field }: { field: { name: string; value: string; onChange: (value: string) => void; onBlur: () => void } }) => (
               <FormItem>
                 <FormLabel>Email Address</FormLabel>
                 <FormControl>
@@ -144,7 +144,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
           <FormField
             control={form.control}
             name="password"
-            render={({ field }) => (
+            render={({ field }: { field: { name: string; value: string; onChange: (value: string) => void; onBlur: () => void } }) => (
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
@@ -167,7 +167,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
           <FormField
             control={form.control}
             name="name"
-            render={({ field }) => (
+            render={({ field }: { field: { name: string; value: string; onChange: (value: string) => void; onBlur: () => void } }) => (
               <FormItem>
                 <FormLabel>Full Name</FormLabel>
                 <FormControl>
@@ -186,7 +186,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
           <FormField
             control={form.control}
             name="role"
-            render={({ field }) => (
+            render={({ field }: { field: { name: string; value: string; onChange: (value: string) => void; onBlur: () => void } }) => (
               <FormItem>
                 <FormLabel>Role</FormLabel>
                 <Select

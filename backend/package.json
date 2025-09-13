@@ -18,6 +18,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:contract": "jest --config ./test/jest-contract.json",
     "test:integration": "jest --config ./test/jest-integration.json",
+    "type-check": "tsc --noEmit",
     "migration:generate": "typeorm-ts-node-commonjs -d ./src/database/data-source.ts migration:generate ./src/database/migrations/$npm_config_name",
     "migration:run": "typeorm-ts-node-commonjs -d ./src/database/data-source.ts migration:run",
     "migration:revert": "typeorm-ts-node-commonjs -d ./src/database/data-source.ts migration:revert",

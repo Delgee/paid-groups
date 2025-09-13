@@ -27,11 +27,11 @@ test.describe('User Validation Error Handling - E2E', () => {
 
   test('should clear validation errors when fixed', async ({ page }) => {
     await page.fill('[data-testid="user-email-input"]', 'invalid');
-    await page.blur('[data-testid="user-email-input"]');
+    await page.click('body');
     await expect(page.locator('[data-testid="email-error"]')).toBeVisible();
 
     await page.fill('[data-testid="user-email-input"]', 'valid@example.com');
-    await page.blur('[data-testid="user-email-input"]');
+    await page.click('body');
     await expect(page.locator('[data-testid="email-error"]')).not.toBeVisible();
   });
 });

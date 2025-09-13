@@ -72,7 +72,7 @@ export interface ApiError {
   details?: Array<{
     field: string;
     constraint: string;
-    value: any;
+    value: unknown;
   }>;
 }
 
@@ -82,7 +82,7 @@ class UsersApiClient {
 
   constructor() {
     this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    this.getAuthHeaders = () => {
+    this.getAuthHeaders = (): Record<string, string> => {
       const token = localStorage.getItem('accessToken');
       return token ? { Authorization: `Bearer ${token}` } : {};
     };
@@ -164,7 +164,7 @@ export class ApiClientError extends Error {
   public readonly details?: Array<{
     field: string;
     constraint: string;
-    value: any;
+    value: unknown;
   }>;
 
   constructor(apiError: ApiError) {

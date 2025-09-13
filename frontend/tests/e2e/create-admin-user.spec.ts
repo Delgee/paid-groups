@@ -66,7 +66,7 @@ test.describe('Owner Creates Admin User - E2E', () => {
 
     // Enter invalid email
     await page.fill('[data-testid="user-email-input"]', 'invalid-email');
-    await page.blur('[data-testid="user-email-input"]');
+    await page.click('body');
 
     // Verify email validation error
     await expect(page.locator('[data-testid="email-error"]')).toContainText('Please enter a valid email address');
@@ -78,7 +78,7 @@ test.describe('Owner Creates Admin User - E2E', () => {
 
     // Enter weak password
     await page.fill('[data-testid="user-password-input"]', 'weak');
-    await page.blur('[data-testid="user-password-input"]');
+    await page.click('body');
 
     // Verify password validation error
     await expect(page.locator('[data-testid="password-error"]')).toContainText('Password must be at least 8 characters');
