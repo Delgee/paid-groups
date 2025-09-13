@@ -23,8 +23,8 @@ export class TelegramBot {
   @Column('uuid')
   tenant_id: string;
 
-  @Column({ length: 255, unique: true })
-  bot_token: string;
+  @Column({ length: 500, unique: true })
+  bot_token: string; // This will store encrypted token
 
   @Column({ length: 255, nullable: true })
   bot_username: string;

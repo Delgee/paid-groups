@@ -10,6 +10,7 @@ export interface CreateBotDto {
   bot_username?: string;
   bot_name: string;
   webhook_url?: string;
+  webhook_secret?: string;
   welcome_message?: string;
   payment_instructions?: string;
   settings?: Record<string, any>;
@@ -18,6 +19,7 @@ export interface CreateBotDto {
 export interface UpdateBotDto {
   bot_name?: string;
   webhook_url?: string;
+  webhook_secret?: string;
   welcome_message?: string;
   payment_instructions?: string;
   is_active?: boolean;
