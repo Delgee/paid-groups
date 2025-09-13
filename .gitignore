@@ -1,7 +1,6 @@
 node_modules
 dist
 build
-.next
 .env
 .env.local
 .env.*.local
@@ -16,4 +15,14 @@ pnpm-debug.log*
 *.swo
 *.tsbuildinfo
 *.log
-frontend/.next/cache/eslint/*
+
+# Next.js build output
+.next
+frontend/.next
+backend/.next
+*.next
+
+# Next.js cache
+.next/cache
+frontend/.next/cache
+.eslintcache

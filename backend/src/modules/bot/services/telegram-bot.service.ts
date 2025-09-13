@@ -71,7 +71,7 @@ export class TelegramBotService {
   async findById(tenantId: string, botId: string): Promise<TelegramBot> {
     const bot = await this.botRepository.findOne({
       where: { id: botId, tenant_id: tenantId },
-      relations: ['telegram_groups'],
+      relations: ['groups'],
     });
 
     if (!bot) {

@@ -202,7 +202,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Button asChild className="w-full">
-              <Link href="/dashboard/bots">
+              <Link href="/dashboard/bots/create">
                 <Bot className="mr-2 h-4 w-4" />
                 Create New Bot
               </Link>
@@ -240,7 +240,7 @@ export default function DashboardPage() {
                 </p>
                 <div className="mt-6">
                   <Button asChild>
-                    <Link href="/dashboard/bots">
+                    <Link href="/dashboard/bots/create">
                       <Bot className="mr-2 h-4 w-4" />
                       Create Bot
                     </Link>

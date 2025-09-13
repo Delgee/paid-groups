@@ -152,7 +152,11 @@ class ApiClient {
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Don't attempt token refresh for auth endpoints
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
+                               originalRequest.url?.includes('/auth/register');
+
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
           originalRequest._retry = true;
 
           try {
@@ -160,7 +164,12 @@ class ApiClient {
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
             return this.instance(originalRequest);
           } catch (refreshError) {
-            this.logout();
+            // Only redirect to login if not already on auth pages
+            if (typeof window !== 'undefined' &&
+                !window.location.pathname.includes('/login') &&
+                !window.location.pathname.includes('/register')) {
+              this.logout();
+            }
             return Promise.reject(refreshError);
           }
         }
@@ -200,23 +209,41 @@ class ApiClient {
 
   // Authentication methods
   async login(credentials: LoginCredentials): Promise<AuthTokens> {
-    const response = await this.instance.post<AuthTokens>('/v1/auth/login', credentials);
-    
-    const { access_token, refresh_token } = response.data;
-    setCookie('access_token', access_token, { maxAge: 60 * 15 }); // 15 minutes
-    setCookie('refresh_token', refresh_token, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
-    
-    return response.data;
+    try {
+      const response = await this.instance.post<AuthTokens>('/v1/auth/login', credentials);
+
+      const { access_token, refresh_token } = response.data;
+      setCookie('access_token', access_token, { maxAge: 60 * 15 }); // 15 minutes
+      setCookie('refresh_token', refresh_token, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
+
+      return response.data;
+    } catch (error: any) {
+      // Extract error message from API response
+      const message = error.response?.data?.message ||
+                     error.response?.data?.error ||
+                     error.message ||
+                     'Invalid email or password';
+      throw new Error(message);
+    }
   }
 
   async register(data: RegisterData): Promise<AuthTokens> {
-    const response = await this.instance.post<AuthTokens>('/v1/auth/register', data);
-    
-    const { access_token, refresh_token } = response.data;
-    setCookie('access_token', access_token, { maxAge: 60 * 15 });
-    setCookie('refresh_token', refresh_token, { maxAge: 60 * 60 * 24 * 7 });
-    
-    return response.data;
+    try {
+      const response = await this.instance.post<AuthTokens>('/v1/auth/register', data);
+
+      const { access_token, refresh_token } = response.data;
+      setCookie('access_token', access_token, { maxAge: 60 * 15 });
+      setCookie('refresh_token', refresh_token, { maxAge: 60 * 60 * 24 * 7 });
+
+      return response.data;
+    } catch (error: any) {
+      // Extract error message from API response
+      const message = error.response?.data?.message ||
+                     error.response?.data?.error ||
+                     error.message ||
+                     'Registration failed';
+      throw new Error(message);
+    }
   }
 
   async logout(): Promise<void> {
@@ -227,9 +254,9 @@ class ApiClient {
     } finally {
       deleteCookie('access_token');
       deleteCookie('refresh_token');
-      
-      // Redirect to login page
-      if (typeof window !== 'undefined') {
+
+      // Redirect to login page only if not already there
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }
     }
