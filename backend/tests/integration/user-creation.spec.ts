@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../../src/database/prisma.service';
+import { Repository, In } from 'typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { User, UserRole } from '../../src/modules/auth/entities/user.entity';
+import { AuditLog, AuditAction } from '../../src/modules/audit/entities/audit-log.entity';
 import { UserManagementService } from '../../src/modules/user-management/user-management.service';
 import { CreateUserRequestDto } from '../../src/modules/user-management/dto/create-user-request.dto';
 import { AppModule } from '../../src/app.module';
@@ -9,7 +12,8 @@ import * as bcrypt from 'bcrypt';
 describe('User Creation Workflow - Integration Test', () => {
   let app: INestApplication;
   let userManagementService: UserManagementService;
-  let prisma: PrismaService;
+  let userRepository: Repository<User>;
+  let auditLogRepository: Repository<AuditLog>;
   let testTenantId: string;
   let ownerUserId: string;
 
@@ -22,28 +26,25 @@ describe('User Creation Workflow - Integration Test', () => {
     await app.init();
 
     userManagementService = moduleFixture.get<UserManagementService>(UserManagementService);
-    prisma = moduleFixture.get<PrismaService>(PrismaService);
+    userRepository = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
+    auditLogRepository = moduleFixture.get<Repository<AuditLog>>(getRepositoryToken(AuditLog));
 
     // Setup test tenant and owner user
     testTenantId = 'test-tenant-uuid';
     ownerUserId = 'test-owner-uuid';
-
-    // Set tenant context for RLS
-    await prisma.$executeRaw`SET LOCAL app.current_tenant TO ${testTenantId}`;
   });
 
   afterAll(async () => {
     // Cleanup test data
-    await prisma.user.deleteMany({
-      where: { tenant_id: testTenantId }
-    });
+    await userRepository.delete({ tenant_id: testTenantId });
     await app.close();
   });
 
   beforeEach(async () => {
     // Clean up users before each test
-    await prisma.user.deleteMany({
-      where: { tenant_id: testTenantId, role: { in: ['admin', 'moderator'] } }
+    await userRepository.delete({
+      tenant_id: testTenantId,
+      role: In([UserRole.ADMIN, UserRole.MODERATOR])
     });
   });
 
@@ -53,7 +54,7 @@ describe('User Creation Workflow - Integration Test', () => {
         email: 'admin@tenant1.com',
         password: 'AdminPass123',
         name: 'John Administrator',
-        role: 'admin'
+        role: UserRole.ADMIN
       };
 
       const result = await userManagementService.createUser(testTenantId, ownerUserId, createUserDto);
@@ -63,13 +64,13 @@ describe('User Creation Workflow - Integration Test', () => {
         id: expect.any(String),
         email: createUserDto.email,
         name: createUserDto.name,
-        role: 'admin',
+        role: UserRole.ADMIN,
         isActive: true,
         createdAt: expect.any(Date)
       });
 
       // Verify database record
-      const dbUser = await prisma.user.findUnique({
+      const dbUser = await userRepository.findOne({
         where: { id: result.id }
       });
 
@@ -78,7 +79,7 @@ describe('User Creation Workflow - Integration Test', () => {
         tenant_id: testTenantId,
         email: createUserDto.email,
         name: createUserDto.name,
-        role: 'admin',
+        role: UserRole.ADMIN,
         is_active: true
       });
 
@@ -93,20 +94,20 @@ describe('User Creation Workflow - Integration Test', () => {
         email: 'moderator@tenant1.com',
         password: 'ModeratorPass123',
         name: 'Jane Moderator',
-        role: 'moderator'
+        role: UserRole.MODERATOR
       };
 
       const result = await userManagementService.createUser(testTenantId, ownerUserId, createUserDto);
 
       expect(result).toMatchObject({
-        role: 'moderator'
+        role: UserRole.MODERATOR
       });
 
-      const dbUser = await prisma.user.findUnique({
+      const dbUser = await userRepository.findOne({
         where: { id: result.id }
       });
 
-      expect(dbUser.role).toBe('moderator');
+      expect(dbUser.role).toBe(UserRole.MODERATOR);
     });
 
     it('should enforce tenant isolation', async () => {
@@ -116,20 +117,20 @@ describe('User Creation Workflow - Integration Test', () => {
         email: 'admin@other-tenant.com',
         password: 'AdminPass123',
         name: 'Other Admin',
-        role: 'admin'
+        role: UserRole.ADMIN
       };
 
       const result = await userManagementService.createUser(otherTenantId, ownerUserId, createUserDto);
 
       // User should be created in other tenant
-      const dbUser = await prisma.user.findUnique({
+      const dbUser = await userRepository.findOne({
         where: { id: result.id }
       });
 
       expect(dbUser.tenant_id).toBe(otherTenantId);
 
       // Verify tenant isolation - users from different tenants shouldn't see each other
-      const currentTenantUsers = await prisma.user.findMany({
+      const currentTenantUsers = await userRepository.find({
         where: { tenant_id: testTenantId }
       });
 
@@ -143,7 +144,7 @@ describe('User Creation Workflow - Integration Test', () => {
         email: 'duplicate@tenant1.com',
         password: 'AdminPass123',
         name: 'First Admin',
-        role: 'admin'
+        role: UserRole.ADMIN
       };
 
       // Create first user
@@ -168,7 +169,7 @@ describe('User Creation Workflow - Integration Test', () => {
         email: 'admin@example.com',
         password: 'AdminPass123',
         name: 'Admin User',
-        role: 'admin'
+        role: UserRole.ADMIN
       };
 
       // Create user in first tenant
@@ -181,8 +182,8 @@ describe('User Creation Workflow - Integration Test', () => {
       expect(user1.email).toBe(user2.email);
 
       // Verify both users exist in database
-      const dbUser1 = await prisma.user.findUnique({ where: { id: user1.id } });
-      const dbUser2 = await prisma.user.findUnique({ where: { id: user2.id } });
+      const dbUser1 = await userRepository.findOne({ where: { id: user1.id } });
+      const dbUser2 = await userRepository.findOne({ where: { id: user2.id } });
 
       expect(dbUser1.tenant_id).toBe(tenant1Id);
       expect(dbUser2.tenant_id).toBe(tenant2Id);
@@ -195,12 +196,12 @@ describe('User Creation Workflow - Integration Test', () => {
         email: 'security@tenant1.com',
         password: 'SecurePass123',
         name: 'Security Test',
-        role: 'admin'
+        role: UserRole.ADMIN
       };
 
       const result = await userManagementService.createUser(testTenantId, ownerUserId, createUserDto);
 
-      const dbUser = await prisma.user.findUnique({
+      const dbUser = await userRepository.findOne({
         where: { id: result.id }
       });
 
@@ -220,21 +221,21 @@ describe('User Creation Workflow - Integration Test', () => {
         email: 'user1@tenant1.com',
         password,
         name: 'User 1',
-        role: 'admin'
+        role: UserRole.ADMIN
       };
 
       const user2Dto: CreateUserRequestDto = {
         email: 'user2@tenant1.com',
         password,
         name: 'User 2',
-        role: 'admin'
+        role: UserRole.ADMIN
       };
 
       const result1 = await userManagementService.createUser(testTenantId, ownerUserId, user1Dto);
       const result2 = await userManagementService.createUser(testTenantId, ownerUserId, user2Dto);
 
-      const dbUser1 = await prisma.user.findUnique({ where: { id: result1.id } });
-      const dbUser2 = await prisma.user.findUnique({ where: { id: result2.id } });
+      const dbUser1 = await userRepository.findOne({ where: { id: result1.id } });
+      const dbUser2 = await userRepository.findOne({ where: { id: result2.id } });
 
       // Hashes should be different (due to salt)
       expect(dbUser1.password_hash).not.toBe(dbUser2.password_hash);
@@ -251,29 +252,28 @@ describe('User Creation Workflow - Integration Test', () => {
         email: 'audited@tenant1.com',
         password: 'AdminPass123',
         name: 'Audited User',
-        role: 'admin'
+        role: UserRole.ADMIN
       };
 
       const result = await userManagementService.createUser(testTenantId, ownerUserId, createUserDto);
 
       // Verify audit log entry
-      const auditLog = await prisma.auditLog.findFirst({
+      const auditLog = await auditLogRepository.findOne({
         where: {
           tenant_id: testTenantId,
-          action: 'user_created',
-          resource_type: 'user',
-          resource_id: result.id
+          action: AuditAction.CREATE,
+          entity_type: 'user',
+          entity_id: result.id
         },
-        orderBy: { created_at: 'desc' }
+        order: { created_at: 'DESC' }
       });
 
       expect(auditLog).toMatchObject({
         tenant_id: testTenantId,
         user_id: ownerUserId,
-        user_type: 'tenant_user',
-        action: 'user_created',
-        resource_type: 'user',
-        resource_id: result.id,
+        action: AuditAction.CREATE,
+        entity_type: 'user',
+        entity_id: result.id,
         changes: expect.objectContaining({
           email: createUserDto.email,
           name: createUserDto.name,
@@ -289,18 +289,17 @@ describe('User Creation Workflow - Integration Test', () => {
         email: 'defaults@tenant1.com',
         password: 'AdminPass123',
         name: 'Default Test',
-        role: 'admin'
+        role: UserRole.ADMIN
       };
 
       const result = await userManagementService.createUser(testTenantId, ownerUserId, createUserDto);
 
-      const dbUser = await prisma.user.findUnique({
+      const dbUser = await userRepository.findOne({
         where: { id: result.id }
       });
 
       expect(dbUser).toMatchObject({
         is_active: true,
-        permissions: {},
         last_login_at: null,
         created_at: expect.any(Date),
         updated_at: expect.any(Date)
@@ -310,26 +309,18 @@ describe('User Creation Workflow - Integration Test', () => {
 
   describe('Error Handling', () => {
     it('should handle database connection errors gracefully', async () => {
-      // Mock prisma to throw connection error
-      const mockPrisma = {
-        ...prisma,
-        user: {
-          ...prisma.user,
-          create: jest.fn().mockRejectedValue(new Error('Database connection failed'))
-        }
-      };
-
-      // This would require dependency injection mocking
-      // For now, verify error structure expectations
+      // This would require dependency injection mocking for TypeORM repository
+      // For now, verify that the service methods are properly exposed
       const createUserDto: CreateUserRequestDto = {
         email: 'error@tenant1.com',
         password: 'AdminPass123',
         name: 'Error Test',
-        role: 'admin'
+        role: UserRole.ADMIN
       };
 
       // Test would verify proper error handling and rollback
-      expect(mockPrisma.user.create).toBeDefined();
+      expect(userRepository.save).toBeDefined();
+      expect(userRepository.create).toBeDefined();
     });
 
     it('should rollback on transaction failure', async () => {

@@ -32,7 +32,7 @@ Primary requirement: Enable SaaS owners to create admin and moderator users thro
 
 ## Technical Context
 **Language/Version**: TypeScript (Node.js 18+, React 18)
-**Primary Dependencies**: NestJS, Next.js 14 (App Router), Prisma ORM, PostgreSQL, Tailwind CSS, Shadcn/UI
+**Primary Dependencies**: NestJS, Next.js 14 (App Router), TypeORM, PostgreSQL, Tailwind CSS, Shadcn/UI
 **Storage**: PostgreSQL with Row-Level Security (existing users table)
 **Testing**: Jest (backend), Playwright (E2E), React Testing Library (frontend)
 **Target Platform**: Web browsers (Chrome 100+, Firefox 100+, Safari 15+)
@@ -48,7 +48,7 @@ Primary requirement: Enable SaaS owners to create admin and moderator users thro
 - Projects: 2 (backend api, frontend ui)
 - Using framework directly? Yes (NestJS controllers, Next.js pages)
 - Single data model? Yes (existing users table with role enum)
-- Avoiding patterns? Yes (direct Prisma usage, no repository abstraction)
+- Avoiding patterns? No (using TypeORM repository pattern)
 
 **Architecture**:
 - EVERY feature as library? Yes (user-management service module)

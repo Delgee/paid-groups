@@ -1,6 +1,9 @@
 import { Injectable, ConflictException, Logger } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateUserRequestDto, UserRole } from './dto/create-user-request.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User, UserRole } from '../auth/entities/user.entity';
+import { AuditLog, AuditAction } from '../audit/entities/audit-log.entity';
+import { CreateUserRequestDto } from './dto/create-user-request.dto';
 import { CreateUserResponseDto } from './dto/create-user-response.dto';
 import { GetUsersResponseDto, GetUsersQueryDto, UserSummaryDto, AllUserRoles } from './dto/get-users-response.dto';
 import * as bcrypt from 'bcrypt';
@@ -10,7 +13,12 @@ export class UserManagementService {
   private readonly logger = new Logger(UserManagementService.name);
   private readonly saltRounds = 12;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(AuditLog)
+    private readonly auditLogRepository: Repository<AuditLog>
+  ) {}
 
   async createUser(
     tenantId: string,
@@ -20,7 +28,7 @@ export class UserManagementService {
     this.logger.log(`Creating user with email: ${createUserDto.email} for tenant: ${tenantId}`);
 
     // Check for duplicate email within tenant
-    const existingUser = await this.prisma.user.findFirst({
+    const existingUser = await this.userRepository.findOne({
       where: {
         tenant_id: tenantId,
         email: createUserDto.email,
@@ -36,48 +44,46 @@ export class UserManagementService {
     const passwordHash = await bcrypt.hash(createUserDto.password, this.saltRounds);
 
     // Create user in database
-    const user = await this.prisma.user.create({
-      data: {
-        tenant_id: tenantId,
-        email: createUserDto.email,
-        password_hash: passwordHash,
-        name: createUserDto.name,
-        role: createUserDto.role,
-        is_active: true,
-        permissions: {},
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
+    const user = this.userRepository.create({
+      tenant_id: tenantId,
+      email: createUserDto.email,
+      password_hash: passwordHash,
+      name: createUserDto.name,
+      role: createUserDto.role,
+      is_active: true,
     });
+
+    const savedUser = await this.userRepository.save(user);
 
     // Create audit log entry
-    await this.prisma.auditLog.create({
-      data: {
-        tenant_id: tenantId,
-        user_id: ownerUserId,
-        user_type: 'tenant_user',
-        action: 'user_created',
-        resource_type: 'user',
-        resource_id: user.id,
-        changes: {
-          email: createUserDto.email,
-          name: createUserDto.name,
-          role: createUserDto.role,
-          created_by: ownerUserId,
-        },
-        created_at: new Date(),
+    const auditLog = this.auditLogRepository.create({
+      tenant_id: tenantId,
+      user_id: ownerUserId,
+      entity_type: 'user',
+      entity_id: savedUser.id,
+      action: AuditAction.CREATE,
+      changes: {
+        email: createUserDto.email,
+        name: createUserDto.name,
+        role: createUserDto.role,
+        created_by: ownerUserId,
       },
+      metadata: {
+        action_description: 'User created by owner'
+      }
     });
 
-    this.logger.log(`User created successfully: ${user.id}`);
+    await this.auditLogRepository.save(auditLog);
+
+    this.logger.log(`User created successfully: ${savedUser.id}`);
 
     return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role as UserRole,
-      isActive: user.is_active,
-      createdAt: user.created_at.toISOString(),
+      id: savedUser.id,
+      email: savedUser.email,
+      name: savedUser.name,
+      role: savedUser.role as UserRole,
+      isActive: savedUser.is_active,
+      createdAt: savedUser.created_at.toISOString(),
     };
   }
 
@@ -99,12 +105,12 @@ export class UserManagementService {
     }
 
     // Get total count
-    const total = await this.prisma.user.count({
+    const total = await this.userRepository.count({
       where: whereClause,
     });
 
     // Get users with pagination
-    const users = await this.prisma.user.findMany({
+    const users = await this.userRepository.find({
       where: whereClause,
       select: {
         id: true,
@@ -115,8 +121,8 @@ export class UserManagementService {
         last_login_at: true,
         created_at: true,
       },
-      orderBy: {
-        created_at: 'desc',
+      order: {
+        created_at: 'DESC',
       },
       skip,
       take: query.limit,

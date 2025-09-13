@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from './create-user-request.dto';
+import { UserRole } from '../../auth/entities/user.entity';
 
 export class CreateUserResponseDto {
   @ApiProperty({

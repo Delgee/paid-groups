@@ -5,7 +5,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Telegraf } from 'telegraf';
 import { TelegramBot } from '../entities/telegram-bot.entity';
 import { EncryptionService } from '../../../common/services/encryption.service';
-import { HealthCheck, BotHealthStatus, SecurityAlert } from '../dto/bot-validation.dto';
+import { HealthCheck, BotHealthStatus } from '../dto/bot-validation.dto';
 
 @Injectable()
 export class BotHealthMonitorService {
@@ -24,26 +24,31 @@ export class BotHealthMonitorService {
 
     const activeBots = await this.botRepository.find({
       where: { is_active: true },
-      relations: ['tenant']
+      relations: ['tenant'],
     });
 
-    const monitoringPromises = activeBots.map(bot =>
-      this.monitorBotHealth(bot.id, bot).catch(error => {
+    const monitoringPromises = activeBots.map((bot) =>
+      this.monitorBotHealth(bot.id, bot).catch((error) => {
         this.logger.error(`Failed to monitor bot ${bot.id}:`, error);
-      })
+      }),
     );
 
     await Promise.allSettled(monitoringPromises);
 
-    this.logger.log(`Completed health monitoring for ${activeBots.length} bots`);
+    this.logger.log(
+      `Completed health monitoring for ${activeBots.length} bots`,
+    );
   }
 
-  async monitorBotHealth(botId: string, bot?: TelegramBot): Promise<BotHealthStatus> {
+  async monitorBotHealth(
+    botId: string,
+    bot?: TelegramBot,
+  ): Promise<BotHealthStatus> {
     try {
       if (!bot) {
         bot = await this.botRepository.findOne({
           where: { id: botId },
-          relations: ['tenant']
+          relations: ['tenant'],
         });
       }
 
@@ -55,20 +60,32 @@ export class BotHealthMonitorService {
       const telegrafBot = new Telegraf(decryptedToken);
 
       // Run all health checks in parallel
-      const [respondingCheck, webhookCheck, activityCheck] = await Promise.allSettled([
-        this.checkBotResponding(telegrafBot),
-        this.checkWebhookDelivery(telegrafBot, bot),
-        this.checkLastActivity(bot)
-      ]);
+      const [respondingCheck, webhookCheck, activityCheck] =
+        await Promise.allSettled([
+          this.checkBotResponding(telegrafBot),
+          this.checkWebhookDelivery(telegrafBot, bot),
+          this.checkLastActivity(bot),
+        ]);
 
-      const responding = respondingCheck.status === 'fulfilled' ? respondingCheck.value : { healthy: false, error: 'Health check failed' };
-      const webhook = webhookCheck.status === 'fulfilled' ? webhookCheck.value : { healthy: false, error: 'Webhook check failed' };
-      const activity = activityCheck.status === 'fulfilled' ? activityCheck.value : { healthy: false, error: 'Activity check failed' };
+      const responding =
+        respondingCheck.status === 'fulfilled'
+          ? respondingCheck.value
+          : { healthy: false, error: 'Health check failed' };
+      const webhook =
+        webhookCheck.status === 'fulfilled'
+          ? webhookCheck.value
+          : { healthy: false, error: 'Webhook check failed' };
+      const activity =
+        activityCheck.status === 'fulfilled'
+          ? activityCheck.value
+          : { healthy: false, error: 'Activity check failed' };
 
       // Determine overall health status
-      const overallHealthy = responding.healthy && webhook.healthy && activity.healthy;
-      const degraded = (!responding.healthy || !webhook.healthy || !activity.healthy) &&
-                      (responding.healthy || webhook.healthy || activity.healthy);
+      const overallHealthy =
+        responding.healthy && webhook.healthy && activity.healthy;
+      const degraded =
+        (!responding.healthy || !webhook.healthy || !activity.healthy) &&
+        (responding.healthy || webhook.healthy || activity.healthy);
 
       let status: 'healthy' | 'degraded' | 'unhealthy';
       if (overallHealthy) {
@@ -84,7 +101,7 @@ export class BotHealthMonitorService {
         status,
         lastCheck: new Date(),
         checks: { responding, webhook, activity },
-        alerts: []
+        alerts: [],
       };
 
       // Store in cache
@@ -106,14 +123,16 @@ export class BotHealthMonitorService {
         checks: {
           responding: { healthy: false, error: error.message },
           webhook: { healthy: false, error: 'Could not check webhook' },
-          activity: { healthy: false, error: 'Could not check activity' }
+          activity: { healthy: false, error: 'Could not check activity' },
         },
-        alerts: [{
-          type: 'TOKEN_REVOKED',
-          message: `Bot monitoring failed: ${error.message}`,
-          severity: 'CRITICAL',
-          timestamp: new Date()
-        }]
+        alerts: [
+          {
+            type: 'TOKEN_REVOKED',
+            message: `Bot monitoring failed: ${error.message}`,
+            severity: 'CRITICAL',
+            timestamp: new Date(),
+          },
+        ],
       };
 
       this.healthCache.set(botId, healthStatus);
@@ -123,10 +142,10 @@ export class BotHealthMonitorService {
 
   private async checkBotResponding(bot: Telegraf): Promise<HealthCheck> {
     try {
-      const info = await bot.telegram.getMe();
+      await bot.telegram.getMe();
       return {
         healthy: true,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     } catch (error) {
       let errorMessage = error.message;
@@ -140,12 +159,15 @@ export class BotHealthMonitorService {
       return {
         healthy: false,
         error: errorMessage,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
 
-  private async checkWebhookDelivery(bot: Telegraf, botEntity: TelegramBot): Promise<HealthCheck> {
+  private async checkWebhookDelivery(
+    bot: Telegraf,
+    botEntity: TelegramBot,
+  ): Promise<HealthCheck> {
     try {
       const webhookInfo = await bot.telegram.getWebhookInfo();
 
@@ -157,19 +179,20 @@ export class BotHealthMonitorService {
         return {
           healthy: false,
           error: 'Webhook URL does not match expected pattern',
-          timestamp: new Date()
+          timestamp: new Date(),
         };
       }
 
       // Check for recent webhook errors
       if (webhookInfo.last_error_date) {
         const errorAge = Date.now() - webhookInfo.last_error_date * 1000;
-        if (errorAge < 300000) { // Error in last 5 minutes
+        if (errorAge < 300000) {
+          // Error in last 5 minutes
           return {
             healthy: false,
             error: webhookInfo.last_error_message,
             pending_updates: webhookInfo.pending_update_count,
-            timestamp: new Date()
+            timestamp: new Date(),
           };
         }
       }
@@ -180,20 +203,20 @@ export class BotHealthMonitorService {
           healthy: false,
           error: `High pending updates count: ${webhookInfo.pending_update_count}`,
           pending_updates: webhookInfo.pending_update_count,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
       }
 
       return {
         healthy: true,
         pending_updates: webhookInfo.pending_update_count,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     } catch (error) {
       return {
         healthy: false,
         error: `Webhook check failed: ${error.message}`,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -212,28 +235,32 @@ export class BotHealthMonitorService {
         return {
           healthy: false,
           error: `No activity detected for ${Math.round(timeSinceActivity / (60 * 60 * 1000))} hours`,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
       }
 
       return {
         healthy: true,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     } catch (error) {
       return {
         healthy: false,
         error: `Activity check failed: ${error.message}`,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
 
-  private async handleUnhealthyBot(bot: TelegramBot, healthStatus: BotHealthStatus): Promise<void> {
+  private async handleUnhealthyBot(
+    bot: TelegramBot,
+    healthStatus: BotHealthStatus,
+  ): Promise<void> {
     this.logger.warn(`Bot ${bot.id} is unhealthy:`, healthStatus);
 
     // Check if token is revoked
-    const tokenRevoked = healthStatus.checks.responding.error?.includes('invalid or revoked');
+    const tokenRevoked =
+      healthStatus.checks.responding.error?.includes('invalid or revoked');
 
     if (tokenRevoked) {
       // Mark bot as inactive but don't delete it
@@ -242,15 +269,17 @@ export class BotHealthMonitorService {
         health_status: 'token_revoked',
         last_health_check: new Date().toISOString(),
         deactivated_at: new Date().toISOString(),
-        deactivation_reason: 'Token revoked or invalid'
+        deactivation_reason: 'Token revoked or invalid',
       };
 
       await this.botRepository.update(bot.id, {
         is_active: false,
-        settings: updatedSettings as Record<string, any>
+        settings: updatedSettings as Record<string, any>,
       });
 
-      this.logger.warn(`Bot ${bot.id} marked as inactive due to token revocation`);
+      this.logger.warn(
+        `Bot ${bot.id} marked as inactive due to token revocation`,
+      );
     }
 
     // TODO: Send notification to tenant about bot health issues
@@ -264,18 +293,18 @@ export class BotHealthMonitorService {
   async getAllBotsHealthStatus(tenantId: string): Promise<BotHealthStatus[]> {
     const tenantBots = await this.botRepository.find({
       where: { tenant_id: tenantId },
-      select: ['id']
+      select: ['id'],
     });
 
     return tenantBots
-      .map(bot => this.healthCache.get(bot.id))
+      .map((bot) => this.healthCache.get(bot.id))
       .filter((status): status is BotHealthStatus => status !== undefined);
   }
 
   async forceHealthCheck(botId: string): Promise<BotHealthStatus> {
     const bot = await this.botRepository.findOne({
       where: { id: botId },
-      relations: ['tenant']
+      relations: ['tenant'],
     });
 
     if (!bot) {
@@ -285,11 +314,16 @@ export class BotHealthMonitorService {
     return await this.monitorBotHealth(botId, bot);
   }
 
-  getHealthSummary(tenantId?: string): { healthy: number; degraded: number; unhealthy: number; total: number } {
+  getHealthSummary(tenantId?: string): {
+    healthy: number;
+    degraded: number;
+    unhealthy: number;
+    total: number;
+  } {
     let statuses: BotHealthStatus[];
 
     if (tenantId) {
-      statuses = Array.from(this.healthCache.values()).filter(status => {
+      statuses = Array.from(this.healthCache.values()).filter(() => {
         // This is not ideal - we'd need to store tenantId in health status
         // For now, we'll return all statuses
         return true;
@@ -299,10 +333,10 @@ export class BotHealthMonitorService {
     }
 
     return {
-      healthy: statuses.filter(s => s.status === 'healthy').length,
-      degraded: statuses.filter(s => s.status === 'degraded').length,
-      unhealthy: statuses.filter(s => s.status === 'unhealthy').length,
-      total: statuses.length
+      healthy: statuses.filter((s) => s.status === 'healthy').length,
+      degraded: statuses.filter((s) => s.status === 'degraded').length,
+      unhealthy: statuses.filter((s) => s.status === 'unhealthy').length,
+      total: statuses.length,
     };
   }
 }

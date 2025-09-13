@@ -5,9 +5,9 @@ import {
   Body,
   Query,
   UseGuards,
-  UseInterceptors,
   HttpCode,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UserManagementService } from './user-management.service';
@@ -15,24 +15,18 @@ import { CreateUserRequestDto } from './dto/create-user-request.dto';
 import { CreateUserResponseDto } from './dto/create-user-response.dto';
 import { GetUsersResponseDto, GetUsersQueryDto } from './dto/get-users-response.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RoleGuard } from '../../common/guards/role.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { TenantId } from '../../common/decorators/tenant-id.decorator';
-import { UserId } from '../../common/decorators/user-id.decorator';
-import { AuditLogInterceptor } from '../../common/interceptors/audit-log.interceptor';
+import { OwnerRoleGuard } from '../../common/guards/owner-role.guard';
 import { ValidationPipe } from '@nestjs/common';
 
 @ApiTags('User Management')
 @Controller('api/users')
-@UseGuards(JwtAuthGuard, RoleGuard)
+@UseGuards(JwtAuthGuard, OwnerRoleGuard)
 @ApiBearerAuth()
 export class UserManagementController {
   constructor(private readonly userManagementService: UserManagementService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles('owner')
-  @UseInterceptors(AuditLogInterceptor)
   @ApiOperation({
     summary: 'Create a new admin or moderator user',
     description: 'Allows owner users to create new users with admin or moderator roles',
@@ -121,15 +115,15 @@ export class UserManagementController {
     },
   })
   async createUser(
-    @TenantId() tenantId: string,
-    @UserId() userId: string,
+    @Request() req: any,
     @Body(new ValidationPipe({ transform: true, whitelist: true })) createUserDto: CreateUserRequestDto,
   ): Promise<CreateUserResponseDto> {
+    const tenantId = req.user?.tenant_id;
+    const userId = req.user?.id;
     return this.userManagementService.createUser(tenantId, userId, createUserDto);
   }
 
   @Get()
-  @Roles('owner')
   @ApiOperation({
     summary: 'Get list of users in the tenant',
     description: 'Retrieves paginated list of users for the current tenant',
@@ -161,9 +155,10 @@ export class UserManagementController {
     description: 'Internal server error',
   })
   async getUsers(
-    @TenantId() tenantId: string,
+    @Request() req: any,
     @Query(new ValidationPipe({ transform: true, whitelist: true })) query: GetUsersQueryDto,
   ): Promise<GetUsersResponseDto> {
+    const tenantId = req.user?.tenant_id;
     return this.userManagementService.getUsers(tenantId, query);
   }
 }

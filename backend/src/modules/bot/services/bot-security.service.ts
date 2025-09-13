@@ -6,6 +6,7 @@ import { Telegraf } from 'telegraf';
 import { TelegramBot } from '../entities/telegram-bot.entity';
 import { EncryptionService } from '../../../common/services/encryption.service';
 import { SecurityAlert } from '../dto/bot-validation.dto';
+import * as crypto from 'crypto';
 
 interface ActivityPattern {
   suspicious: boolean;
@@ -14,13 +15,13 @@ interface ActivityPattern {
   indicators: string[];
 }
 
-interface BotInfo {
-  id: number;
-  username: string;
-  first_name: string;
-  can_join_groups: boolean;
-  can_read_all_group_messages: boolean;
-}
+// interface BotInfo {
+//   id: number;
+//   username: string;
+//   first_name: string;
+//   can_join_groups: boolean;
+//   can_read_all_group_messages: boolean;
+// }
 
 @Injectable()
 export class BotSecurityService {
@@ -40,7 +41,7 @@ export class BotSecurityService {
     try {
       const bot = await this.botRepository.findOne({
         where: { id: botId },
-        relations: ['tenant']
+        relations: ['tenant'],
       });
 
       if (!bot) {
@@ -51,11 +52,12 @@ export class BotSecurityService {
       const telegrafBot = new Telegraf(decryptedToken);
 
       // Run all security checks
-      const [webhookAlert, activityAlert, identityAlert] = await Promise.allSettled([
-        this.checkWebhookTampering(telegrafBot, bot),
-        this.checkSuspiciousActivity(bot),
-        this.checkBotIdentityChanges(telegrafBot, bot)
-      ]);
+      const [webhookAlert, activityAlert, identityAlert] =
+        await Promise.allSettled([
+          this.checkWebhookTampering(telegrafBot, bot),
+          this.checkSuspiciousActivity(bot),
+          this.checkBotIdentityChanges(telegrafBot, bot),
+        ]);
 
       // Collect alerts from settled promises
       if (webhookAlert.status === 'fulfilled' && webhookAlert.value) {
@@ -74,23 +76,28 @@ export class BotSecurityService {
           type: 'WEBHOOK_TAMPERED',
           message: `Failed to check webhook: ${webhookAlert.reason}`,
           severity: 'MEDIUM',
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
       return alerts;
     } catch (error) {
       this.logger.error(`Security check failed for bot ${botId}:`, error);
-      return [{
-        type: 'TOKEN_REVOKED',
-        message: `Security check failed: ${error.message}`,
-        severity: 'HIGH',
-        timestamp: new Date()
-      }];
+      return [
+        {
+          type: 'TOKEN_REVOKED',
+          message: `Security check failed: ${error.message}`,
+          severity: 'HIGH',
+          timestamp: new Date(),
+        },
+      ];
     }
   }
 
-  private async checkWebhookTampering(bot: Telegraf, botEntity: TelegramBot): Promise<SecurityAlert | null> {
+  private async checkWebhookTampering(
+    bot: Telegraf,
+    botEntity: TelegramBot,
+  ): Promise<SecurityAlert | null> {
     try {
       const webhookInfo = await bot.telegram.getWebhookInfo();
       const baseUrl = this.configService.get<string>('BASE_URL');
@@ -102,9 +109,10 @@ export class BotSecurityService {
         if (webhookInfo.url === '') {
           return {
             type: 'WEBHOOK_TAMPERED',
-            message: 'Webhook was removed externally - bot will not receive updates',
+            message:
+              'Webhook was removed externally - bot will not receive updates',
             severity: 'HIGH',
-            timestamp: new Date()
+            timestamp: new Date(),
           };
         }
 
@@ -112,14 +120,16 @@ export class BotSecurityService {
           type: 'WEBHOOK_TAMPERED',
           message: `Webhook URL was changed externally. Expected: ${expectedWebhook}, Found: ${webhookInfo.url}`,
           severity: 'HIGH',
-          timestamp: new Date()
+          timestamp: new Date(),
         };
       }
 
       // Check webhook secret if we have one stored
       if (botEntity.webhook_secret && webhookInfo.has_custom_certificate) {
         // This is a basic check - Telegram doesn't expose the secret for comparison
-        this.logger.debug('Webhook has custom certificate, secret may have been changed');
+        this.logger.debug(
+          'Webhook has custom certificate, secret may have been changed',
+        );
       }
 
       return null;
@@ -129,7 +139,9 @@ export class BotSecurityService {
     }
   }
 
-  private async checkSuspiciousActivity(bot: TelegramBot): Promise<SecurityAlert | null> {
+  private async checkSuspiciousActivity(
+    bot: TelegramBot,
+  ): Promise<SecurityAlert | null> {
     try {
       const activityPattern = await this.analyzeActivityPattern(bot);
 
@@ -138,7 +150,7 @@ export class BotSecurityService {
           type: 'SUSPICIOUS_ACTIVITY',
           message: `Suspicious activity detected: ${activityPattern.reason}. Indicators: ${activityPattern.indicators.join(', ')}`,
           severity: activityPattern.score > 85 ? 'HIGH' : 'MEDIUM',
-          timestamp: new Date()
+          timestamp: new Date(),
         };
       }
 
@@ -149,7 +161,9 @@ export class BotSecurityService {
     }
   }
 
-  private async analyzeActivityPattern(bot: TelegramBot): Promise<ActivityPattern> {
+  private async analyzeActivityPattern(
+    bot: TelegramBot,
+  ): Promise<ActivityPattern> {
     const indicators: string[] = [];
     let score = 0;
 
@@ -159,14 +173,16 @@ export class BotSecurityService {
     const timeSinceUpdate = now.getTime() - lastUpdate.getTime();
 
     // Very recent updates could indicate tampering
-    if (timeSinceUpdate < 60000) { // Less than 1 minute ago
+    if (timeSinceUpdate < 60000) {
+      // Less than 1 minute ago
       indicators.push('Very recent configuration changes');
       score += 20;
     }
 
     // Check if bot was updated outside business hours (potential compromise)
     const updateHour = lastUpdate.getHours();
-    if (updateHour < 6 || updateHour > 22) { // Outside 6 AM - 10 PM
+    if (updateHour < 6 || updateHour > 22) {
+      // Outside 6 AM - 10 PM
       indicators.push('Updates outside business hours');
       score += 15;
     }
@@ -177,7 +193,8 @@ export class BotSecurityService {
       const lastManualUpdate = new Date(settings.last_manual_update);
       const timeSinceManual = now.getTime() - lastManualUpdate.getTime();
 
-      if (timeSinceUpdate < timeSinceManual && timeSinceUpdate < 300000) { // Updated after manual update within 5 mins
+      if (timeSinceUpdate < timeSinceManual && timeSinceUpdate < 300000) {
+        // Updated after manual update within 5 mins
         indicators.push('Automatic updates after manual changes');
         score += 25;
       }
@@ -187,7 +204,8 @@ export class BotSecurityService {
     const cached = this.activityCache.get(bot.id);
     if (cached && cached.lastCheck) {
       const timeBetweenChecks = now.getTime() - cached.lastCheck.getTime();
-      if (timeBetweenChecks < 300000 && cached.updateCount > 3) { // More than 3 updates in 5 minutes
+      if (timeBetweenChecks < 300000 && cached.updateCount > 3) {
+        // More than 3 updates in 5 minutes
         indicators.push('Rapid successive updates');
         score += 30;
       }
@@ -197,18 +215,22 @@ export class BotSecurityService {
     this.activityCache.set(bot.id, {
       lastCheck: now,
       updateCount: cached ? (cached.updateCount || 0) + 1 : 1,
-      lastUpdateTime: lastUpdate
+      lastUpdateTime: lastUpdate,
     });
 
     return {
       suspicious: score > 50,
-      reason: score > 50 ? 'Multiple suspicious indicators detected' : undefined,
+      reason:
+        score > 50 ? 'Multiple suspicious indicators detected' : undefined,
       score,
-      indicators
+      indicators,
     };
   }
 
-  private async checkBotIdentityChanges(bot: Telegraf, botEntity: TelegramBot): Promise<SecurityAlert | null> {
+  private async checkBotIdentityChanges(
+    bot: Telegraf,
+    botEntity: TelegramBot,
+  ): Promise<SecurityAlert | null> {
     try {
       const currentInfo = await bot.telegram.getMe();
       const storedUsername = botEntity.bot_username;
@@ -219,44 +241,48 @@ export class BotSecurityService {
         const updatedSettings = {
           ...botEntity.settings,
           identity_change_detected: new Date().toISOString(),
-          previous_username: storedUsername
+          previous_username: storedUsername,
         };
 
         await this.botRepository.update(botEntity.id, {
           bot_username: currentInfo.username,
-          settings: updatedSettings as Record<string, any>
+          settings: updatedSettings as Record<string, any>,
         });
 
         return {
           type: 'BOT_IDENTITY_CHANGED',
           message: `Bot username changed from @${storedUsername} to @${currentInfo.username}`,
           severity: 'HIGH',
-          timestamp: new Date()
+          timestamp: new Date(),
         };
       }
 
       // Check if bot name changed significantly
       const storedName = botEntity.bot_name;
       if (storedName && currentInfo.first_name !== storedName) {
-        const similarity = this.calculateStringSimilarity(storedName, currentInfo.first_name);
+        const similarity = this.calculateStringSimilarity(
+          storedName,
+          currentInfo.first_name,
+        );
 
-        if (similarity < 0.7) { // Less than 70% similar
+        if (similarity < 0.7) {
+          // Less than 70% similar
           const updatedSettings = {
             ...botEntity.settings,
             name_change_detected: new Date().toISOString(),
-            previous_name: storedName
+            previous_name: storedName,
           };
 
           await this.botRepository.update(botEntity.id, {
             bot_name: currentInfo.first_name,
-            settings: updatedSettings as Record<string, any>
+            settings: updatedSettings as Record<string, any>,
           });
 
           return {
             type: 'BOT_IDENTITY_CHANGED',
             message: `Bot name changed from "${storedName}" to "${currentInfo.first_name}"`,
             severity: 'MEDIUM',
-            timestamp: new Date()
+            timestamp: new Date(),
           };
         }
       }
@@ -282,7 +308,9 @@ export class BotSecurityService {
   }
 
   private levenshteinDistance(str1: string, str2: string): number {
-    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+    const matrix = Array(str2.length + 1)
+      .fill(null)
+      .map(() => Array(str1.length + 1).fill(null));
 
     for (let i = 0; i <= str1.length; i++) {
       matrix[0][i] = i;
@@ -298,8 +326,8 @@ export class BotSecurityService {
         } else {
           matrix[j][i] = Math.min(
             matrix[j - 1][i - 1] + 1, // substitution
-            matrix[j][i - 1] + 1,     // insertion
-            matrix[j - 1][i] + 1      // deletion
+            matrix[j][i - 1] + 1, // insertion
+            matrix[j - 1][i] + 1, // deletion
           );
         }
       }
@@ -308,9 +336,12 @@ export class BotSecurityService {
     return matrix[str2.length][str1.length];
   }
 
-  async verifyWebhookSignature(payload: any, signature: string, secret: string): Promise<boolean> {
+  async verifyWebhookSignature(
+    payload: any,
+    signature: string,
+    secret: string,
+  ): Promise<boolean> {
     try {
-      const crypto = require('crypto');
       const expectedSignature = crypto
         .createHmac('sha256', secret)
         .update(JSON.stringify(payload))
@@ -318,7 +349,7 @@ export class BotSecurityService {
 
       return crypto.timingSafeEqual(
         Buffer.from(signature, 'hex'),
-        Buffer.from(expectedSignature, 'hex')
+        Buffer.from(expectedSignature, 'hex'),
       );
     } catch (error) {
       this.logger.error('Failed to verify webhook signature:', error);
@@ -326,19 +357,28 @@ export class BotSecurityService {
     }
   }
 
-  async auditBotAccess(botId: string, action: string, userId?: string, ipAddress?: string): Promise<void> {
+  async auditBotAccess(
+    botId: string,
+    action: string,
+    userId?: string,
+    ipAddress?: string,
+  ): Promise<void> {
     try {
-      this.logger.log(`Bot audit: ${action} on bot ${botId} by user ${userId} from ${ipAddress}`);
+      this.logger.log(
+        `Bot audit: ${action} on bot ${botId} by user ${userId} from ${ipAddress}`,
+      );
 
       // TODO: Store audit logs in database
       // This would integrate with your audit log system
-
     } catch (error) {
       this.logger.error(`Failed to audit bot access for ${botId}:`, error);
     }
   }
 
-  async checkBotPermissions(botToken: string, requiredPermissions: string[]): Promise<{ granted: boolean; missing: string[] }> {
+  async checkBotPermissions(
+    botToken: string,
+    requiredPermissions: string[],
+  ): Promise<{ granted: boolean; missing: string[] }> {
     try {
       const bot = new Telegraf(botToken);
       const botInfo = await bot.telegram.getMe();
@@ -346,27 +386,36 @@ export class BotSecurityService {
       const missing: string[] = [];
 
       // Check basic permissions
-      if (requiredPermissions.includes('can_join_groups') && !botInfo.can_join_groups) {
+      if (
+        requiredPermissions.includes('can_join_groups') &&
+        !botInfo.can_join_groups
+      ) {
         missing.push('can_join_groups');
       }
 
-      if (requiredPermissions.includes('can_read_all_group_messages') && !botInfo.can_read_all_group_messages) {
+      if (
+        requiredPermissions.includes('can_read_all_group_messages') &&
+        !botInfo.can_read_all_group_messages
+      ) {
         missing.push('can_read_all_group_messages');
       }
 
-      if (requiredPermissions.includes('supports_inline_queries') && !botInfo.supports_inline_queries) {
+      if (
+        requiredPermissions.includes('supports_inline_queries') &&
+        !botInfo.supports_inline_queries
+      ) {
         missing.push('supports_inline_queries');
       }
 
       return {
         granted: missing.length === 0,
-        missing
+        missing,
       };
     } catch (error) {
       this.logger.error('Failed to check bot permissions:', error);
       return {
         granted: false,
-        missing: requiredPermissions
+        missing: requiredPermissions,
       };
     }
   }
@@ -377,7 +426,7 @@ export class BotSecurityService {
     const maxAge = 24 * 60 * 60 * 1000; // 24 hours
 
     for (const [botId, data] of this.activityCache.entries()) {
-      if (data.lastCheck && (now - data.lastCheck.getTime()) > maxAge) {
+      if (data.lastCheck && now - data.lastCheck.getTime() > maxAge) {
         this.activityCache.delete(botId);
       }
     }

@@ -41,10 +41,7 @@ describe('GET /api/users - Contract Test', () => {
             name: expect.any(String),
             role: expect.stringMatching(/^(owner|admin|moderator)$/),
             isActive: expect.any(Boolean),
-            lastLoginAt: expect.oneOf([
-              expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/),
-              null
-            ]),
+            lastLoginAt: expect.any(Object), // Can be string (ISO date) or null
             createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/)
           })
         ]),

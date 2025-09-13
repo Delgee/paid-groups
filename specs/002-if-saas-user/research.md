@@ -32,7 +32,7 @@
 - PostgreSQL enum already supports owner, admin, moderator roles
 - RLS policies already implement tenant isolation
 - Unique constraint on (tenant_id, email) prevents duplicates
-- Prisma ORM already configured for user operations
+- TypeORM already configured for user operations
 
 **Alternatives considered**:
 - New user_roles table → Rejected: Role enum sufficient for current requirements
@@ -86,7 +86,7 @@
 - Email format validation using RFC 5322 regex
 - Password strength requirements (min 8 chars, complexity)
 - Role enum validation prevents invalid role assignment
-- SQL injection prevention through Prisma ORM
+- SQL injection prevention through TypeORM
 
 ### Audit Trail
 - User creation events logged with actor, target, timestamp

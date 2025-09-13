@@ -1,10 +1,6 @@
 import { IsEmail, IsString, IsEnum, MinLength, MaxLength, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
-export enum UserRole {
-  ADMIN = 'admin',
-  MODERATOR = 'moderator'
-}
+import { UserRole } from '../../auth/entities/user.entity';
 
 export class CreateUserRequestDto {
   @ApiProperty({
@@ -45,9 +41,9 @@ export class CreateUserRequestDto {
 
   @ApiProperty({
     description: 'Role to assign to the new user',
-    enum: UserRole,
+    enum: [UserRole.ADMIN, UserRole.MODERATOR],
     example: UserRole.ADMIN
   })
-  @IsEnum(UserRole, { message: 'Role must be either admin or moderator' })
+  @IsEnum([UserRole.ADMIN, UserRole.MODERATOR], { message: 'Role must be either admin or moderator' })
   role: UserRole;
 }

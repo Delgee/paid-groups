@@ -12,6 +12,7 @@ import { BotModule } from './modules/bot/bot.module';
 import { MembershipModule } from './modules/membership/membership.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { HealthModule } from './modules/health/health.module';
+import { UserManagementModule } from './modules/user-management/user-management.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
@@ -53,6 +54,7 @@ import { RequestContextMiddleware } from './common/middleware/request-context.mi
     MembershipModule,
     PaymentModule,
     HealthModule,
+    UserManagementModule,
   ],
   controllers: [AppController],
   providers: [

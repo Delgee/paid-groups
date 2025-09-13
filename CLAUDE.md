@@ -109,7 +109,7 @@ const createUserSchema = z.object({
 ### Database Query Pattern
 ```typescript
 // Always scope by tenant
-const users = await this.prisma.user.findMany({
+const users = await this.userRepository.find({
   where: {
     tenant_id: tenantId,
     is_active: true
@@ -122,7 +122,7 @@ const users = await this.prisma.user.findMany({
     created_at: true,
     last_login_at: true
   },
-  orderBy: { created_at: 'desc' }
+  order: { created_at: 'DESC' }
 });
 ```
 

@@ -106,7 +106,7 @@ export class ResourceController {
 ### Database Query Pattern
 ```typescript
 // Always scope by tenant
-const result = await this.prisma.resource.findMany({
+const result = await this.resourceRepository.find({
   where: {
     tenant_id: tenantId,
     // other conditions

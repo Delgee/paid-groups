@@ -6,7 +6,7 @@
 ## Execution Flow (main)
 ```
 1. Load plan.md from feature directory
-   → Tech stack: TypeScript, NestJS, Next.js 14, Prisma ORM, PostgreSQL
+   → Tech stack: TypeScript, NestJS, Next.js 14, TypeORM, PostgreSQL
    → Structure: Web application (backend/ + frontend/)
 2. Load design documents:
    → data-model.md: CreateUserRequestDto, CreateUserResponseDto, GetUsersResponseDto
@@ -64,7 +64,7 @@
 - [x] T021 Create user page in frontend/src/app/(dashboard)/users/create/page.tsx
 
 ## Phase 3.4: Integration
-- [x] T022 Connect UserManagementService to Prisma ORM with tenant isolation
+- [x] T022 Connect UserManagementService to TypeORM with tenant isolation
 - [x] T023 Add user management routes to NestJS module exports
 - [x] T024 Integrate user management UI with dashboard navigation
 
@@ -153,9 +153,9 @@ Task: "Update backend API documentation in backend/docs/api.md"
 - Role selection dropdown (admin/moderator)
 - Error handling and user feedback
 
-### T022: Prisma ORM Integration
+### T022: TypeORM Integration
 - Configure tenant context in service methods
-- Use existing users table with RLS policies
+- Use existing users table with proper entity relations
 - Implement proper error handling for constraints
 - Add audit logging entries
 

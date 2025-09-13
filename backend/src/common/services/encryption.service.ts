@@ -17,7 +17,13 @@ export class EncryptionService {
     }
 
     // Derive key from the provided key using PBKDF2
-    this.key = crypto.pbkdf2Sync(encryptionKey, 'salt', 10000, this.keyLength, 'sha256');
+    this.key = crypto.pbkdf2Sync(
+      encryptionKey,
+      'salt',
+      10000,
+      this.keyLength,
+      'sha256',
+    );
   }
 
   encrypt(text: string): string {
@@ -38,7 +44,7 @@ export class EncryptionService {
   decrypt(encryptedData: string): string {
     try {
       const parts = encryptedData.split(':');
-      const iv = Buffer.from(parts.shift()!, 'hex');
+      Buffer.from(parts.shift()!, 'hex');
       const encrypted = parts.join(':');
 
       const decipher = crypto.createDecipher('aes256', this.key);
