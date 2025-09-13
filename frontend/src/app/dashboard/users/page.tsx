@@ -7,7 +7,7 @@ export default function UsersPage() {
   const router = useRouter();
 
   const handleCreateUser = () => {
-    router.push('/users/create');
+    router.push('/dashboard/users/create');
   };
 
   return (

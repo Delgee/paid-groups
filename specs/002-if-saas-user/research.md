@@ -15,7 +15,7 @@
 - GraphQL mutations → Rejected: REST API pattern already established in project
 
 ### Frontend Architecture Decision
-**Decision**: Create new user management pages in (dashboard) route group with Shadcn/UI components
+**Decision**: Create new user management pages in dashboard route group with Shadcn/UI components
 **Rationale**:
 - Next.js 14 App Router already configured
 - Shadcn/UI components provide consistent design system

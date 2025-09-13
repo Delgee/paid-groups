@@ -110,7 +110,7 @@ backend/
 frontend/
 ├── src/
 │   ├── app/
-│   │   └── (dashboard)/
+│   │   └── dashboard/
 │   │       └── users/          # New user management pages
 │   ├── components/
 │   │   └── user-management/    # New UI components

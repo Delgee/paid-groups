@@ -138,21 +138,21 @@
 - [x] T066 [P] Auth layout with redirect logic in frontend/app/(auth)/layout.tsx
 
 ### Dashboard Core
-- [x] T067 Dashboard layout with sidebar in frontend/app/(dashboard)/layout.tsx
-- [x] T068 Dashboard overview page in frontend/app/(dashboard)/page.tsx
+- [x] T067 Dashboard layout with sidebar in frontend/app/dashboard/layout.tsx
+- [x] T068 Dashboard overview page in frontend/app/dashboard/page.tsx
 - [x] T069 [P] API client service with auth in frontend/lib/api/client.ts
 - [x] T070 [P] Auth context provider in frontend/components/providers/auth-provider.tsx
 
 ### Bot Management UI
-- [x] T071 Bots list page in frontend/app/(dashboard)/bots/page.tsx
+- [x] T071 Bots list page in frontend/app/dashboard/bots/page.tsx
 - [x] T072 Bot creation form in frontend/components/features/bots/create-bot-form.tsx
-- [x] T073 Bot detail page in frontend/app/(dashboard)/bots/[id]/page.tsx
+- [x] T073 Bot detail page in frontend/app/dashboard/bots/[id]/page.tsx
 - [x] T074 Group connection modal in frontend/components/features/bots/connect-group-modal.tsx
 
 ### Member Management UI
-- [x] T075 Members list with filters in frontend/app/(dashboard)/members/page.tsx
-- [x] T076 Member detail view in frontend/app/(dashboard)/members/[id]/page.tsx
-- [x] T077 Membership plans page in frontend/app/(dashboard)/plans/page.tsx
+- [x] T075 Members list with filters in frontend/app/dashboard/members/page.tsx
+- [x] T076 Member detail view in frontend/app/dashboard/members/[id]/page.tsx
+- [x] T077 Membership plans page in frontend/app/dashboard/plans/page.tsx
 
 ## Phase 3.6: Integration & Infrastructure
 

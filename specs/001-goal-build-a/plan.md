@@ -123,7 +123,7 @@ backend/
 frontend/
 ├── app/
 │   ├── (auth)/
-│   ├── (dashboard)/
+│   ├── dashboard/
 │   └── api/
 ├── components/
 │   ├── ui/

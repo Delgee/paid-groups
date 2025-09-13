@@ -163,7 +163,7 @@ backend/
 frontend/
 ├── app/                   # Next.js app router
 │   ├── (auth)/           # Auth pages
-│   ├── (dashboard)/      # Dashboard pages
+│   ├── dashboard/      # Dashboard pages
 │   └── api/              # API routes
 ├── components/
 │   ├── ui/               # Shadcn/UI components

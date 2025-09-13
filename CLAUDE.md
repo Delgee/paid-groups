@@ -24,7 +24,7 @@ You're working on a multi-tenant SaaS platform for managing paid Telegram groups
 - Role-based access control: owner > admin > moderator
 - Email uniqueness enforced per tenant (tenant_id, email) constraint
 - Password validation: min 8 chars with complexity requirements
-- Frontend: User management pages in (dashboard)/users route group
+- Frontend: User management pages in dashboard/users route group
 
 ### 3. Authentication & Authorization
 - JWT tokens with role-based guards
@@ -141,7 +141,7 @@ backend/src/modules/
 │       └── user-management.service.spec.ts
 
 frontend/src/
-├── app/(dashboard)/users/    # NEW: User management pages
+├── app/dashboard/users/    # NEW: User management pages
 │   ├── page.tsx             # User list page
 │   └── create/page.tsx      # Create user page
 ├── components/user-management/  # NEW: User UI components

@@ -33,7 +33,7 @@
 
 ## Phase 3.1: Setup
 - [x] T001 Create user-management module structure in backend/src/modules/user-management/
-- [x] T002 Add user management route in frontend/src/app/(dashboard)/users/
+- [x] T002 Add user management route in frontend/src/app/dashboard/users/
 - [x] T003 [P] Install and configure validation dependencies (class-validator, zod)
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
@@ -60,8 +60,8 @@
 - [x] T017 [P] User management API client in frontend/src/lib/api/users.ts
 - [x] T018 [P] CreateUserForm component in frontend/src/components/user-management/CreateUserForm.tsx
 - [x] T019 [P] UserList component in frontend/src/components/user-management/UserList.tsx
-- [x] T020 User management page in frontend/src/app/(dashboard)/users/page.tsx
-- [x] T021 Create user page in frontend/src/app/(dashboard)/users/create/page.tsx
+- [x] T020 User management page in frontend/src/app/dashboard/users/page.tsx
+- [x] T021 Create user page in frontend/src/app/dashboard/users/create/page.tsx
 
 ## Phase 3.4: Integration
 - [x] T022 Connect UserManagementService to TypeORM with tenant isolation
