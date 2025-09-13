@@ -1,0 +1,410 @@
+openapi: 3.0.3
+info:
+  title: User Management API
+  description: API for owner users to create and manage admin/moderator users
+  version: 1.0.0
+  contact:
+    name: SaaS Development Team
+
+servers:
+  - url: http://localhost:3001
+    description: Development server
+  - url: https://api.production.com
+    description: Production server
+
+paths:
+  /api/users:
+    post:
+      summary: Create a new admin or moderator user
+      description: Allows owner users to create new users with admin or moderator roles
+      tags:
+        - User Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            example:
+              email: "admin@example.com"
+              password: "SecurePass123"
+              name: "John Admin"
+              role: "admin"
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUserResponse'
+              example:
+                id: "123e4567-e89b-12d3-a456-426614174000"
+                email: "admin@example.com"
+                name: "John Admin"
+                role: "admin"
+                isActive: true
+                createdAt: "2025-09-14T10:30:00.000Z"
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                statusCode: 400
+                message: ["email must be a valid email", "password is too weak"]
+                error: "Bad Request"
+                details:
+                  - field: "email"
+                    constraint: "isEmail"
+                    value: "invalid-email"
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                statusCode: 401
+                message: "Unauthorized"
+                error: "Unauthorized"
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessError'
+              example:
+                statusCode: 403
+                message: "Only owner users can create admin/moderator users"
+                error: "Forbidden"
+                code: "INSUFFICIENT_PERMISSIONS"
+        '409':
+          description: Conflict - email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessError'
+              example:
+                statusCode: 409
+                message: "User with this email already exists"
+                error: "Conflict"
+                code: "DUPLICATE_EMAIL"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemError'
+
+    get:
+      summary: Get list of users in the tenant
+      description: Retrieves paginated list of users for the current tenant
+      tags:
+        - User Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number (starts from 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: role
+          in: query
+          description: Filter by user role
+          required: false
+          schema:
+            type: string
+            enum: [owner, admin, moderator]
+      responses:
+        '200':
+          description: List of users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUsersResponse'
+              example:
+                users:
+                  - id: "123e4567-e89b-12d3-a456-426614174000"
+                    email: "owner@example.com"
+                    name: "Owner User"
+                    role: "owner"
+                    isActive: true
+                    lastLoginAt: "2025-09-14T09:15:00.000Z"
+                    createdAt: "2025-09-01T10:00:00.000Z"
+                  - id: "456e7890-e89b-12d3-a456-426614174001"
+                    email: "admin@example.com"
+                    name: "Admin User"
+                    role: "admin"
+                    isActive: true
+                    lastLoginAt: "2025-09-14T08:30:00.000Z"
+                    createdAt: "2025-09-10T14:20:00.000Z"
+                pagination:
+                  total: 5
+                  page: 1
+                  limit: 20
+                  hasNext: false
+                  hasPrev: false
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication endpoint
+
+  schemas:
+    CreateUserRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          description: Valid email address, unique within tenant
+          example: "admin@example.com"
+        password:
+          type: string
+          minLength: 8
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$'
+          description: Minimum 8 characters with uppercase, lowercase, and number
+          example: "SecurePass123"
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          pattern: '^[a-zA-Z0-9\s\-]+$'
+          description: Full name, 2-100 characters
+          example: "John Admin"
+        role:
+          type: string
+          enum: [admin, moderator]
+          description: Role to assign to the new user
+          example: "admin"
+
+    CreateUserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the created user
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        email:
+          type: string
+          format: email
+          description: Email address of the created user
+          example: "admin@example.com"
+        name:
+          type: string
+          description: Full name of the created user
+          example: "John Admin"
+        role:
+          type: string
+          enum: [admin, moderator]
+          description: Role assigned to the user
+          example: "admin"
+        isActive:
+          type: boolean
+          description: Whether the user account is active
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the user was created
+          example: "2025-09-14T10:30:00.000Z"
+
+    GetUsersResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSummary'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the user
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        email:
+          type: string
+          format: email
+          description: Email address of the user
+          example: "admin@example.com"
+        name:
+          type: string
+          description: Full name of the user
+          example: "John Admin"
+        role:
+          type: string
+          enum: [owner, admin, moderator]
+          description: Role of the user
+          example: "admin"
+        isActive:
+          type: boolean
+          description: Whether the user account is active
+          example: true
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of last login, null if never logged in
+          example: "2025-09-14T09:15:00.000Z"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the user was created
+          example: "2025-09-10T14:20:00.000Z"
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of users
+          example: 5
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          description: Number of items per page
+          example: 20
+        hasNext:
+          type: boolean
+          description: Whether there is a next page
+          example: false
+        hasPrev:
+          type: boolean
+          description: Whether there is a previous page
+          example: false
+
+    ValidationError:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: array
+          items:
+            type: string
+          example: ["email must be a valid email", "password is too weak"]
+        error:
+          type: string
+          example: "Bad Request"
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "email"
+              constraint:
+                type: string
+                example: "isEmail"
+              value:
+                anyOf:
+                  - type: string
+                  - type: number
+                  - type: boolean
+                example: "invalid-email"
+
+    BusinessError:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          enum: [403, 409]
+          example: 409
+        message:
+          type: string
+          example: "User with this email already exists"
+        error:
+          type: string
+          enum: ["Forbidden", "Conflict"]
+          example: "Conflict"
+        code:
+          type: string
+          enum: ["INSUFFICIENT_PERMISSIONS", "DUPLICATE_EMAIL"]
+          example: "DUPLICATE_EMAIL"
+
+    SystemError:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 500
+        message:
+          type: string
+          example: "Internal server error"
+        error:
+          type: string
+          example: "Internal Server Error"
+        requestId:
+          type: string
+          format: uuid
+          example: "req_123e4567-e89b-12d3-a456-426614174000"
+
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 401
+        message:
+          type: string
+          example: "Unauthorized"
+        error:
+          type: string
+          example: "Unauthorized"
+
+tags:
+  - name: User Management
+    description: Operations for managing admin and moderator users
