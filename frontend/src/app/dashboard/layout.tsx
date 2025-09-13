@@ -8,6 +8,7 @@ import {
   Bot,
   Home,
   Users,
+  UserCog,
   CreditCard,
   Settings,
   LogOut,
@@ -36,9 +37,9 @@ const navigation = [
   { name: 'Bots', href: '/dashboard/bots', icon: Bot },
   { name: 'Members', href: '/dashboard/members', icon: Users },
   { name: 'Plans', href: '/dashboard/plans', icon: CreditCard },
+  { name: 'User Management', href: '/dashboard/users', icon: UserCog },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-  { name: 'Users', href: '/dashboard/users', icon: Users },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/auth-provider';
-import { Bot, Users, CreditCard, TrendingUp } from 'lucide-react';
+import { Bot, Users, CreditCard, TrendingUp, UserCog } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -217,6 +217,12 @@ export default function DashboardPage() {
               <Link href="/dashboard/plans">
                 <CreditCard className="mr-2 h-4 w-4" />
                 Manage Plans
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/dashboard/users">
+                <UserCog className="mr-2 h-4 w-4" />
+                Manage Users
               </Link>
             </Button>
           </CardContent>
