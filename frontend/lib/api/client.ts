@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { getCookie, setCookie, deleteCookie } from 'cookies-next';
+import { z } from 'zod';
 
 export interface ApiResponse<T = any> {
   data?: T;
@@ -38,6 +39,75 @@ export interface RegisterData {
   password: string;
   name: string;
   company_name: string;
+}
+
+export interface CreateUserRequest {
+  email: string;
+  password: string;
+  name: string;
+  role: 'admin' | 'moderator';
+}
+
+export interface UserSummary {
+  id: string;
+  email: string;
+  name: string;
+  role: 'owner' | 'admin' | 'moderator';
+  isActive: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
+export interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface GetUsersResponse {
+  users: UserSummary[];
+  pagination: Pagination;
+}
+
+export interface GetUsersQuery {
+  page?: number;
+  limit?: number;
+  role?: 'owner' | 'admin' | 'moderator';
+}
+
+// Zod schemas for validation
+export const UserRoleSchema = z.enum(['admin', 'moderator']);
+export type UserRole = z.infer<typeof UserRoleSchema>;
+
+export const AllUserRolesSchema = z.enum(['owner', 'admin', 'moderator']);
+export type AllUserRoles = z.infer<typeof AllUserRolesSchema>;
+
+export const CreateUserRequestSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters long')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+    ),
+  name: z
+    .string()
+    .min(2, 'Name must be at least 2 characters long')
+    .max(100, 'Name must not exceed 100 characters')
+    .regex(/^[a-zA-Z0-9\s\-]+$/, 'Name can only contain letters, numbers, spaces, and hyphens'),
+  role: UserRoleSchema,
+});
+
+export interface CreateUserResponse {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface Bot {
@@ -382,6 +452,19 @@ class ApiClient {
     return response.data;
   }
 
+  // User management methods
+  async createUser(userData: CreateUserRequest): Promise<UserSummary> {
+    const response = await this.instance.post<UserSummary>('/v1/users', userData);
+    return response.data;
+  }
+
+  async getUsers(query: GetUsersQuery = {}): Promise<GetUsersResponse> {
+    const response = await this.instance.get<GetUsersResponse>('/v1/users', {
+      params: query
+    });
+    return response.data;
+  }
+
   // Generic HTTP methods for extensibility
   async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.get<T>(url, config);
@@ -412,6 +495,64 @@ class ApiClient {
     return getCookie('access_token');
   }
 }
+
+// Error class for API errors
+export class ApiClientError extends Error {
+  public readonly statusCode: number;
+  public readonly error: string;
+  public readonly code?: string;
+  public readonly details?: Array<{
+    field: string;
+    constraint: string;
+    value: unknown;
+  }>;
+
+  constructor(apiError: { statusCode: number; message: string | string[]; error: string; code?: string; details?: any }) {
+    const message = Array.isArray(apiError.message)
+      ? apiError.message.join(', ')
+      : apiError.message;
+
+    super(message);
+
+    this.name = 'ApiClientError';
+    this.statusCode = apiError.statusCode;
+    this.error = apiError.error;
+    this.code = apiError.code;
+    this.details = apiError.details;
+  }
+
+  get isValidationError(): boolean {
+    return this.statusCode === 400;
+  }
+
+  get isDuplicateError(): boolean {
+    return this.statusCode === 409 && this.code === 'DUPLICATE_EMAIL';
+  }
+
+  get isUnauthorized(): boolean {
+    return this.statusCode === 401;
+  }
+
+  get isForbidden(): boolean {
+    return this.statusCode === 403;
+  }
+
+  getFieldErrors(): Record<string, string> {
+    if (!this.details) return {};
+
+    return this.details.reduce((acc, detail) => {
+      acc[detail.field] = detail.constraint;
+      return acc;
+    }, {} as Record<string, string>);
+  }
+}
+
+// React Query keys
+export const userQueryKeys = {
+  all: ['users'] as const,
+  lists: () => [...userQueryKeys.all, 'list'] as const,
+  list: (filters: GetUsersQuery) => [...userQueryKeys.lists(), filters] as const,
+};
 
 export const apiClient = new ApiClient();
 export default apiClient;

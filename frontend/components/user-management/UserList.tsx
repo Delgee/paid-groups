@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Users, ChevronLeft, ChevronRight } from 'lucide-react';
-import { usersApi, userQueryKeys, AllUserRoles, UserSummary } from 'lib/api/users';
+import { apiClient, userQueryKeys, AllUserRoles, UserSummary } from '@/lib/api/client';
 import { formatDistanceToNow } from 'date-fns';
 
 interface UserListProps {
@@ -40,7 +40,7 @@ export function UserList({ onCreateUser }: UserListProps) {
     refetch
   } = useQuery({
     queryKey: userQueryKeys.list({ page, limit, role: roleFilter }),
-    queryFn: () => usersApi.getUsers({ page, limit, role: roleFilter }),
+    queryFn: () => apiClient.getUsers({ page, limit, role: roleFilter }),
     staleTime: 30 * 1000, // 30 seconds
   });
 

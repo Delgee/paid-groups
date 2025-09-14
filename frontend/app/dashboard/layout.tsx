@@ -3,16 +3,17 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  BarChart3, 
-  Bot, 
-  Home, 
-  Users, 
-  CreditCard, 
+import {
+  BarChart3,
+  Bot,
+  Home,
+  Users,
+  CreditCard,
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -35,6 +36,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Bots', href: '/dashboard/bots', icon: Bot },
   { name: 'Members', href: '/dashboard/members', icon: Users },
+  { name: 'User Management', href: '/dashboard/users', icon: UserPlus },
   { name: 'Plans', href: '/dashboard/plans', icon: CreditCard },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
@@ -89,7 +91,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
             <nav className="mt-5 px-2 space-y-1">
               {navigation.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                 return (
                   <Link
                     key={item.name}
@@ -126,7 +128,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
             <nav className="mt-5 flex-1 px-2 bg-white space-y-1">
               {navigation.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                 return (
                   <Link
                     key={item.name}

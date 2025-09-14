@@ -19,7 +19,7 @@ import { OwnerRoleGuard } from '../../common/guards/owner-role.guard';
 import { ValidationPipe } from '@nestjs/common';
 
 @ApiTags('User Management')
-@Controller('api/users')
+@Controller('users')
 @UseGuards(JwtAuthGuard, OwnerRoleGuard)
 @ApiBearerAuth()
 export class UserManagementController {

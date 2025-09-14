@@ -27,10 +27,10 @@ import {
   CreateUserRequestSchema,
   CreateUserResponse,
   UserRole,
-  usersApi,
+  apiClient,
   ApiClientError,
   userQueryKeys,
-} from 'lib/api/users';
+} from '@/lib/api/client';
 
 interface CreateUserFormProps {
   onSuccess?: () => void;
@@ -52,7 +52,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
   });
 
   const createUserMutation = useMutation({
-    mutationFn: usersApi.createUser.bind(usersApi),
+    mutationFn: apiClient.createUser.bind(apiClient),
     onSuccess: (data: CreateUserResponse) => {
       toast.success(`${data.role.charAt(0).toUpperCase() + data.role.slice(1)} user ${data.name} has been created.`);
 

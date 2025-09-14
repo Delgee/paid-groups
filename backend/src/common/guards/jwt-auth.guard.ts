@@ -20,8 +20,15 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const secret = process.env.JWT_SECRET || 'your-super-secret-jwt-key-minimum-32-characters';
-      const payload = verify(token, secret) as { user_id: string; tenant_id?: string };
-      request['user'] = payload;
+      const payload = verify(token, secret) as { sub: string; email: string; tenant_id: string; role: string };
+
+      // Transform JWT payload to match expected user structure
+      request['user'] = {
+        id: payload.sub,
+        email: payload.email,
+        tenant_id: payload.tenant_id,
+        role: payload.role,
+      };
       
       // Set tenant context for RLS
       if (payload.tenant_id) {
