@@ -52,7 +52,7 @@ Primary requirement: Enable SaaS owners to create admin and moderator users thro
 
 **Architecture**:
 - EVERY feature as library? Yes (user-management service module)
-- Libraries listed: backend/src/modules/user-management (CRUD operations, validation), frontend/src/components/user-management (UI components, forms)
+- Libraries listed: backend/src/modules/user-management (CRUD operations, validation), frontend/components/user-management (UI components, forms)
 - CLI per library: Yes (nestjs cli commands, next dev/build commands)
 - Library docs: llms.txt format planned? Yes (update CLAUDE.md)
 

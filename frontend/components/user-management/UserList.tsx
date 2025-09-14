@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Users, ChevronLeft, ChevronRight } from 'lucide-react';
-import { usersApi, userQueryKeys, AllUserRoles, UserSummary } from '@/lib/api/users';
+import { usersApi, userQueryKeys, AllUserRoles, UserSummary } from 'lib/api/users';
 import { formatDistanceToNow } from 'date-fns';
 
 interface UserListProps {

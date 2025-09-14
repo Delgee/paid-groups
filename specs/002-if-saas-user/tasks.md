@@ -33,7 +33,7 @@
 
 ## Phase 3.1: Setup
 - [x] T001 Create user-management module structure in backend/src/modules/user-management/
-- [x] T002 Add user management route in frontend/src/app/dashboard/users/
+- [x] T002 Add user management route in frontend/app/dashboard/users/
 - [x] T003 [P] Install and configure validation dependencies (class-validator, zod)
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
@@ -57,11 +57,11 @@
 - [x] T016 Role-based guard for owner permissions in backend/src/common/guards/owner-role.guard.ts
 
 ### Frontend Implementation
-- [x] T017 [P] User management API client in frontend/src/lib/api/users.ts
-- [x] T018 [P] CreateUserForm component in frontend/src/components/user-management/CreateUserForm.tsx
-- [x] T019 [P] UserList component in frontend/src/components/user-management/UserList.tsx
-- [x] T020 User management page in frontend/src/app/dashboard/users/page.tsx
-- [x] T021 Create user page in frontend/src/app/dashboard/users/create/page.tsx
+- [x] T017 [P] User management API client in frontend/lib/api/users.ts
+- [x] T018 [P] CreateUserForm component in frontend/components/user-management/CreateUserForm.tsx
+- [x] T019 [P] UserList component in frontend/components/user-management/UserList.tsx
+- [x] T020 User management page in frontend/app/dashboard/users/page.tsx
+- [x] T021 Create user page in frontend/app/dashboard/users/create/page.tsx
 
 ## Phase 3.4: Integration
 - [x] T022 Connect UserManagementService to TypeORM with tenant isolation
@@ -69,7 +69,7 @@
 - [x] T024 Integrate user management UI with dashboard navigation
 
 ## Phase 3.5: Polish
-- [x] T025 [P] Unit tests for CreateUserForm validation in frontend/src/components/user-management/__tests__/CreateUserForm.test.tsx
+- [x] T025 [P] Unit tests for CreateUserForm validation in frontend/components/user-management/__tests__/CreateUserForm.test.tsx
 - [x] T026 [P] Unit tests for UserManagementService in backend/src/modules/user-management/__tests__/user-management.service.spec.ts
 - [x] T027 Performance test API response times (<500ms) using quickstart scenarios
 - [x] T028 [P] Update backend API documentation in backend/docs/api.md
@@ -110,14 +110,14 @@ Task: "GetUsersResponseDto in backend/src/modules/user-management/dto/get-users-
 ### Frontend Components (After T017)
 ```bash
 # Launch T018-T019 together (independent components):
-Task: "CreateUserForm component in frontend/src/components/user-management/CreateUserForm.tsx"
-Task: "UserList component in frontend/src/components/user-management/UserList.tsx"
+Task: "CreateUserForm component in frontend/components/user-management/CreateUserForm.tsx"
+Task: "UserList component in frontend/components/user-management/UserList.tsx"
 ```
 
 ### Polish Phase (After integration)
 ```bash
 # Launch T025, T026, T028 together (independent files):
-Task: "Unit tests for CreateUserForm validation in frontend/src/components/user-management/__tests__/CreateUserForm.test.tsx"
+Task: "Unit tests for CreateUserForm validation in frontend/components/user-management/__tests__/CreateUserForm.test.tsx"
 Task: "Unit tests for UserManagementService in backend/src/modules/user-management/__tests__/user-management.service.spec.ts"
 Task: "Update backend API documentation in backend/docs/api.md"
 ```

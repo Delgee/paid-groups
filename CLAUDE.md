@@ -140,7 +140,7 @@ backend/src/modules/
 │       ├── user-management.controller.spec.ts
 │       └── user-management.service.spec.ts
 
-frontend/src/
+frontend
 ├── app/dashboard/users/    # NEW: User management pages
 │   ├── page.tsx             # User list page
 │   └── create/page.tsx      # Create user page

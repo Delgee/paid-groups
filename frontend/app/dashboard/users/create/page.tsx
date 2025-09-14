@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { CreateUserForm } from '@/components/user-management/CreateUserForm';
+import { CreateUserForm } from 'components/user-management/CreateUserForm';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 

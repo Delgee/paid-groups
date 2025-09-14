@@ -30,7 +30,7 @@ import {
   usersApi,
   ApiClientError,
   userQueryKeys,
-} from '@/lib/api/users';
+} from 'lib/api/users';
 
 interface CreateUserFormProps {
   onSuccess?: () => void;
@@ -54,10 +54,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
   const createUserMutation = useMutation({
     mutationFn: usersApi.createUser.bind(usersApi),
     onSuccess: (data: CreateUserResponse) => {
-      toast({
-        title: 'User created successfully',
-        description: `${data.role.charAt(0).toUpperCase() + data.role.slice(1)} user ${data.name} has been created.`,
-      });
+      toast.success(`${data.role.charAt(0).toUpperCase() + data.role.slice(1)} user ${data.name} has been created.`);
 
       // Invalidate and refetch user list
       queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
@@ -83,23 +80,11 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
           type: 'server',
           message: 'A user with this email already exists',
         });
-        toast({
-          title: 'Email already exists',
-          description: 'A user with this email already exists in your organization.',
-          variant: 'destructive',
-        });
+        toast.error('A user with this email already exists in your organization.');
       } else if (error.isForbidden) {
-        toast({
-          title: 'Access denied',
-          description: 'Only owner users can create admin and moderator users.',
-          variant: 'destructive',
-        });
+        toast.error('Only owner users can create admin and moderator users.');
       } else {
-        toast({
-          title: 'Error creating user',
-          description: error.message || 'An unexpected error occurred.',
-          variant: 'destructive',
-        });
+        toast.error(error.message || 'An unexpected error occurred.');
       }
     },
   });

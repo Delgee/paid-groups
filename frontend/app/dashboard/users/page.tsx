@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { UserList } from '@/components/user-management/UserList';
+import { UserList } from 'components/user-management/UserList';
 
 export default function UsersPage() {
   const router = useRouter();
