@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../src/app.module';
+import { AppModule } from '../../../src/app.module';
 
 describe('GET /api/users - Contract Test', () => {
   let app: INestApplication;
@@ -36,22 +36,26 @@ describe('GET /api/users - Contract Test', () => {
       expect(response.body).toMatchObject({
         users: expect.arrayContaining([
           expect.objectContaining({
-            id: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
+            id: expect.stringMatching(
+              /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+            ),
             email: expect.stringMatching(/^[^\s@]+@[^\s@]+\.[^\s@]+$/),
             name: expect.any(String),
             role: expect.stringMatching(/^(owner|admin|moderator)$/),
             isActive: expect.any(Boolean),
             lastLoginAt: expect.any(Object), // Can be string (ISO date) or null
-            createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/)
-          })
+            createdAt: expect.stringMatching(
+              /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+            ),
+          }),
         ]),
         pagination: expect.objectContaining({
           total: expect.any(Number),
           page: expect.any(Number),
           limit: expect.any(Number),
           hasNext: expect.any(Boolean),
-          hasPrev: expect.any(Boolean)
-        })
+          hasPrev: expect.any(Boolean),
+        }),
       });
     });
 
@@ -68,8 +72,8 @@ describe('GET /api/users - Contract Test', () => {
           page: 1,
           limit: 20,
           hasNext: false,
-          hasPrev: false
-        })
+          hasPrev: false,
+        }),
       });
     });
   });
@@ -86,7 +90,7 @@ describe('GET /api/users - Contract Test', () => {
         limit: 10,
         total: expect.any(Number),
         hasNext: expect.any(Boolean),
-        hasPrev: expect.any(Boolean)
+        hasPrev: expect.any(Boolean),
       });
     });
 
@@ -133,7 +137,7 @@ describe('GET /api/users - Contract Test', () => {
       expect(response.body).toMatchObject({
         statusCode: 400,
         message: expect.arrayContaining([expect.stringContaining('role')]),
-        error: 'Bad Request'
+        error: 'Bad Request',
       });
     });
 
@@ -147,9 +151,9 @@ describe('GET /api/users - Contract Test', () => {
         statusCode: 400,
         message: expect.arrayContaining([
           expect.stringContaining('page'),
-          expect.stringContaining('limit')
+          expect.stringContaining('limit'),
         ]),
-        error: 'Bad Request'
+        error: 'Bad Request',
       });
     });
 
@@ -160,7 +164,7 @@ describe('GET /api/users - Contract Test', () => {
         .expect(400);
 
       expect(response.body.message).toEqual(
-        expect.arrayContaining([expect.stringContaining('limit')])
+        expect.arrayContaining([expect.stringContaining('limit')]),
       );
     });
 
@@ -172,7 +176,7 @@ describe('GET /api/users - Contract Test', () => {
 
       expect(response.body.pagination).toMatchObject({
         page: 1,
-        limit: 20
+        limit: 20,
       });
     });
   });
@@ -186,7 +190,7 @@ describe('GET /api/users - Contract Test', () => {
       expect(response.body).toMatchObject({
         statusCode: 401,
         message: 'Unauthorized',
-        error: 'Unauthorized'
+        error: 'Unauthorized',
       });
     });
 
@@ -199,7 +203,7 @@ describe('GET /api/users - Contract Test', () => {
       expect(response.body).toMatchObject({
         statusCode: 401,
         message: 'Unauthorized',
-        error: 'Unauthorized'
+        error: 'Unauthorized',
       });
     });
 
@@ -213,7 +217,7 @@ describe('GET /api/users - Contract Test', () => {
         statusCode: 403,
         message: 'Only owner users can access user management',
         error: 'Forbidden',
-        code: 'INSUFFICIENT_PERMISSIONS'
+        code: 'INSUFFICIENT_PERMISSIONS',
       });
     });
   });
@@ -233,9 +237,9 @@ describe('GET /api/users - Contract Test', () => {
           expect.objectContaining({
             // Should not expose tenant_id but verify internal consistency
             id: expect.any(String),
-            email: expect.any(String)
-          })
-        ])
+            email: expect.any(String),
+          }),
+        ]),
       );
     });
   });
@@ -245,7 +249,7 @@ describe('GET /api/users - Contract Test', () => {
       // Test would verify response time is reasonable
       const startTime = Date.now();
 
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .get('/api/users?page=1&limit=100')
         .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
@@ -264,7 +268,9 @@ describe('GET /api/users - Contract Test', () => {
 
       // Verify pagination logic consistency
       expect(pagination.hasPrev).toBe(pagination.page > 1);
-      expect(pagination.hasNext).toBe(pagination.page * pagination.limit < pagination.total);
+      expect(pagination.hasNext).toBe(
+        pagination.page * pagination.limit < pagination.total,
+      );
     });
   });
 
@@ -295,15 +301,15 @@ describe('GET /api/users - Contract Test', () => {
           statusCode: 500,
           message: 'Internal server error',
           error: 'Internal Server Error',
-          requestId: expect.stringMatching(/^req_[0-9a-f-]+$/)
-        }
+          requestId: expect.stringMatching(/^req_[0-9a-f-]+$/),
+        },
       };
 
       expect(response.body).toMatchObject({
         statusCode: 500,
         message: 'Internal server error',
         error: 'Internal Server Error',
-        requestId: expect.any(String)
+        requestId: expect.any(String),
       });
     });
   });

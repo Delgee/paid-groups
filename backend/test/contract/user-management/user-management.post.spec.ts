@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../src/app.module';
+import { AppModule } from '../../../src/app.module';
 
 describe('POST /api/users - Contract Test', () => {
   let app: INestApplication;
@@ -31,7 +31,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'admin@tenant1.com',
         password: 'AdminPass123',
         name: 'John Administrator',
-        role: 'admin'
+        role: 'admin',
       };
 
       const response = await request(app.getHttpServer())
@@ -42,12 +42,16 @@ describe('POST /api/users - Contract Test', () => {
 
       // Validate CreateUserResponse schema
       expect(response.body).toMatchObject({
-        id: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
+        id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+        ),
         email: validRequest.email,
         name: validRequest.name,
         role: validRequest.role,
         isActive: true,
-        createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/)
+        createdAt: expect.stringMatching(
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+        ),
       });
     });
 
@@ -56,7 +60,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'moderator@tenant1.com',
         password: 'ModeratorPass123',
         name: 'Jane Moderator',
-        role: 'moderator'
+        role: 'moderator',
       };
 
       await request(app.getHttpServer())
@@ -71,7 +75,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'invalid-email',
         password: 'ValidPass123',
         name: 'Test User',
-        role: 'admin'
+        role: 'admin',
       };
 
       const response = await request(app.getHttpServer())
@@ -87,9 +91,9 @@ describe('POST /api/users - Contract Test', () => {
         details: expect.arrayContaining([
           expect.objectContaining({
             field: 'email',
-            constraint: 'isEmail'
-          })
-        ])
+            constraint: 'isEmail',
+          }),
+        ]),
       });
     });
 
@@ -98,7 +102,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'test@tenant1.com',
         password: 'weak',
         name: 'Test User',
-        role: 'admin'
+        role: 'admin',
       };
 
       const response = await request(app.getHttpServer())
@@ -110,7 +114,7 @@ describe('POST /api/users - Contract Test', () => {
       expect(response.body).toMatchObject({
         statusCode: 400,
         message: expect.arrayContaining([expect.stringContaining('password')]),
-        error: 'Bad Request'
+        error: 'Bad Request',
       });
     });
 
@@ -119,7 +123,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'test@tenant1.com',
         password: 'ValidPass123',
         name: 'Test User',
-        role: 'owner' // owners cannot create other owners
+        role: 'owner', // owners cannot create other owners
       };
 
       const response = await request(app.getHttpServer())
@@ -131,13 +135,13 @@ describe('POST /api/users - Contract Test', () => {
       expect(response.body).toMatchObject({
         statusCode: 400,
         message: expect.arrayContaining([expect.stringContaining('role')]),
-        error: 'Bad Request'
+        error: 'Bad Request',
       });
     });
 
     it('should return 400 for missing required fields', async () => {
       const incompleteRequest = {
-        email: 'test@tenant1.com'
+        email: 'test@tenant1.com',
         // missing password, name, role
       };
 
@@ -152,8 +156,8 @@ describe('POST /api/users - Contract Test', () => {
         expect.arrayContaining([
           expect.stringContaining('password'),
           expect.stringContaining('name'),
-          expect.stringContaining('role')
-        ])
+          expect.stringContaining('role'),
+        ]),
       );
     });
   });
@@ -164,7 +168,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'test@tenant1.com',
         password: 'ValidPass123',
         name: 'Test User',
-        role: 'admin'
+        role: 'admin',
       };
 
       const response = await request(app.getHttpServer())
@@ -175,7 +179,7 @@ describe('POST /api/users - Contract Test', () => {
       expect(response.body).toMatchObject({
         statusCode: 401,
         message: 'Unauthorized',
-        error: 'Unauthorized'
+        error: 'Unauthorized',
       });
     });
 
@@ -184,7 +188,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'test@tenant1.com',
         password: 'ValidPass123',
         name: 'Test User',
-        role: 'admin'
+        role: 'admin',
       };
 
       const response = await request(app.getHttpServer())
@@ -196,7 +200,7 @@ describe('POST /api/users - Contract Test', () => {
       expect(response.body).toMatchObject({
         statusCode: 401,
         message: 'Unauthorized',
-        error: 'Unauthorized'
+        error: 'Unauthorized',
       });
     });
 
@@ -205,7 +209,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'test@tenant1.com',
         password: 'ValidPass123',
         name: 'Test User',
-        role: 'admin'
+        role: 'admin',
       };
 
       const response = await request(app.getHttpServer())
@@ -218,7 +222,7 @@ describe('POST /api/users - Contract Test', () => {
         statusCode: 403,
         message: 'Only owner users can create admin/moderator users',
         error: 'Forbidden',
-        code: 'INSUFFICIENT_PERMISSIONS'
+        code: 'INSUFFICIENT_PERMISSIONS',
       });
     });
   });
@@ -229,7 +233,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'admin@tenant1.com', // Same email as first test
         password: 'AnotherPass123',
         name: 'Another Admin',
-        role: 'admin'
+        role: 'admin',
       };
 
       const response = await request(app.getHttpServer())
@@ -242,7 +246,7 @@ describe('POST /api/users - Contract Test', () => {
         statusCode: 409,
         message: 'User with this email already exists',
         error: 'Conflict',
-        code: 'DUPLICATE_EMAIL'
+        code: 'DUPLICATE_EMAIL',
       });
     });
   });
@@ -256,15 +260,15 @@ describe('POST /api/users - Contract Test', () => {
           statusCode: 500,
           message: 'Internal server error',
           error: 'Internal Server Error',
-          requestId: expect.stringMatching(/^req_[0-9a-f-]+$/)
-        }
+          requestId: expect.stringMatching(/^req_[0-9a-f-]+$/),
+        },
       };
 
       expect(response.body).toMatchObject({
         statusCode: 500,
         message: 'Internal server error',
         error: 'Internal Server Error',
-        requestId: expect.any(String)
+        requestId: expect.any(String),
       });
     });
   });
@@ -275,7 +279,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'longname@tenant1.com',
         password: 'ValidPass123',
         name: 'A'.repeat(100), // Max length according to schema
-        role: 'admin'
+        role: 'admin',
       };
 
       await request(app.getHttpServer())
@@ -290,7 +294,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'toolong@tenant1.com',
         password: 'ValidPass123',
         name: 'A'.repeat(101), // Exceeds max length
-        role: 'admin'
+        role: 'admin',
       };
 
       const response = await request(app.getHttpServer())
@@ -300,7 +304,7 @@ describe('POST /api/users - Contract Test', () => {
         .expect(400);
 
       expect(response.body.message).toEqual(
-        expect.arrayContaining([expect.stringContaining('name')])
+        expect.arrayContaining([expect.stringContaining('name')]),
       );
     });
 
@@ -309,7 +313,7 @@ describe('POST /api/users - Contract Test', () => {
         email: 'short@tenant1.com',
         password: 'ValidPass123',
         name: 'AB', // Min length according to schema
-        role: 'admin'
+        role: 'admin',
       };
 
       await request(app.getHttpServer())
