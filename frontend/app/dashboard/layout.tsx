@@ -13,7 +13,8 @@ import {
   LogOut,
   Menu,
   X,
-  UserPlus
+  UserPlus,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -35,6 +36,7 @@ interface DashboardLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Bots', href: '/dashboard/bots', icon: Bot },
+  { name: 'Telegram Groups', href: '/dashboard/telegram-groups', icon: MessageSquare },
   { name: 'Members', href: '/dashboard/members', icon: Users },
   { name: 'User Management', href: '/dashboard/users', icon: UserPlus },
   { name: 'Plans', href: '/dashboard/plans', icon: CreditCard },
