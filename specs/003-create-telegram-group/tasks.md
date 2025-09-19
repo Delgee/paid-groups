@@ -5,22 +5,22 @@
 
 ## Phase 3.1: Setup
 
-- [ ] T001 [P] Add Telegraph library dependency to backend package.json
-- [ ] T002 [P] Configure test environment variables for Telegram Bot API testing
-- [ ] T003 [P] Update database migration for telegram_groups table enhancements
+- [x] T001 [P] Add Telegraph library dependency to backend package.json
+- [x] T002 [P] Configure test environment variables for Telegram Bot API testing
+- [x] T003 [P] Update database migration for telegram_groups table enhancements
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 ### Contract Tests
-- [ ] T004 [P] Contract test GET /v1/telegram-groups in backend/tests/contract/telegram-groups-list.contract.spec.ts
-- [ ] T005 [P] Contract test POST /v1/telegram-groups in backend/tests/contract/telegram-groups-create.contract.spec.ts
-- [ ] T006 [P] Contract test GET /v1/telegram-groups/{id} in backend/tests/contract/telegram-groups-get.contract.spec.ts
-- [ ] T007 [P] Contract test PUT /v1/telegram-groups/{id} in backend/tests/contract/telegram-groups-update.contract.spec.ts
-- [ ] T008 [P] Contract test DELETE /v1/telegram-groups/{id} in backend/tests/contract/telegram-groups-delete.contract.spec.ts
-- [ ] T009 [P] Contract test POST /v1/telegram-groups/{id}/connect-channel in backend/tests/contract/telegram-groups-connect.contract.spec.ts
-- [ ] T010 [P] Contract test POST /v1/telegram-groups/{id}/sync in backend/tests/contract/telegram-groups-sync.contract.spec.ts
+- [x] T004 [P] Contract test GET /v1/telegram-groups in backend/test/contract/telegram-groups/telegram-groups-list.contract.spec.ts
+- [x] T005 [P] Contract test POST /v1/telegram-groups in backend/test/contract/telegram-groups/telegram-groups-create.contract.spec.ts
+- [x] T006 [P] Contract test GET /v1/telegram-groups/{id} in backend/test/contract/telegram-groups/telegram-groups-get.contract.spec.ts
+- [x] T007 [P] Contract test PUT /v1/telegram-groups/{id} in backend/test/contract/telegram-groups/telegram-groups-update.contract.spec.ts
+- [x] T008 [P] Contract test DELETE /v1/telegram-groups/{id} in backend/test/contract/telegram-groups/telegram-groups-delete.contract.spec.ts
+- [x] T009 [P] Contract test POST /v1/telegram-groups/{id}/connect-channel in backend/test/contract/telegram-groups/telegram-groups-connect.contract.spec.ts
+- [x] T010 [P] Contract test POST /v1/telegram-groups/{id}/sync in backend/test/contract/telegram-groups/telegram-groups-sync.contract.spec.ts
 
 ### Integration Tests
 - [ ] T011 [P] Integration test telegram group CRUD workflow in backend/tests/integration/telegram-groups-crud.integration.spec.ts
