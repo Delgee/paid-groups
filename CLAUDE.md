@@ -180,13 +180,23 @@ frontend
 - Validation error scenarios (weak password, duplicate email)
 - Authorization tests (non-owner access prevention)
 
-## Recent Changes (Feature 002)
-- Added user management API endpoints with role-based access
-- Created user management UI components with form validation
-- Implemented tenant-scoped user creation with audit logging
-- Added OpenAPI contract specifications for user endpoints
+### 6. Telegram Group Management (Current Feature: 003-create-telegram-group)
+- Owner users can create/update/delete telegram groups via POST/PUT/DELETE /api/telegram-groups
+- Telegram channel connection with bot permission validation
+- Auto-sync group details to Telegram channels when bot_assigned=true
+- Enhanced TelegramApiService with setChatTitle, setChatDescription methods
+- Redis caching for Telegram API responses (TTL: 1 hour)
+- Frontend: Telegram group management pages in dashboard/telegram-groups route group
 
-Remember: Follow TDD, maintain tenant isolation, validate all inputs, and audit sensitive operations.
+## Recent Changes (Feature 003)
+- Added telegram group management API endpoints with Telegram integration
+- Enhanced TelegramApiService with channel management methods
+- Implemented bot permission validation and auto-sync capabilities
+- Created telegram group UI components with channel connection forms
+- Added Redis caching for Telegram API responses and rate limiting
+- Added OpenAPI contract specifications for telegram group endpoints
+
+Remember: Follow TDD, maintain tenant isolation, validate all inputs, audit sensitive operations, and handle Telegram API errors gracefully.
 
 ## React/Frontend Best Practices & Anti-Patterns
 

@@ -1,0 +1,565 @@
+openapi: 3.0.3
+info:
+  title: Telegram Groups Management API
+  description: API for managing telegram groups with channel connection and bot integration
+  version: 1.0.0
+  contact:
+    name: Telegram Groups SaaS API
+
+servers:
+  - url: http://localhost:3001/v1
+    description: Development server
+
+paths:
+  /telegram-groups:
+    get:
+      summary: List telegram groups
+      description: Get paginated list of telegram groups for the authenticated tenant
+      tags:
+        - Telegram Groups
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: bot_id
+          in: query
+          description: Filter by bot ID
+          schema:
+            type: string
+            format: uuid
+        - name: connection_status
+          in: query
+          description: Filter by connection status
+          schema:
+            type: string
+            enum: [pending, connected, failed, disconnected]
+        - name: bot_assigned
+          in: query
+          description: Filter by bot assignment status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of telegram groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TelegramGroupSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      summary: Create telegram group
+      description: Create a new telegram group entry in the dashboard
+      tags:
+        - Telegram Groups
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTelegramGroupRequest'
+      responses:
+        '201':
+          description: Telegram group created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramGroup'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /telegram-groups/{id}:
+    get:
+      summary: Get telegram group by ID
+      description: Get detailed information about a specific telegram group
+      tags:
+        - Telegram Groups
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Telegram group ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Telegram group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramGroup'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update telegram group
+      description: Update telegram group information and optionally sync to Telegram channel
+      tags:
+        - Telegram Groups
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Telegram group ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTelegramGroupRequest'
+      responses:
+        '200':
+          description: Telegram group updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramGroup'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    delete:
+      summary: Delete telegram group
+      description: Delete a telegram group from the dashboard
+      tags:
+        - Telegram Groups
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Telegram group ID
+          schema:
+            type: string
+            format: uuid
+        - name: force
+          in: query
+          description: Force delete even with active members
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '204':
+          description: Telegram group deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Cannot delete group with active members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /telegram-groups/{id}/connect-channel:
+    post:
+      summary: Connect Telegram channel
+      description: Connect an existing Telegram channel to the telegram group
+      tags:
+        - Telegram Groups
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Telegram group ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectChannelRequest'
+      responses:
+        '200':
+          description: Channel connected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramGroup'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Channel already connected or bot lacks permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /telegram-groups/{id}/sync:
+    post:
+      summary: Sync to Telegram
+      description: Manually synchronize group details to the connected Telegram channel
+      tags:
+        - Telegram Groups
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Telegram group ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Sync completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Group details synced to Telegram successfully"
+                  sync_at:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Sync failed due to bot permissions or Telegram API error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TelegramGroup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the telegram group
+        group_name:
+          type: string
+          description: Display name of the group
+          example: "VIP Subscribers"
+        description:
+          type: string
+          nullable: true
+          description: Group description
+          example: "Premium content for VIP members"
+        group_type:
+          type: string
+          enum: [group, supergroup, channel]
+          description: Type of Telegram chat
+        telegram_chat_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Telegram chat ID (negative for groups/channels)
+        username:
+          type: string
+          nullable: true
+          description: Telegram username (@username)
+        invite_link:
+          type: string
+          nullable: true
+          description: Telegram invite link
+        member_count:
+          type: integer
+          description: Current member count
+          minimum: 0
+        is_active:
+          type: boolean
+          description: Whether the group is active
+        bot_assigned:
+          type: boolean
+          description: Whether bot has admin permissions
+        connection_status:
+          type: string
+          enum: [pending, connected, failed, disconnected]
+          description: Connection status to Telegram channel
+        sync_enabled:
+          type: boolean
+          description: Whether auto-sync is enabled
+        last_sync_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last successful sync timestamp
+        sync_errors:
+          type: string
+          nullable: true
+          description: Last sync error message
+        settings:
+          type: object
+          description: Additional group settings
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        bot:
+          $ref: '#/components/schemas/TelegramBotSummary'
+
+    TelegramGroupSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        group_type:
+          type: string
+          enum: [group, supergroup, channel]
+        member_count:
+          type: integer
+        is_active:
+          type: boolean
+        bot_assigned:
+          type: boolean
+        connection_status:
+          type: string
+          enum: [pending, connected, failed, disconnected]
+        last_sync_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        bot:
+          $ref: '#/components/schemas/TelegramBotSummary'
+
+    TelegramBotSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bot_name:
+          type: string
+        bot_username:
+          type: string
+          nullable: true
+
+    CreateTelegramGroupRequest:
+      type: object
+      required:
+        - group_name
+        - bot_id
+      properties:
+        group_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Display name for the group
+          example: "VIP Subscribers"
+        description:
+          type: string
+          maxLength: 1000
+          description: Optional group description
+          example: "Premium content for VIP members"
+        bot_id:
+          type: string
+          format: uuid
+          description: Associated bot ID
+        settings:
+          type: object
+          description: Additional group settings
+
+    UpdateTelegramGroupRequest:
+      type: object
+      properties:
+        group_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Display name for the group
+        description:
+          type: string
+          maxLength: 1000
+          description: Group description
+        sync_enabled:
+          type: boolean
+          description: Enable/disable auto-sync to Telegram
+        settings:
+          type: object
+          description: Additional group settings
+
+    ConnectChannelRequest:
+      type: object
+      required:
+        - telegram_chat_id
+      properties:
+        telegram_chat_id:
+          type: string
+          pattern: '^-?\d+$'
+          description: Telegram chat ID (as string, negative for groups/channels)
+          example: "-1001234567890"
+        invite_link:
+          type: string
+          pattern: '^https:\/\/t\.me\/'
+          description: Optional Telegram invite link
+          example: "https://t.me/+AbCdEfGhIjKlMnOp"
+        verify_permissions:
+          type: boolean
+          default: true
+          description: Verify bot admin permissions before connecting
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of items
+        page:
+          type: integer
+          description: Current page number (1-based)
+        limit:
+          type: integer
+          description: Items per page
+        hasNext:
+          type: boolean
+          description: Whether there are more pages
+        hasPrev:
+          type: boolean
+          description: Whether there are previous pages
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+        error:
+          type: string
+          description: Error type
+        statusCode:
+          type: integer
+          description: HTTP status code
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          description: Request path
+        details:
+          type: object
+          description: Additional error details
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Conflict:
+      description: Conflict - resource already exists or constraint violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
