@@ -251,8 +251,8 @@ export class TelegramApiService {
 
 
   async answerCallbackQuery(
-    botToken: string, 
-    callbackQueryId: string, 
+    botToken: string,
+    callbackQueryId: string,
     text?: string
   ): Promise<boolean> {
     try {
@@ -262,6 +262,165 @@ export class TelegramApiService {
     } catch (error) {
       this.logger.error(`Failed to answer callback query ${callbackQueryId}: ${error.message}`);
       return false;
+    }
+  }
+
+  /**
+   * Sets the title of a chat/channel
+   * @param botToken - The bot token
+   * @param chatId - The chat/channel ID
+   * @param title - The new title (1-128 characters)
+   * @returns Promise<boolean> - True if successful, false otherwise
+   */
+  async setChatTitle(botToken: string, chatId: string | number, title: string): Promise<boolean> {
+    try {
+      const bot = this.getBotInstance(botToken);
+      await bot.telegram.setChatTitle(chatId, title);
+      this.logger.log(`Chat title updated successfully for chat ${chatId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to set chat title for chat ${chatId}: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Sets the description of a chat/channel
+   * @param botToken - The bot token
+   * @param chatId - The chat/channel ID
+   * @param description - The new description (0-255 characters)
+   * @returns Promise<boolean> - True if successful, false otherwise
+   */
+  async setChatDescription(botToken: string, chatId: string | number, description: string): Promise<boolean> {
+    try {
+      const bot = this.getBotInstance(botToken);
+      await bot.telegram.setChatDescription(chatId, description);
+      this.logger.log(`Chat description updated successfully for chat ${chatId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to set chat description for chat ${chatId}: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Gets channel information specifically for channels
+   * @param botToken - The bot token
+   * @param channelId - The channel ID (must be a channel)
+   * @returns Promise<TelegramChat | null> - Channel info if successful, null otherwise
+   */
+  async getChannelInfo(botToken: string, channelId: string | number): Promise<TelegramChat | null> {
+    try {
+      const bot = this.getBotInstance(botToken);
+      const chat = await bot.telegram.getChat(channelId);
+
+      // Verify it's actually a channel
+      if (chat.type !== 'channel') {
+        this.logger.warn(`Chat ${channelId} is not a channel, type: ${chat.type}`);
+        return null;
+      }
+
+      return {
+        id: chat.id,
+        type: chat.type,
+        title: 'title' in chat ? chat.title : undefined,
+        username: 'username' in chat ? chat.username : undefined,
+        description: 'description' in chat ? chat.description : undefined,
+        member_count: await this.getChatMemberCount(botToken, channelId),
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get channel info for ${channelId}: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Verifies bot permissions in a channel
+   * @param botToken - The bot token
+   * @param channelId - The channel ID
+   * @returns Promise<object> - Bot permissions in the channel
+   */
+  async verifyBotPermissionsInChannel(
+    botToken: string,
+    channelId: string | number
+  ): Promise<{
+    isAdmin: boolean;
+    canPostMessages: boolean;
+    canEditMessages: boolean;
+    canDeleteMessages: boolean
+  }> {
+    try {
+      const bot = this.getBotInstance(botToken);
+      const botInfo = await bot.telegram.getMe();
+      const member = await bot.telegram.getChatMember(channelId, botInfo.id);
+
+      const isAdmin = ['creator', 'administrator'].includes(member.status);
+
+      // For administrators, check specific permissions
+      let canPostMessages = false;
+      let canEditMessages = false;
+      let canDeleteMessages = false;
+
+      if (member.status === 'creator') {
+        // Creator has all permissions
+        canPostMessages = true;
+        canEditMessages = true;
+        canDeleteMessages = true;
+      } else if (member.status === 'administrator') {
+        // Check specific admin permissions
+        canPostMessages = member.can_post_messages !== false;
+        canEditMessages = member.can_edit_messages !== false;
+        canDeleteMessages = member.can_delete_messages !== false;
+      }
+
+      this.logger.log(`Bot permissions verified for channel ${channelId}: admin=${isAdmin}, post=${canPostMessages}, edit=${canEditMessages}, delete=${canDeleteMessages}`);
+
+      return {
+        isAdmin,
+        canPostMessages,
+        canEditMessages,
+        canDeleteMessages,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to verify bot permissions in channel ${channelId}: ${error.message}`);
+      return {
+        isAdmin: false,
+        canPostMessages: false,
+        canEditMessages: false,
+        canDeleteMessages: false,
+      };
+    }
+  }
+
+  /**
+   * Posts a message to a channel
+   * @param botToken - The bot token
+   * @param channelId - The channel ID
+   * @param message - The message text
+   * @param options - Additional message options
+   * @returns Promise<object> - Success status and message ID if successful
+   */
+  async postToChannel(
+    botToken: string,
+    channelId: string | number,
+    message: string,
+    options?: SendMessageOptions
+  ): Promise<{ success: boolean; messageId?: number }> {
+    try {
+      const bot = this.getBotInstance(botToken);
+      const sentMessage = await bot.telegram.sendMessage(channelId, message, options);
+
+      this.logger.log(`Message posted successfully to channel ${channelId}, message ID: ${sentMessage.message_id}`);
+
+      return {
+        success: true,
+        messageId: sentMessage.message_id,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to post message to channel ${channelId}: ${error.message}`);
+      return {
+        success: false,
+      };
     }
   }
 }

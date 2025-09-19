@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-import { TelegramBot } from '../bots/entities/telegram-bot.entity';
+import { TelegramBot } from '../bot/entities/telegram-bot.entity';
 
 export enum GroupType {
   GROUP = 'group',
