@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, ReactNode, useRef } from 'react';
+import React, { useEffect, ReactNode } from 'react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useRouter } from 'next/navigation';
 

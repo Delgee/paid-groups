@@ -1,16 +1,29 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useCallback,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
-import type { User, LoginCredentials, RegisterData, AuthTokens } from '@/lib/api/client';
+import type {
+  User,
+  LoginCredentials,
+  RegisterData,
+  AuthTokens,
+} from '@/lib/api/client';
+import { AuthErrorBoundary } from './auth-error-boundary';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<AuthTokens>;
+  register: (data: RegisterData) => Promise<AuthTokens>;
   logout: () => Promise<void>;
   refetch: () => Promise<void>;
 }
@@ -21,23 +34,16 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
+function AuthProviderCore({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isClient, setIsClient] = useState(false);
-  const router = useRouter();
-
-  // Detect client-side rendering
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const isAuthenticated = !!user && apiClient.isAuthenticated();
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
-      // Only check auth on client side
-      if (!isClient || !apiClient.isAuthenticated()) {
+      // Check if we have tokens before making the request
+      if (!apiClient.isAuthenticated()) {
         setUser(null);
         setIsLoading(false);
         return;
@@ -48,63 +54,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Failed to fetch user:', error);
       setUser(null);
+      // Clear tokens on auth failure
+      apiClient.logout();
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (isClient) {
-      fetchUser();
-    }
-  }, [isClient]);
+    // Only run on client side - useEffect automatically handles this
+    fetchUser();
+  }, [fetchUser]);
 
   const login = async (credentials: LoginCredentials) => {
     try {
-      setIsLoading(true);
       const response: AuthTokens = await apiClient.login(credentials);
       setUser(response.user);
-      
-      // Redirect to dashboard after successful login
-      router.push('/dashboard');
+      return response;
     } catch (error: unknown) {
       setUser(null);
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Login failed';
       throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const register = async (data: RegisterData) => {
     try {
-      setIsLoading(true);
       const response: AuthTokens = await apiClient.register(data);
       setUser(response.user);
-      
-      // Redirect to dashboard after successful registration
-      router.push('/dashboard');
+      return response;
     } catch (error: unknown) {
       setUser(null);
-      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Registration failed';
       throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     try {
-      setIsLoading(true);
       await apiClient.logout();
       setUser(null);
-      
-      // Redirect to login page
-      router.push('/login');
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      setIsLoading(false);
+      // Still clear user state even if logout fails
+      setUser(null);
     }
   };
 
@@ -122,10 +117,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     refetch,
   };
 
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
   return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+    <AuthErrorBoundary>
+      <AuthProviderCore>{children}</AuthProviderCore>
+    </AuthErrorBoundary>
   );
 }
 
@@ -151,8 +150,8 @@ export function withAuth<P extends object>(Component: React.ComponentType<P>) {
 
     if (isLoading) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className='min-h-screen flex items-center justify-center'>
+          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900'></div>
         </div>
       );
     }

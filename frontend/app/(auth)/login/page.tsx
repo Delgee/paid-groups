@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '@/components/providers/auth-provider';
+import { apiClient } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +21,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
 
   const {
     register,
@@ -32,12 +31,16 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    setError(null);
+    setIsLoading(true);
+
     try {
-      setIsLoading(true);
-      setError(null);
-      await login(data);
+      await apiClient.login(data);
+      // If login succeeds, navigate manually since we're bypassing the auth provider
+      window.location.href = '/dashboard';
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during login');
+      const errorMessage = err instanceof Error ? err.message : 'Unable to connect to server. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

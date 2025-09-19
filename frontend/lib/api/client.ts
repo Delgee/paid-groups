@@ -631,7 +631,11 @@ export class ApiClientError extends Error {
     message: string | string[];
     error: string;
     code?: string;
-    details?: any;
+    details?: Array<{
+      field: string;
+      constraint: string;
+      value: unknown;
+    }>;
   }) {
     const message = Array.isArray(apiError.message)
       ? apiError.message.join(', ')
