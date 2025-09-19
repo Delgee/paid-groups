@@ -23,18 +23,18 @@
 - [x] T010 [P] Contract test POST /v1/telegram-groups/{id}/sync in backend/test/contract/telegram-groups/telegram-groups-sync.contract.spec.ts
 
 ### Integration Tests
-- [ ] T011 [P] Integration test telegram group CRUD workflow in backend/tests/integration/telegram-groups-crud.integration.spec.ts
-- [ ] T012 [P] Integration test channel connection and bot permission verification in backend/tests/integration/telegram-channel-connection.integration.spec.ts
-- [ ] T013 [P] Integration test auto-sync functionality with active groups in backend/tests/integration/telegram-sync.integration.spec.ts
-- [ ] T014 [P] Integration test multi-tenant isolation for telegram groups in backend/tests/integration/telegram-groups-tenant-isolation.integration.spec.ts
+- [x] T011 [P] Integration test telegram group CRUD workflow in backend/test/integration/telegram-groups-crud.integration.spec.ts
+- [x] T012 [P] Integration test channel connection and bot permission verification in backend/test/integration/telegram-channel-connection.integration.spec.ts
+- [x] T013 [P] Integration test auto-sync functionality with active groups in backend/test/integration/telegram-sync.integration.spec.ts
+- [x] T014 [P] Integration test multi-tenant isolation for telegram groups in backend/test/integration/telegram-groups-tenant-isolation.integration.spec.ts
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
 ### Backend Models and DTOs
-- [ ] T015 [P] Create TelegramGroup entity enhancements in backend/src/modules/telegram-groups/telegram-groups.entity.ts
-- [ ] T016 [P] Create CreateTelegramGroupDto in backend/src/modules/telegram-groups/dto/create-telegram-group.dto.ts
-- [ ] T017 [P] Create UpdateTelegramGroupDto in backend/src/modules/telegram-groups/dto/update-telegram-group.dto.ts
-- [ ] T018 [P] Create ConnectChannelDto in backend/src/modules/telegram-groups/dto/connect-channel.dto.ts
+- [x] T015 [P] Create TelegramGroup entity enhancements in backend/src/modules/telegram-groups/telegram-groups.entity.ts
+- [x] T016 [P] Create CreateTelegramGroupDto in backend/src/modules/telegram-groups/dto/create-telegram-group.dto.ts
+- [x] T017 [P] Create UpdateTelegramGroupDto in backend/src/modules/telegram-groups/dto/update-telegram-group.dto.ts
+- [x] T018 [P] Create ConnectChannelDto in backend/src/modules/telegram-groups/dto/connect-channel.dto.ts
 
 ### Telegram Integration Services
 - [ ] T019 [P] Enhance TelegramApiService with channel management methods in backend/src/integrations/telegram/telegram-api.service.ts
