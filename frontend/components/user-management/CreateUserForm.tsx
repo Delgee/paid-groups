@@ -189,7 +189,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
                   disabled={isLoading}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger data-testid="user-role-select-trigger">
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
                   </FormControl>

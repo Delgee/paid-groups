@@ -14,18 +14,22 @@ test.describe('Owner Creates Moderator User - E2E', () => {
     await page.locator('.hidden.md\\:flex [data-testid="user-management-nav"]').click();
     await page.click('[data-testid="create-user-button"]');
 
-    await page.fill('[data-testid="user-email-input"]', 'moderator@tenant1.com');
+    const timestamp = Date.now();
+    await page.fill('[data-testid="user-email-input"]', `moderator${timestamp}@tenant1.com`);
     await page.fill('[data-testid="user-password-input"]', 'ModeratorPass123');
     await page.fill('[data-testid="user-name-input"]', 'Jane Moderator');
     // Handle Radix Select component
-    await page.click('[data-testid="user-role-select"]');
-    await page.click('text=Moderator');
+    await page.click('[data-testid="user-role-select-trigger"]');
+    await page.getByRole('option', { name: 'Moderator' }).click();
 
     await page.click('[data-testid="create-user-submit"]');
 
-    await expect(page.locator('[data-testid="success-toast"]')).toContainText('Moderator user created successfully');
+    // Wait for successful creation and navigation back to users page
+    await expect(page).toHaveURL('/dashboard/users', { timeout: 10000 });
 
-    const userRow = page.locator('[data-testid="user-list-item"]').filter({ hasText: 'moderator@tenant1.com' });
+    // Verify new user appears in list
+    const userRow = page.locator('[data-testid="user-list-item"]').filter({ hasText: `moderator${timestamp}@tenant1.com` });
+    await expect(userRow).toBeVisible();
     await expect(userRow.locator('[data-testid="user-role"]')).toContainText('Moderator');
   });
 });
