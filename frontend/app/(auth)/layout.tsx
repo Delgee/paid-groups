@@ -1,8 +1,8 @@
 'use client';
 
+import React, { useEffect, ReactNode, useRef } from 'react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useRouter } from 'next/navigation';
-import { useEffect, ReactNode } from 'react';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -19,21 +19,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Show loading spinner while checking auth status
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
-
-  // If authenticated, show nothing (will redirect)
-  if (isAuthenticated) {
-    return null;
-  }
-
-  // Show auth pages for unauthenticated users
+  // Always render the same container structure to prevent unmounting
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -45,7 +31,18 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             Manage your paid Telegram groups with ease
           </p>
         </div>
-        {children}
+        {/* Show loading overlay if loading, otherwise show children */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : isAuthenticated ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-sm text-gray-600">Redirecting...</p>
+          </div>
+        ) : (
+          children
+        )}
       </div>
     </div>
   );

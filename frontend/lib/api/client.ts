@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { getCookie, setCookie, deleteCookie } from 'cookies-next';
 import { z } from 'zod';
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   message?: string;
@@ -53,9 +53,9 @@ export interface UserSummary {
   email: string;
   name: string;
   role: 'owner' | 'admin' | 'moderator';
-  isActive: boolean;
-  lastLoginAt: string | null;
-  createdAt: string;
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
 }
 
 export interface Pagination {
@@ -91,13 +91,16 @@ export const CreateUserRequestSchema = z.object({
     .min(8, 'Password must be at least 8 characters long')
     .regex(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
-      'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number',
     ),
   name: z
     .string()
     .min(2, 'Name must be at least 2 characters long')
     .max(100, 'Name must not exceed 100 characters')
-    .regex(/^[a-zA-Z0-9\s\-]+$/, 'Name can only contain letters, numbers, spaces, and hyphens'),
+    .regex(
+      /^[a-zA-Z0-9\s\-]+$/,
+      'Name can only contain letters, numbers, spaces, and hyphens',
+    ),
   role: UserRoleSchema,
 });
 
@@ -136,7 +139,7 @@ export interface TelegramGroup {
   bot_id: string;
   tenant_id: string;
   synced_at?: string;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -188,19 +191,27 @@ export interface Membership {
 }
 
 class ApiClient {
-  private instance: AxiosInstance;
+  private instance!: AxiosInstance;
   private refreshTokenPromise: Promise<string> | null = null;
+  private static singleton: ApiClient | null = null;
 
   constructor() {
+    // Enforce singleton pattern
+    if (ApiClient.singleton) {
+      return ApiClient.singleton;
+    }
+
     this.instance = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+      baseURL: typeof window !== 'undefined' ? '/api' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/v1'),
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
       },
+      withCredentials: true,
     });
 
     this.setupInterceptors();
+    ApiClient.singleton = this;
   }
 
   private setupInterceptors() {
@@ -213,7 +224,7 @@ class ApiClient {
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
     // Response interceptor to handle token refresh
@@ -222,11 +233,20 @@ class ApiClient {
       async (error) => {
         const originalRequest = error.config;
 
-        // Don't attempt token refresh for auth endpoints
-        const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
-                               originalRequest.url?.includes('/auth/register');
+        // Don't attempt token refresh or logout for auth endpoints
+        const isAuthEndpoint =
+          originalRequest.url?.includes('/auth/login') ||
+          originalRequest.url?.includes('/auth/register') ||
+          originalRequest.url?.includes('/auth/logout');
 
-        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+
+        // If it's an auth endpoint, just reject the error without any additional handling
+        if (isAuthEndpoint) {
+          return Promise.reject(error);
+        }
+
+        // Handle 401 errors for non-auth endpoints
+        if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
           try {
@@ -235,9 +255,11 @@ class ApiClient {
             return this.instance(originalRequest);
           } catch (refreshError) {
             // Only redirect to login if not already on auth pages
-            if (typeof window !== 'undefined' &&
-                !window.location.pathname.includes('/login') &&
-                !window.location.pathname.includes('/register')) {
+            if (
+              typeof window !== 'undefined' &&
+              !window.location.pathname.includes('/login') &&
+              !window.location.pathname.includes('/register')
+            ) {
               this.logout();
             }
             return Promise.reject(refreshError);
@@ -245,7 +267,7 @@ class ApiClient {
         }
 
         return Promise.reject(error);
-      }
+      },
     );
   }
 
@@ -261,18 +283,28 @@ class ApiClient {
       }
 
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/v1/auth/refresh`,
-        { refresh_token: refreshToken }
+        `${typeof window !== 'undefined' ? '/api' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/v1')}/auth/refresh`,
+        { refresh_token: refreshToken },
       );
 
       const { access_token, refresh_token: newRefreshToken } = response.data;
 
-      setCookie('access_token', access_token, { maxAge: 60 * 15 }); // 15 minutes
-      setCookie('refresh_token', newRefreshToken, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
+      setCookie('access_token', access_token, {
+        maxAge: 60 * 15,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      });
+      setCookie('refresh_token', newRefreshToken, {
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      });
 
       this.refreshTokenPromise = null;
       return access_token;
-    })();
+    })().finally(() => {
+      this.refreshTokenPromise = null;
+    });
 
     return this.refreshTokenPromise;
   }
@@ -280,112 +312,168 @@ class ApiClient {
   // Authentication methods
   async login(credentials: LoginCredentials): Promise<AuthTokens> {
     try {
-      const response = await this.instance.post<AuthTokens>('/v1/auth/login', credentials);
+      const response = await this.instance.post<AuthTokens>(
+        '/auth/login',
+        credentials,
+      );
 
       const { access_token, refresh_token } = response.data;
-      setCookie('access_token', access_token, { maxAge: 60 * 15 }); // 15 minutes
-      setCookie('refresh_token', refresh_token, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
+      setCookie('access_token', access_token, {
+        maxAge: 60 * 15,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      });
+      setCookie('refresh_token', refresh_token, {
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      });
 
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
       // Extract error message from API response
-      const message = error.response?.data?.message ||
-                     error.response?.data?.error ||
-                     error.message ||
-                     'Invalid email or password';
+      const axiosError = error as {
+        response?: { data?: { message?: string; error?: string } };
+        message?: string;
+      };
+      const message =
+        axiosError.response?.data?.message ||
+        axiosError.response?.data?.error ||
+        axiosError.message ||
+        'Invalid email or password';
       throw new Error(message);
     }
   }
 
   async register(data: RegisterData): Promise<AuthTokens> {
     try {
-      const response = await this.instance.post<AuthTokens>('/v1/auth/register', data);
+      const response = await this.instance.post<AuthTokens>(
+        '/auth/register',
+        data,
+      );
 
       const { access_token, refresh_token } = response.data;
-      setCookie('access_token', access_token, { maxAge: 60 * 15 });
-      setCookie('refresh_token', refresh_token, { maxAge: 60 * 60 * 24 * 7 });
+      setCookie('access_token', access_token, {
+        maxAge: 60 * 15,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      });
+      setCookie('refresh_token', refresh_token, {
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      });
 
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
       // Extract error message from API response
-      const message = error.response?.data?.message ||
-                     error.response?.data?.error ||
-                     error.message ||
-                     'Registration failed';
+      const axiosError = error as {
+        response?: { data?: { message?: string; error?: string } };
+        message?: string;
+      };
+      const message =
+        axiosError.response?.data?.message ||
+        axiosError.response?.data?.error ||
+        axiosError.message ||
+        'Registration failed';
       throw new Error(message);
     }
   }
 
   async logout(): Promise<void> {
     try {
-      await this.instance.post('/v1/auth/logout');
+      await this.instance.post('/auth/logout');
     } catch (error) {
       // Continue with logout even if API call fails
+      console.error('Logout API call failed:', error);
     } finally {
       deleteCookie('access_token');
       deleteCookie('refresh_token');
 
       // Redirect to login page only if not already there
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+      if (
+        typeof window !== 'undefined' &&
+        !window.location.pathname.includes('/login')
+      ) {
+        // Force hard navigation to clear all state
         window.location.href = '/login';
       }
     }
   }
 
   async me(): Promise<User> {
-    const response = await this.instance.get<User>('/v1/auth/me');
+    const response = await this.instance.get<User>('/auth/me');
     return response.data;
   }
 
   // Bot management methods
   async getBots(): Promise<{ bots: Bot[] }> {
-    const response = await this.instance.get<{ bots: Bot[] }>('/v1/bots');
+    const response = await this.instance.get<{ bots: Bot[] }>('/bots');
     return response.data;
   }
 
   async getBot(id: string): Promise<Bot> {
-    const response = await this.instance.get<Bot>(`/v1/bots/${id}`);
+    const response = await this.instance.get<Bot>(`/bots/${id}`);
     return response.data;
   }
 
   async createBot(data: { bot_token: string; bot_name: string }): Promise<Bot> {
-    const response = await this.instance.post<Bot>('/v1/bots', data);
+    const response = await this.instance.post<Bot>('/bots', data);
     return response.data;
   }
 
-  async updateBot(id: string, data: Partial<{ bot_name: string; is_active: boolean }>): Promise<Bot> {
-    const response = await this.instance.put<Bot>(`/v1/bots/${id}`, data);
+  async updateBot(
+    id: string,
+    data: Partial<{ bot_name: string; is_active: boolean }>,
+  ): Promise<Bot> {
+    const response = await this.instance.put<Bot>(`/bots/${id}`, data);
     return response.data;
   }
 
   async deleteBot(id: string): Promise<void> {
-    await this.instance.delete(`/v1/bots/${id}`);
+    await this.instance.delete(`/bots/${id}`);
   }
 
   // Group management methods
   async getBotGroups(botId: string): Promise<{ groups: TelegramGroup[] }> {
-    const response = await this.instance.get<{ groups: TelegramGroup[] }>(`/v1/bots/${botId}/groups`);
+    const response = await this.instance.get<{ groups: TelegramGroup[] }>(
+      `/bots/${botId}/groups`,
+    );
     return response.data;
   }
 
   async connectGroup(
-    botId: string, 
-    data: { telegram_chat_id: number; group_name: string; group_type: 'channel' | 'group' | 'supergroup' }
+    botId: string,
+    data: {
+      telegram_chat_id: number;
+      group_name: string;
+      group_type: 'channel' | 'group' | 'supergroup';
+    },
   ): Promise<TelegramGroup> {
-    const response = await this.instance.post<TelegramGroup>(`/v1/bots/${botId}/groups`, data);
+    const response = await this.instance.post<TelegramGroup>(
+      `/bots/${botId}/groups`,
+      data,
+    );
     return response.data;
   }
 
   async disconnectGroup(botId: string, groupId: string): Promise<void> {
-    await this.instance.delete(`/v1/bots/${botId}/groups/${groupId}`);
+    await this.instance.delete(`/bots/${botId}/groups/${groupId}`);
   }
 
   // Bot messages methods
   async createBotMessage(
     botId: string,
-    data: { message_type: string; content: string; variables?: Record<string, string> }
-  ): Promise<any> {
-    const response = await this.instance.post(`/v1/bots/${botId}/messages`, data);
+    data: {
+      message_type: string;
+      content: string;
+      variables?: Record<string, string>;
+    },
+  ): Promise<unknown> {
+    const response = await this.instance.post(
+      `/bots/${botId}/messages`,
+      data,
+    );
     return response.data;
   }
 
@@ -397,14 +485,17 @@ class ApiClient {
     status?: string;
     group_id?: string;
   }): Promise<{ members: Member[]; total: number }> {
-    const response = await this.instance.get<{ members: Member[]; total: number }>('/v1/members', {
-      params
+    const response = await this.instance.get<{
+      members: Member[];
+      total: number;
+    }>('/members', {
+      params,
     });
     return response.data;
   }
 
   async getMember(id: string): Promise<Member> {
-    const response = await this.instance.get<Member>(`/v1/members/${id}`);
+    const response = await this.instance.get<Member>(`/members/${id}`);
     return response.data;
   }
 
@@ -416,15 +507,20 @@ class ApiClient {
     group_id?: string;
     status?: string;
   }): Promise<{ memberships: Membership[]; total: number }> {
-    const response = await this.instance.get<{ memberships: Membership[]; total: number }>('/v1/memberships', {
-      params
+    const response = await this.instance.get<{
+      memberships: Membership[];
+      total: number;
+    }>('/memberships', {
+      params,
     });
     return response.data;
   }
 
   // Membership plans methods
   async getMembershipPlans(): Promise<{ plans: MembershipPlan[] }> {
-    const response = await this.instance.get<{ plans: MembershipPlan[] }>('/v1/membership-plans');
+    const response = await this.instance.get<{ plans: MembershipPlan[] }>(
+      '/membership-plans',
+    );
     return response.data;
   }
 
@@ -436,52 +532,75 @@ class ApiClient {
     duration_days: number;
     features?: string[];
   }): Promise<MembershipPlan> {
-    const response = await this.instance.post<MembershipPlan>('/v1/membership-plans', data);
+    const response = await this.instance.post<MembershipPlan>(
+      '/membership-plans',
+      data,
+    );
     return response.data;
   }
 
-  async updateMembershipPlan(id: string, data: Partial<{
-    name: string;
-    description?: string;
-    price: number;
-    duration_days: number;
-    features?: string[];
-    is_active: boolean;
-  }>): Promise<MembershipPlan> {
-    const response = await this.instance.put<MembershipPlan>(`/v1/membership-plans/${id}`, data);
+  async updateMembershipPlan(
+    id: string,
+    data: Partial<{
+      name: string;
+      description?: string;
+      price: number;
+      duration_days: number;
+      features?: string[];
+      is_active: boolean;
+    }>,
+  ): Promise<MembershipPlan> {
+    const response = await this.instance.put<MembershipPlan>(
+      `/membership-plans/${id}`,
+      data,
+    );
     return response.data;
   }
 
   // User management methods
   async createUser(userData: CreateUserRequest): Promise<UserSummary> {
-    const response = await this.instance.post<UserSummary>('/v1/users', userData);
+    const response = await this.instance.post<UserSummary>(
+      '/users',
+      userData,
+    );
     return response.data;
   }
 
   async getUsers(query: GetUsersQuery = {}): Promise<GetUsersResponse> {
-    const response = await this.instance.get<GetUsersResponse>('/v1/users', {
-      params: query
+    const response = await this.instance.get<GetUsersResponse>('/users', {
+      params: query,
     });
     return response.data;
   }
 
   // Generic HTTP methods for extensibility
-  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.get<T>(url, config);
     return response.data;
   }
 
-  async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async post<T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
     const response = await this.instance.post<T>(url, data, config);
     return response.data;
   }
 
-  async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async put<T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
     const response = await this.instance.put<T>(url, data, config);
     return response.data;
   }
 
-  async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async delete<T = unknown>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
     const response = await this.instance.delete<T>(url, config);
     return response.data;
   }
@@ -507,7 +626,13 @@ export class ApiClientError extends Error {
     value: unknown;
   }>;
 
-  constructor(apiError: { statusCode: number; message: string | string[]; error: string; code?: string; details?: any }) {
+  constructor(apiError: {
+    statusCode: number;
+    message: string | string[];
+    error: string;
+    code?: string;
+    details?: any;
+  }) {
     const message = Array.isArray(apiError.message)
       ? apiError.message.join(', ')
       : apiError.message;
@@ -540,10 +665,13 @@ export class ApiClientError extends Error {
   getFieldErrors(): Record<string, string> {
     if (!this.details) return {};
 
-    return this.details.reduce((acc, detail) => {
-      acc[detail.field] = detail.constraint;
-      return acc;
-    }, {} as Record<string, string>);
+    return this.details.reduce(
+      (acc, detail) => {
+        acc[detail.field] = detail.constraint;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
   }
 }
 
@@ -551,7 +679,8 @@ export class ApiClientError extends Error {
 export const userQueryKeys = {
   all: ['users'] as const,
   lists: () => [...userQueryKeys.all, 'list'] as const,
-  list: (filters: GetUsersQuery) => [...userQueryKeys.lists(), filters] as const,
+  list: (filters: GetUsersQuery) =>
+    [...userQueryKeys.lists(), filters] as const,
 };
 
 export const apiClient = new ApiClient();
