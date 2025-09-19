@@ -69,6 +69,7 @@ export default function LoginPage() {
               type="email"
               autoComplete="email"
               required
+              data-testid="email-input"
               {...register('email')}
               className={errors.email ? 'border-red-500' : ''}
             />
@@ -84,6 +85,7 @@ export default function LoginPage() {
               type="password"
               autoComplete="current-password"
               required
+              data-testid="password-input"
               {...register('password')}
               className={errors.password ? 'border-red-500' : ''}
             />
@@ -96,6 +98,7 @@ export default function LoginPage() {
             type="submit"
             className="w-full"
             disabled={isLoading}
+            data-testid="login-button"
           >
             {isLoading ? (
               <>

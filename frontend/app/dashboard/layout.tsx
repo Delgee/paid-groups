@@ -96,6 +96,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Link
                     key={item.name}
                     href={item.href}
+                    data-testid={item.name === 'User Management' ? 'user-management-nav' : undefined}
                     className={`group flex items-center px-2 py-2 text-base font-medium rounded-md transition-colors ${
                       isActive
                         ? 'bg-blue-100 text-blue-700'
@@ -133,6 +134,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Link
                     key={item.name}
                     href={item.href}
+                    data-testid={item.name === 'User Management' ? 'user-management-nav' : undefined}
                     className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
                       isActive
                         ? 'bg-blue-100 text-blue-700'

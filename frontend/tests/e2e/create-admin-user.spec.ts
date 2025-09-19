@@ -4,7 +4,7 @@ test.describe('Owner Creates Admin User - E2E', () => {
   test.beforeEach(async ({ page }) => {
     // Login as owner user
     await page.goto('/login');
-    await page.fill('[data-testid="email-input"]', 'owner@tenant1.com');
+    await page.fill('[data-testid="email-input"]', 'testowner@tenant1.com');
     await page.fill('[data-testid="password-input"]', 'OwnerPass123');
     await page.click('[data-testid="login-button"]');
 
@@ -14,11 +14,12 @@ test.describe('Owner Creates Admin User - E2E', () => {
 
   test('should create admin user through complete workflow', async ({ page }) => {
     // Navigate to user management
-    await page.click('[data-testid="user-management-nav"]');
+    // Click on the desktop navigation element
+    await page.locator('.hidden.md\\:flex [data-testid="user-management-nav"]').click();
     await expect(page).toHaveURL('/dashboard/users');
 
     // Verify page content
-    await expect(page.locator('h1')).toContainText('User Management');
+    await expect(page.locator('h1').filter({ hasText: 'User Management' })).toBeVisible();
 
     // Click create new user button
     await page.click('[data-testid="create-user-button"]');
@@ -28,7 +29,9 @@ test.describe('Owner Creates Admin User - E2E', () => {
     await page.fill('[data-testid="user-email-input"]', 'admin@tenant1.com');
     await page.fill('[data-testid="user-password-input"]', 'AdminPass123');
     await page.fill('[data-testid="user-name-input"]', 'John Administrator');
-    await page.selectOption('[data-testid="user-role-select"]', 'admin');
+    // Handle Radix Select component
+    await page.click('[data-testid="user-role-select"]');
+    await page.click('text=Admin');
 
     // Submit form
     await page.click('[data-testid="create-user-submit"]');
@@ -47,7 +50,8 @@ test.describe('Owner Creates Admin User - E2E', () => {
   });
 
   test('should show form validation errors', async ({ page }) => {
-    await page.click('[data-testid="user-management-nav"]');
+    // Click on the desktop navigation element
+    await page.locator('.hidden.md\\:flex [data-testid="user-management-nav"]').click();
     await page.click('[data-testid="create-user-button"]');
 
     // Try to submit empty form
@@ -61,7 +65,8 @@ test.describe('Owner Creates Admin User - E2E', () => {
   });
 
   test('should validate email format', async ({ page }) => {
-    await page.click('[data-testid="user-management-nav"]');
+    // Click on the desktop navigation element
+    await page.locator('.hidden.md\\:flex [data-testid="user-management-nav"]').click();
     await page.click('[data-testid="create-user-button"]');
 
     // Enter invalid email
@@ -73,7 +78,8 @@ test.describe('Owner Creates Admin User - E2E', () => {
   });
 
   test('should validate password complexity', async ({ page }) => {
-    await page.click('[data-testid="user-management-nav"]');
+    // Click on the desktop navigation element
+    await page.locator('.hidden.md\\:flex [data-testid="user-management-nav"]').click();
     await page.click('[data-testid="create-user-button"]');
 
     // Enter weak password
@@ -86,13 +92,16 @@ test.describe('Owner Creates Admin User - E2E', () => {
 
   test('should handle duplicate email error', async ({ page }) => {
     // Create first user
-    await page.click('[data-testid="user-management-nav"]');
+    // Click on the desktop navigation element
+    await page.locator('.hidden.md\\:flex [data-testid="user-management-nav"]').click();
     await page.click('[data-testid="create-user-button"]');
 
     await page.fill('[data-testid="user-email-input"]', 'duplicate@tenant1.com');
     await page.fill('[data-testid="user-password-input"]', 'AdminPass123');
     await page.fill('[data-testid="user-name-input"]', 'First Admin');
-    await page.selectOption('[data-testid="user-role-select"]', 'admin');
+    // Handle Radix Select component
+    await page.click('[data-testid="user-role-select"]');
+    await page.click('text=Admin');
     await page.click('[data-testid="create-user-submit"]');
 
     // Wait for success
@@ -103,7 +112,9 @@ test.describe('Owner Creates Admin User - E2E', () => {
     await page.fill('[data-testid="user-email-input"]', 'duplicate@tenant1.com');
     await page.fill('[data-testid="user-password-input"]', 'AdminPass123');
     await page.fill('[data-testid="user-name-input"]', 'Second Admin');
-    await page.selectOption('[data-testid="user-role-select"]', 'admin');
+    // Handle Radix Select component
+    await page.click('[data-testid="user-role-select"]');
+    await page.click('text=Admin');
     await page.click('[data-testid="create-user-submit"]');
 
     // Verify duplicate email error
@@ -111,14 +122,17 @@ test.describe('Owner Creates Admin User - E2E', () => {
   });
 
   test('should show loading state during form submission', async ({ page }) => {
-    await page.click('[data-testid="user-management-nav"]');
+    // Click on the desktop navigation element
+    await page.locator('.hidden.md\\:flex [data-testid="user-management-nav"]').click();
     await page.click('[data-testid="create-user-button"]');
 
     // Fill form
     await page.fill('[data-testid="user-email-input"]', 'loading@tenant1.com');
     await page.fill('[data-testid="user-password-input"]', 'AdminPass123');
     await page.fill('[data-testid="user-name-input"]', 'Loading Test');
-    await page.selectOption('[data-testid="user-role-select"]', 'admin');
+    // Handle Radix Select component
+    await page.click('[data-testid="user-role-select"]');
+    await page.click('text=Admin');
 
     // Submit and verify loading state
     await page.click('[data-testid="create-user-submit"]');

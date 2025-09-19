@@ -447,6 +447,129 @@ npm run lint && npm run type-check
 - Multiple `any` types in dashboard components
 - Type safety violations in API client
 
+## 🧪 **E2E Testing & Test ID Best Practices**
+
+### **Data-TestID Requirements**
+
+Every interactive element in the UI MUST have a `data-testid` attribute for E2E testing:
+
+```typescript
+// ✅ GOOD: All interactive elements have test IDs
+<Input
+  data-testid="email-input"
+  type="email"
+  {...register('email')}
+/>
+
+<Button
+  data-testid="login-button"
+  type="submit"
+>
+  Sign in
+</Button>
+
+// ✅ GOOD: Error messages have test IDs for validation testing
+<FormMessage data-testid="email-error" />
+
+// ✅ GOOD: Navigation elements have test IDs (both mobile and desktop)
+<Link
+  data-testid={item.name === 'User Management' ? 'user-management-nav' : undefined}
+  href={item.href}
+>
+  {item.name}
+</Link>
+```
+
+### **Required Test IDs by Component Type**
+
+**Form Components:**
+- `{field}-input` - Form inputs (email-input, password-input, name-input)
+- `{field}-error` - Error message containers
+- `{action}-button` - Action buttons (login-button, create-user-submit)
+- `{field}-select` - Dropdown/select components
+
+**Navigation:**
+- `{page}-nav` - Navigation links (user-management-nav)
+- `create-{entity}-button` - Create action buttons
+
+**Lists & Data:**
+- `{entity}-list-item` - List items for data display
+- `{field}` - Data display elements (user-name, user-role)
+
+**Loading & States:**
+- `loading-spinner` - Loading indicators
+- `{action}-success` - Success state indicators
+
+### **Complex Component Patterns**
+
+**Radix UI Components:** Ensure test IDs work with component libraries:
+```typescript
+// ✅ GOOD: Test ID on Select component for E2E accessibility
+<Select
+  data-testid="user-role-select"
+  onValueChange={field.onChange}
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select a role" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="admin">Admin</SelectItem>
+    <SelectItem value="moderator">Moderator</SelectItem>
+  </SelectContent>
+</Select>
+```
+
+**Toast Notifications:** Include IDs for success/error states:
+```typescript
+// ✅ GOOD: Toast messages with identifiable IDs
+toast.success('User created successfully', {
+  id: 'user-creation-success'
+});
+
+toast.error('Email already exists', {
+  id: 'user-creation-duplicate-error'
+});
+```
+
+### **E2E Test Debugging Tips**
+
+1. **Viewport Issues:** Desktop vs mobile navigation requires specific selectors:
+```typescript
+// Target desktop navigation specifically
+await page.locator('.hidden.md\\:flex [data-testid="user-management-nav"]').click();
+```
+
+2. **Component Library Interactions:** Handle Radix/complex components:
+```typescript
+// For Radix Select components
+await page.click('[data-testid="user-role-select"]');
+await page.click('text=Admin');
+```
+
+3. **Multiple Elements:** Use filters when multiple elements have same test ID:
+```typescript
+await page.locator('h1').filter({ hasText: 'User Management' }).toBeVisible();
+```
+
+### **Test Data Management**
+
+- Create dedicated test users with predictable credentials
+- Use specific tenant/organization data for test isolation
+- Document test user credentials in test setup files
+
+**Example Test User Setup:**
+```bash
+# Create test owner user for E2E tests
+curl -X POST http://localhost:3001/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "testowner@tenant1.com",
+    "password": "OwnerPass123",
+    "name": "Test Owner",
+    "company_name": "Test Company"
+  }'
+```
+
 **🚨 Never commit code that fails linting!** This leads to:
 - Runtime errors in production
 - Type safety violations

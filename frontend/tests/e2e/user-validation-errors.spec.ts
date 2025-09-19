@@ -3,11 +3,12 @@ import { test, expect } from '@playwright/test';
 test.describe('User Validation Error Handling - E2E', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
-    await page.fill('[data-testid="email-input"]', 'owner@tenant1.com');
+    await page.fill('[data-testid="email-input"]', 'testowner@tenant1.com');
     await page.fill('[data-testid="password-input"]', 'OwnerPass123');
     await page.click('[data-testid="login-button"]');
     await expect(page).toHaveURL('/dashboard');
-    await page.click('[data-testid="user-management-nav"]');
+    // Click on the desktop navigation element
+    await page.locator('.hidden.md\\:flex [data-testid="user-management-nav"]').click();
     await page.click('[data-testid="create-user-button"]');
   });
 
