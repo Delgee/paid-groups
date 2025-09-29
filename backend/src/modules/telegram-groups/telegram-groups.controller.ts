@@ -30,7 +30,7 @@ import { UpdateTelegramGroupDto } from './dto/update-telegram-group.dto';
 import { ConnectChannelDto } from './dto/connect-channel.dto';
 import { GetTelegramGroupsDto } from './dto/get-telegram-groups.dto';
 
-@Controller('v1/telegram-groups')
+@Controller('telegram-groups')
 @UseGuards(JwtAuthGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 @ApiTags('Telegram Groups')

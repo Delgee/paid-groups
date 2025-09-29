@@ -69,9 +69,48 @@ cd frontend && npm run dev  # Frontend on :3000
 
 ## Common Patterns
 
+### Backend API Routing Conventions
+
+**⚠️ CRITICAL: Controller Path Configuration**
+
+NestJS automatically adds the global prefix `/v1` to all routes. Controller decorators should **NEVER** include this prefix.
+
+```typescript
+// ❌ WRONG - Creates /v1/v1/users (double prefix!)
+@Controller('v1/users')
+export class UserController {}
+
+// ✅ CORRECT - Creates /v1/users
+@Controller('users')
+export class UserController {}
+
+// ❌ WRONG - Creates /v1/v1/telegram-groups
+@Controller('v1/telegram-groups')
+export class TelegramGroupsController {}
+
+// ✅ CORRECT - Creates /v1/telegram-groups
+@Controller('telegram-groups')
+export class TelegramGroupsController {}
+```
+
+**Why this matters:**
+- Backend sets global prefix in `main.ts`: `app.setGlobalPrefix('v1')`
+- Frontend proxies `/api/*` to backend `/v1/*` via `next.config.js`
+- Double prefixes cause 404 errors that are hard to debug
+
+**Testing your routes:**
+```bash
+# After backend starts, verify routes are correct:
+curl http://localhost:3001/v1/users           # Should work
+curl http://localhost:3001/v1/v1/users        # Should 404
+
+# Frontend should access via proxy:
+# /api/users → proxied to → http://localhost:3001/v1/users
+```
+
 ### User Management API Endpoints
 ```typescript
-@Controller('users')
+@Controller('users')  // NOT 'v1/users' - global prefix handles this!
 @UseGuards(JwtAuthGuard, RoleGuard('owner'))
 @ApiTags('User Management')
 export class UserController {
