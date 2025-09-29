@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { Tenant } from '../../tenant/entities/tenant.entity';
 import { Member } from './member.entity';
-import { TelegramGroup } from '../../bot/entities/telegram-group.entity';
+import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { MembershipPlan } from './membership-plan.entity';
 import { Payment } from '../../payment/entities/payment.entity';
 

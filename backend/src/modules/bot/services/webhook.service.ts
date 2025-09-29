@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TelegramBot } from '../entities/telegram-bot.entity';
-import { TelegramGroup } from '../entities/telegram-group.entity';
+import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { TelegramApiService } from './telegram-api.service';
 import { MemberService } from '../../membership/services/member.service';
 import { MembershipService } from '../../membership/services/membership.service';

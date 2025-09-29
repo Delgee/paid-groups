@@ -10,7 +10,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Tenant } from '../../tenant/entities/tenant.entity';
-import { TelegramGroup } from '../../bot/entities/telegram-group.entity';
+import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { Membership } from './membership.entity';
 
 @Entity('membership_plans')

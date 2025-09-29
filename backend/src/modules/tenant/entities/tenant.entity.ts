@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
 import { TelegramBot } from '../../bot/entities/telegram-bot.entity';
-import { TelegramGroup } from '../../bot/entities/telegram-group.entity';
+import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { MembershipPlan } from '../../membership/entities/membership-plan.entity';
 import { Member } from '../../membership/entities/member.entity';
 import { Membership } from '../../membership/entities/membership.entity';

@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -35,7 +36,6 @@ export class TelegramGroup {
   id: string;
 
   @Column('uuid')
-  @Index()
   tenant_id: string;
 
   @Column('uuid')
@@ -74,14 +74,12 @@ export class TelegramGroup {
   description: string | null;
 
   @Column({ type: 'boolean', default: false })
-  @Index()
   bot_assigned: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
   last_sync_at: Date | null;
 
   @Column({ type: 'boolean', default: false })
-  @Index()
   sync_enabled: boolean;
 
   @Column({
@@ -89,7 +87,6 @@ export class TelegramGroup {
     enum: ConnectionStatus,
     default: ConnectionStatus.PENDING,
   })
-  @Index()
   connection_status: ConnectionStatus;
 
   @Column({ type: 'text', nullable: true })
@@ -105,6 +102,14 @@ export class TelegramGroup {
   @ManyToOne(() => TelegramBot, { eager: true })
   @JoinColumn({ name: 'bot_id' })
   bot: TelegramBot;
+
+  @OneToMany('Membership', 'group')
+  memberships: any[];
+
+  @OneToMany('MembershipPlan', 'group')
+  membership_plans: any[];
+
+  tenant: any; // Add tenant relation placeholder for compatibility
 
   // Virtual properties for API responses
   get telegram_chat_id_string(): string | null {

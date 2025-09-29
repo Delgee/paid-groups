@@ -12,15 +12,16 @@ import { BotHealthMonitorService } from './services/bot-health-monitor.service';
 import { BotSecurityService } from './services/bot-security.service';
 import { EncryptionService } from '../../common/services/encryption.service';
 import { TelegramBot } from './entities/telegram-bot.entity';
-import { TelegramGroup } from './entities/telegram-group.entity';
 import { MembershipModule } from '../membership/membership.module';
+import { TelegramGroupsModule } from '../telegram-groups/telegram-groups.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TelegramBot, TelegramGroup]),
+    TypeOrmModule.forFeature([TelegramBot]),
     ConfigModule,
     ScheduleModule.forRoot(),
     forwardRef(() => MembershipModule),
+    forwardRef(() => TelegramGroupsModule),
   ],
   controllers: [BotController, BotWebhookController],
   providers: [

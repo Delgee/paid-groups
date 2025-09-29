@@ -10,7 +10,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Tenant } from '../../tenant/entities/tenant.entity';
-import { TelegramGroup } from './telegram-group.entity';
+import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 
 @Entity('telegram_bots')
 @Index(['tenant_id'])

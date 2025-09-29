@@ -20,6 +20,7 @@ import { TelegramSyncService } from '../../integrations/telegram/telegram-sync.s
     TelegramSyncService,
   ],
   exports: [
+    TypeOrmModule.forFeature([TelegramGroup]),
     TelegramGroupsService,
     TelegramApiService,
     TelegramChannelService,
