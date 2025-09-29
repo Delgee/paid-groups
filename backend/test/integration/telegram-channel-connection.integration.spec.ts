@@ -3,9 +3,9 @@ import { INestApplication } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TelegramGroup } from '../../src/modules/telegram-groups/telegram-groups.entity';
-import { TelegramBot } from '../../src/modules/bots/entities/telegram-bot.entity';
+import { TelegramBot } from '../../src/modules/bot/entities/telegram-bot.entity';
 import { TelegramGroupsService } from '../../src/modules/telegram-groups/telegram-groups.service';
-import { TelegramApiService } from '../../src/integrations/telegram/telegram-api.service';
+import { TelegramApiService } from '../../src/modules/bot/services/telegram-api.service';
 import { TelegramChannelService } from '../../src/integrations/telegram/telegram-channel.service';
 import { CreateTelegramGroupDto } from '../../src/modules/telegram-groups/dto/create-telegram-group.dto';
 import { ConnectChannelDto } from '../../src/modules/telegram-groups/dto/connect-channel.dto';
@@ -75,7 +75,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
       bot_id: testBotId,
     };
 
-    testGroup = await telegramGroupsService.create(testTenantId, createGroupDto);
+    testGroup = await telegramGroupsService.create(testTenantId, createGroupDto as any);
   });
 
   describe('Channel Connection Workflow', () => {
@@ -89,7 +89,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
       const result = await telegramGroupsService.connectChannel(
         testTenantId,
         testGroup.id,
-        connectChannelDto,
+        connectChannelDto as any,
       );
 
       expect(result).toMatchObject({
@@ -121,7 +121,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
       const result = await telegramGroupsService.connectChannel(
         testTenantId,
         testGroup.id,
-        connectChannelDto,
+        connectChannelDto as any,
       );
 
       // Group type should be updated based on chat ID format
@@ -168,7 +168,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
       await telegramGroupsService.connectChannel(
         testTenantId,
         testGroup.id,
-        connectChannelDto,
+        connectChannelDto as any,
       );
 
       // Create another group
@@ -198,7 +198,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
       await telegramGroupsService.connectChannel(
         testTenantId,
         testGroup.id,
-        connectChannelDto,
+        connectChannelDto as any,
       );
 
       // Try to connect a different channel to the same group
@@ -288,7 +288,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
       const result = await telegramGroupsService.connectChannel(
         testTenantId,
         testGroup.id,
-        connectChannelDto,
+        connectChannelDto as any,
       );
 
       // Verify channel information was retrieved and stored
@@ -313,7 +313,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
       const result = await telegramGroupsService.connectChannel(
         testTenantId,
         testGroup.id,
-        connectChannelDto,
+        connectChannelDto as any,
       );
 
       expect(result.invite_link).toBe(connectChannelDto.invite_link);
@@ -428,7 +428,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
       connectedGroup = await telegramGroupsService.connectChannel(
         testTenantId,
         testGroup.id,
-        connectChannelDto,
+        connectChannelDto as any,
       );
     });
 
@@ -487,7 +487,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
       await telegramGroupsService.connectChannel(
         testTenantId,
         testGroup.id,
-        connectChannelDto,
+        connectChannelDto as any,
       );
 
       // Create group in different tenant

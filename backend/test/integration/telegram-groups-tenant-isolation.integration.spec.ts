@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { Repository, In } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TelegramGroup } from '../../src/modules/telegram-groups/telegram-groups.entity';
-import { TelegramBot } from '../../src/modules/bots/entities/telegram-bot.entity';
+import { TelegramBot } from '../../src/modules/bot/entities/telegram-bot.entity';
 import { Tenant } from '../../src/modules/auth/entities/tenant.entity';
 import { TelegramGroupsService } from '../../src/modules/telegram-groups/telegram-groups.service';
 import { CreateTelegramGroupDto } from '../../src/modules/telegram-groups/dto/create-telegram-group.dto';
