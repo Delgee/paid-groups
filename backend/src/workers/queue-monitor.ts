@@ -7,7 +7,7 @@
  * Run with: npx ts-node src/workers/queue-monitor.ts
  */
 
-import { Queue, Job } from 'bull';
+import * as Bull from 'bull';
 import Redis from 'ioredis';
 
 interface QueueStats {
@@ -20,19 +20,19 @@ interface QueueStats {
 
 class QueueMonitor {
   private redis: Redis;
-  private paymentQueue: Queue;
+  private paymentQueue: Bull.Queue;
 
   constructor() {
     this.redis = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT) || 6379,
+      port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD,
     });
 
-    this.paymentQueue = new Queue('payment-processing', {
+    this.paymentQueue = new Bull('payment-processing', {
       redis: {
         host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT) || 6379,
+        port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD,
       },
     });
@@ -48,11 +48,11 @@ class QueueMonitor {
     };
   }
 
-  async getFailedJobs(limit: number = 10): Promise<Job[]> {
+  async getFailedJobs(limit: number = 10): Promise<Bull.Job[]> {
     return this.paymentQueue.getFailed(0, limit - 1);
   }
 
-  async getActiveJobs(): Promise<Job[]> {
+  async getActiveJobs(): Promise<Bull.Job[]> {
     return this.paymentQueue.getActive();
   }
 
@@ -66,7 +66,7 @@ class QueueMonitor {
         await job.retry();
         console.log(`✅ Retried job ${job.id}`);
       } catch (error) {
-        console.error(`❌ Failed to retry job ${job.id}:`, error.message);
+        console.error(`❌ Failed to retry job ${job.id}:`, error instanceof Error ? error.message : 'Unknown error');
       }
     }
   }
@@ -109,8 +109,8 @@ class QueueMonitor {
       const failedJobs = await this.getFailedJobs(5);
       failedJobs.forEach(job => {
         console.log(`  - Job ${job.id}: ${job.name}`);
-        console.log(`    Failed: ${new Date(job.failedOn || 0).toLocaleString()}`);
-        console.log(`    Error: ${job.failedReason}`);
+        console.log(`    Failed: ${new Date((job as any).failedOn || Date.now()).toLocaleString()}`);
+        console.log(`    Error: ${(job as any).failedReason || 'Unknown error'}`);
         console.log(`    Attempts: ${job.attemptsMade}/${job.opts.attempts || 'unlimited'}`);
         console.log('');
       });
