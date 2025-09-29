@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TelegramGroupForm } from 'components/telegram-groups/TelegramGroupForm';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -152,7 +152,7 @@ export default function EditTelegramGroupPage({ params }: EditTelegramGroupPageP
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">Edit Telegram Group</h1>
           <p className="text-muted-foreground">
-            Update settings and configuration for "{telegramGroup?.group_name}"
+            Update settings and configuration for &quot;{telegramGroup?.group_name}&quot;
           </p>
         </div>
       </div>

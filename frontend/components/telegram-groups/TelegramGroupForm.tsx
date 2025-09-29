@@ -155,11 +155,7 @@ export function TelegramGroupForm({
             message: 'Settings format is invalid'
           });
         } else {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: error.message || 'An unexpected error occurred.',
-          });
+          toast.error(error.message || 'An unexpected error occurred.');
         }
       }
     }

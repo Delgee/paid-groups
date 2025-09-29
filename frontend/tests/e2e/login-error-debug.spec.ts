@@ -172,7 +172,16 @@ test.describe('Login Error Handling Debug - E2E', () => {
   test('should track network requests in detail', async ({ page }) => {
     console.log('=== Starting detailed network monitoring test ===');
 
-    const networkLogs = [];
+    const networkLogs: Array<{
+      type: string;
+      url: string;
+      method?: string;
+      headers?: Record<string, string>;
+      postData?: string | null;
+      timestamp?: number;
+      status?: number;
+      statusText?: string;
+    }> = [];
 
     // Track all network activity
     page.on('request', request => {
@@ -226,7 +235,7 @@ test.describe('Login Error Handling Debug - E2E', () => {
 
     console.log('=== NAVIGATION REQUESTS ===');
     navigationRequests.forEach(req => {
-      console.log(`Navigation: ${req.url} at ${new Date(req.timestamp).toISOString()}`);
+      console.log(`Navigation: ${req.url} at ${req.timestamp ? new Date(req.timestamp).toISOString() : 'unknown'}`);
     });
 
     if (navigationRequests.length > 1) {

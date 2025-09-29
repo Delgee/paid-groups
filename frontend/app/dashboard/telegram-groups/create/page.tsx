@@ -9,7 +9,8 @@ import { toast } from 'sonner';
 import {
   telegramGroupsApi,
   telegramGroupsQueryKeys,
-  CreateTelegramGroupData
+  CreateTelegramGroupData,
+  UpdateTelegramGroupData
 } from '@/lib/api/telegram-groups';
 
 export default function CreateTelegramGroupPage() {
@@ -32,8 +33,9 @@ export default function CreateTelegramGroupPage() {
     },
   });
 
-  const handleSubmit = async (data: CreateTelegramGroupData) => {
-    await createMutation.mutateAsync(data);
+  const handleSubmit = async (data: CreateTelegramGroupData | UpdateTelegramGroupData) => {
+    // In create mode, we always get CreateTelegramGroupData
+    await createMutation.mutateAsync(data as CreateTelegramGroupData);
   };
 
   const handleCancel = () => {

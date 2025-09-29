@@ -558,8 +558,8 @@ class ApiClient {
   }
 
   // User management methods
-  async createUser(userData: CreateUserRequest): Promise<UserSummary> {
-    const response = await this.instance.post<UserSummary>(
+  async createUser(userData: CreateUserRequest): Promise<CreateUserResponse> {
+    const response = await this.instance.post<CreateUserResponse>(
       '/users',
       userData,
     );

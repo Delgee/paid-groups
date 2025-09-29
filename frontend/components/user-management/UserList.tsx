@@ -166,17 +166,17 @@ export function UserList({ onCreateUser }: UserListProps) {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
-                          {formatLastLogin(user.lastLoginAt)}
+                          {formatLastLogin(user.last_login_at)}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
-                          {formatCreatedAt(user.createdAt)}
+                          {formatCreatedAt(user.created_at)}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                          {user.isActive ? 'Active' : 'Inactive'}
+                        <Badge variant={user.is_active ? 'default' : 'secondary'}>
+                          {user.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
                     </TableRow>

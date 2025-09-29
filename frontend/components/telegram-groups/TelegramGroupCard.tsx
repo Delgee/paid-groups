@@ -29,7 +29,6 @@ import {
   Settings,
   Trash2,
   ExternalLink,
-  Eye,
   Clock,
 } from 'lucide-react';
 import {
