@@ -289,9 +289,9 @@ export function TelegramGroupForm({
                     </FormControl>
                     <SelectContent>
                       {availableBots.length === 0 ? (
-                        <SelectItem value="" disabled>
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
                           No active bots available
-                        </SelectItem>
+                        </div>
                       ) : (
                         availableBots.map((bot) => (
                           <SelectItem key={bot.id} value={bot.id}>

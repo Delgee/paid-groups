@@ -408,7 +408,7 @@ export function TelegramGroupList({
               'Loading groups...'
             ) : (
               <>
-                Showing {filteredGroups.length} of {data?.pagination.total || 0} groups
+                Showing {filteredGroups.length} of {data?.pagination?.total || 0} groups
                 {debouncedSearchTerm && ` matching "${debouncedSearchTerm}"`}
               </>
             )}
@@ -582,7 +582,7 @@ export function TelegramGroupList({
         )}
 
         {/* Pagination */}
-        {!isLoading && data && data.pagination.total > limit && (
+        {!isLoading && data && data.pagination && data.pagination.total > limit && (
           <div className="flex items-center justify-between pt-6">
             <div className="text-sm text-muted-foreground">
               Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, data.pagination.total)} of {data.pagination.total} groups
