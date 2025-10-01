@@ -24,6 +24,7 @@ export class CreateTelegramGroups1730000004000 implements MigrationInterface {
             name: 'telegram_chat_id',
             type: 'bigint',
             isUnique: true,
+            isNullable: true,
           },
           {
             name: 'group_name',

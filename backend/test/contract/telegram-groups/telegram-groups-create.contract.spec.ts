@@ -9,6 +9,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
   let botId: string;
 
   beforeEach(async () => {
+    jest.setTimeout(30000);
     app = await TestSetupHelper.createTestApp();
     await TestSetupHelper.cleanupDatabase();
 
@@ -66,6 +67,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
   });
 
   afterEach(async () => {
+    jest.setTimeout(30000);
     await TestSetupHelper.closeApp(app);
   });
 

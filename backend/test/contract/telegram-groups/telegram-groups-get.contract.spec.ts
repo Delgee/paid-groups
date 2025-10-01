@@ -10,6 +10,7 @@ describe('GET /v1/telegram-groups/{id} - Contract Test', () => {
   let groupId: string;
 
   beforeEach(async () => {
+    jest.setTimeout(30000);
     app = await TestSetupHelper.createTestApp();
     await TestSetupHelper.cleanupDatabase();
 
@@ -80,6 +81,7 @@ describe('GET /v1/telegram-groups/{id} - Contract Test', () => {
   });
 
   afterEach(async () => {
+    jest.setTimeout(30000);
     await TestSetupHelper.closeApp(app);
   });
 

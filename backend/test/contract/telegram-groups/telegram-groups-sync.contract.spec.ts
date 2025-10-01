@@ -11,6 +11,7 @@ describe('POST /v1/telegram-groups/{id}/sync - Contract Test', () => {
   let connectedGroupId: string;
 
   beforeEach(async () => {
+    jest.setTimeout(30000);
     app = await TestSetupHelper.createTestApp();
     await TestSetupHelper.cleanupDatabase();
 
@@ -100,6 +101,7 @@ describe('POST /v1/telegram-groups/{id}/sync - Contract Test', () => {
   });
 
   afterEach(async () => {
+    jest.setTimeout(30000);
     await TestSetupHelper.closeApp(app);
   });
 

@@ -37,55 +37,64 @@
 - [x] T018 [P] Create ConnectChannelDto in backend/src/modules/telegram-groups/dto/connect-channel.dto.ts
 
 ### Telegram Integration Services
-- [ ] T019 [P] Enhance TelegramApiService with channel management methods in backend/src/integrations/telegram/telegram-api.service.ts
-- [ ] T020 [P] Create TelegramChannelService for channel operations in backend/src/integrations/telegram/telegram-channel.service.ts
-- [ ] T021 [P] Create TelegramSyncService for auto-sync functionality in backend/src/integrations/telegram/telegram-sync.service.ts
+- [x] T019 [P] Enhance TelegramApiService with channel management methods in backend/src/integrations/telegram/telegram-api.service.ts
+- [x] T020 [P] Create TelegramChannelService for channel operations in backend/src/integrations/telegram/telegram-channel.service.ts
+- [x] T021 [P] Create TelegramSyncService for auto-sync functionality in backend/src/integrations/telegram/telegram-sync.service.ts
 
 ### Core Business Logic
-- [ ] T022 Create TelegramGroupsService with CRUD operations in backend/src/modules/telegram-groups/telegram-groups.service.ts
-- [ ] T023 Create TelegramGroupsController with all endpoints in backend/src/modules/telegram-groups/telegram-groups.controller.ts
-- [ ] T024 Add input validation and error handling for telegram group operations
-- [ ] T025 Implement bot permission verification logic
+- [x] T022 Create TelegramGroupsService with CRUD operations in backend/src/modules/telegram-groups/telegram-groups.service.ts
+- [x] T023 Create TelegramGroupsController with all endpoints in backend/src/modules/telegram-groups/telegram-groups.controller.ts
+- [x] T024 Add input validation and error handling for telegram group operations
+- [x] T025 Implement bot permission verification logic
 
 ### Database Migration
-- [ ] T026 Create database migration to add new telegram_groups columns in backend/src/migrations/add-telegram-groups-enhancements.ts
+- [x] T026 Create database migration to add new telegram_groups columns in backend/src/database/migrations/1730000011000-EnhanceTelegramGroups.ts
 
 ## Phase 3.4: Frontend Implementation
 
 ### Frontend Components
-- [ ] T027 [P] Create TelegramGroupForm component in frontend/components/telegram-groups/TelegramGroupForm.tsx
-- [ ] T028 [P] Create TelegramGroupList component in frontend/components/telegram-groups/TelegramGroupList.tsx
-- [ ] T029 [P] Create TelegramGroupCard component in frontend/components/telegram-groups/TelegramGroupCard.tsx
-- [ ] T030 [P] Create ChannelConnectionForm component in frontend/components/telegram-groups/ChannelConnectionForm.tsx
+- [x] T027 [P] Create TelegramGroupForm component in frontend/components/telegram-groups/TelegramGroupForm.tsx
+- [x] T028 [P] Create TelegramGroupList component in frontend/components/telegram-groups/TelegramGroupList.tsx
+- [x] T029 [P] Create TelegramGroupCard component in frontend/components/telegram-groups/TelegramGroupCard.tsx
+- [x] T030 [P] Create ChannelConnectionForm component in frontend/components/telegram-groups/ChannelConnectionForm.tsx
 
 ### Frontend Pages
-- [ ] T031 Create telegram groups list page in frontend/app/dashboard/telegram-groups/page.tsx
-- [ ] T032 Create telegram group creation page in frontend/app/dashboard/telegram-groups/create/page.tsx
-- [ ] T033 Create telegram group edit page in frontend/app/dashboard/telegram-groups/[id]/edit/page.tsx
+- [x] T031 Create telegram groups list page in frontend/app/dashboard/telegram-groups/page.tsx
+- [x] T032 Create telegram group creation page in frontend/app/dashboard/telegram-groups/create/page.tsx
+- [x] T033 Create telegram group edit page in frontend/app/dashboard/telegram-groups/[id]/edit/page.tsx
 
 ### Frontend API Client
-- [ ] T034 [P] Create telegram groups API client methods in frontend/lib/api/telegram-groups.ts
+- [x] T034 [P] Create telegram groups API client methods in frontend/lib/api/telegram-groups.ts
 
 ## Phase 3.5: Integration and Polish
 
 ### Module Integration
-- [ ] T035 Register TelegramGroupsModule in backend app.module.ts
-- [ ] T036 Add navigation links for telegram groups in frontend navigation
-- [ ] T037 Implement caching for Telegram API responses using Redis
+- [x] T035 Register TelegramGroupsModule in backend app.module.ts
+- [x] T036 Add navigation links for telegram groups in frontend navigation (line 39 in app/dashboard/layout.tsx)
+
+### Test Fixes (Critical - Post-Implementation)
+- [x] T037 Fix CRUD integration test function signatures in backend/test/integration/telegram-groups-crud.integration.spec.ts
+- [x] T038 Fix tenant isolation test timeouts and assertions in backend/test/integration/telegram-groups-tenant-isolation.integration.spec.ts
+- [x] T039 Verify and fix contract tests (7 files in test/contract/telegram-groups/)
+- [x] T040 Fix channel connection integration test signatures and types in backend/test/integration/telegram-channel-connection.integration.spec.ts
+- [x] T041 Fix sync integration test signatures and types in backend/test/integration/telegram-sync.integration.spec.ts
+
+### Redis Caching and Environment
+- [ ] T042 Implement caching for Telegram API responses using Redis
 
 ### Testing Environment Setup
-- [ ] T038 Configure test bot token and channel for development environment
-- [ ] T039 Add telegram groups to existing RLS policies and tenant context
+- [ ] T043 Configure test bot token and channel for development environment
+- [ ] T044 Add telegram groups to existing RLS policies and tenant context
 
 ### E2E Tests
-- [ ] T040 [P] E2E test complete telegram group management workflow in frontend/tests/e2e/telegram-groups-workflow.spec.ts
-- [ ] T041 [P] E2E test channel connection and sync operations in frontend/tests/e2e/telegram-channel-connection.spec.ts
+- [ ] T045 [P] E2E test complete telegram group management workflow in frontend/tests/e2e/telegram-groups-workflow.spec.ts
+- [ ] T046 [P] E2E test channel connection and sync operations in frontend/tests/e2e/telegram-channel-connection.spec.ts
 
 ### Polish and Documentation
-- [ ] T042 [P] Add rate limiting for Telegram API calls
-- [ ] T043 [P] Implement structured logging for telegram operations
-- [ ] T044 [P] Update CLAUDE.md with telegram groups patterns
-- [ ] T045 Run quickstart.md validation scenarios and fix any issues
+- [ ] T047 [P] Add rate limiting for Telegram API calls
+- [ ] T048 [P] Implement structured logging for telegram operations
+- [ ] T049 [P] Update CLAUDE.md with telegram groups patterns
+- [ ] T050 Run quickstart.md validation scenarios and fix any issues
 
 ## Dependencies
 
