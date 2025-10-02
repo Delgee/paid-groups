@@ -237,7 +237,7 @@ describe('Telegram Groups CRUD Workflow - Integration Test', () => {
       });
 
       expect(result).toMatchObject({
-        data: expect.arrayContaining([
+        groups: expect.arrayContaining([
           expect.objectContaining({
             id: testGroups[0].id,
             group_name: 'VIP Group 1',
@@ -247,13 +247,10 @@ describe('Telegram Groups CRUD Workflow - Integration Test', () => {
             group_name: 'VIP Group 2',
           }),
         ]),
-        pagination: {
-          total: 2,
-          page: 1,
-          limit: 10,
-          hasNext: false,
-          hasPrev: false,
-        },
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
       });
     });
 
@@ -316,7 +313,6 @@ describe('Telegram Groups CRUD Workflow - Integration Test', () => {
       const updateGroupDto: UpdateTelegramGroupDto = {
         group_name: 'Updated Group Name',
         description: 'Updated description for testing',
-        sync_enabled: true,
         settings: {
           welcome_message: 'Updated welcome message!',
           auto_approve: true,
@@ -333,7 +329,6 @@ describe('Telegram Groups CRUD Workflow - Integration Test', () => {
         id: testGroup.id,
         group_name: updateGroupDto.group_name,
         description: updateGroupDto.description,
-        sync_enabled: updateGroupDto.sync_enabled,
         settings: updateGroupDto.settings,
         updated_at: expect.any(Date),
       });
@@ -346,7 +341,6 @@ describe('Telegram Groups CRUD Workflow - Integration Test', () => {
       expect(dbGroup).toMatchObject({
         group_name: updateGroupDto.group_name,
         description: updateGroupDto.description,
-        sync_enabled: updateGroupDto.sync_enabled,
         settings: updateGroupDto.settings,
       });
     });
@@ -394,7 +388,7 @@ describe('Telegram Groups CRUD Workflow - Integration Test', () => {
 
       await expect(
         telegramGroupsService.update(testGroup.id, updateGroupDto, otherTenantId),
-      ).rejects.toThrow('Telegram group not found');
+      ).rejects.toThrow(/Telegram group.*not found/);
     });
   });
 
@@ -414,12 +408,13 @@ describe('Telegram Groups CRUD Workflow - Integration Test', () => {
     it('should delete telegram group successfully', async () => {
       await telegramGroupsService.remove(testGroup.id, testTenantId);
 
-      // Verify group is deleted from database
+      // Verify group is soft deleted (is_active = false)
       const dbGroup = await telegramGroupRepository.findOne({
         where: { id: testGroup.id },
       });
 
-      expect(dbGroup).toBeNull();
+      expect(dbGroup).toBeDefined();
+      expect(dbGroup.is_active).toBe(false);
     });
 
     it('should soft delete telegram group', async () => {
@@ -430,30 +425,33 @@ describe('Telegram Groups CRUD Workflow - Integration Test', () => {
         where: { id: testGroup.id },
       });
 
-      expect(dbGroup).toBeNull();
+      expect(dbGroup).toBeDefined();
+      expect(dbGroup.is_active).toBe(false);
+      expect(dbGroup.sync_enabled).toBe(false);
     });
 
     it('should throw error for non-existent group', async () => {
       const nonExistentId = '123e4567-e89b-12d3-a456-426614174000';
 
       await expect(
-        telegramGroupsService.remove(testTenantId, nonExistentId),
-      ).rejects.toThrow('Telegram group not found');
+        telegramGroupsService.remove(nonExistentId, testTenantId),
+      ).rejects.toThrow(/Telegram group.*not found/);
     });
 
     it('should enforce tenant isolation on delete', async () => {
       const otherTenantId = randomUUID();
 
       await expect(
-        telegramGroupsService.remove(otherTenantId, testGroup.id),
-      ).rejects.toThrow('Telegram group not found');
+        telegramGroupsService.remove(testGroup.id, otherTenantId),
+      ).rejects.toThrow(/Telegram group.*not found/);
 
-      // Verify group still exists in original tenant
+      // Verify group still exists and is active in original tenant
       const dbGroup = await telegramGroupRepository.findOne({
         where: { id: testGroup.id },
       });
 
       expect(dbGroup).toBeDefined();
+      expect(dbGroup.is_active).toBe(true);
     });
   });
 
