@@ -5,9 +5,10 @@ import {
   CallHandler,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { switchMap } from 'rxjs/operators';
 import { DataSource } from 'typeorm';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { validate as isValidUUID } from 'uuid';
 
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
@@ -23,7 +24,7 @@ export class TenantInterceptor implements NestInterceptor {
     if (tenantId) {
       // Set the tenant context for PostgreSQL RLS
       return this.setTenantContext(tenantId).pipe(
-        tap(() => next.handle()),
+        switchMap(() => next.handle()),
       );
     }
 
@@ -32,8 +33,16 @@ export class TenantInterceptor implements NestInterceptor {
 
   private setTenantContext(tenantId: string): Observable<any> {
     return new Observable(observer => {
+      // Validate UUID to prevent SQL injection
+      if (!isValidUUID(tenantId)) {
+        observer.error(new Error('Invalid tenant ID format'));
+        return;
+      }
+
+      // SET commands don't support parameterized queries in PostgreSQL
+      // We validate the UUID above to ensure it's safe
       this.dataSource
-        .query(`SET LOCAL app.current_tenant = $1`, [tenantId])
+        .query(`SET LOCAL app.current_tenant = '${tenantId}'`)
         .then(() => {
           observer.next(null);
           observer.complete();
