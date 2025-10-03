@@ -6,6 +6,7 @@ import { AuditLog, AuditAction } from '../audit/entities/audit-log.entity';
 import { CreateUserRequestDto } from './dto/create-user-request.dto';
 import { CreateUserResponseDto } from './dto/create-user-response.dto';
 import { GetUsersResponseDto, GetUsersQueryDto, UserSummaryDto, AllUserRoles } from './dto/get-users-response.dto';
+import { calculatePagination } from '../../common/dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -138,20 +139,11 @@ export class UserManagementService {
       createdAt: user.created_at.toISOString(),
     }));
 
-    const hasNext = skip + query.limit < total;
-    const hasPrev = query.page > 1;
-
     this.logger.log(`Retrieved ${users.length} users out of ${total} total`);
 
     return {
       users: userSummaries,
-      pagination: {
-        total,
-        page: query.page,
-        limit: query.limit,
-        hasNext,
-        hasPrev,
-      },
+      pagination: calculatePagination(total, query.page, query.limit),
     };
   }
 

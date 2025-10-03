@@ -109,8 +109,9 @@ describe('GET /v1/users - Contract Test', () => {
           total: expect.any(Number),
           page: expect.any(Number),
           limit: expect.any(Number),
-          hasNext: expect.any(Boolean),
-          hasPrev: expect.any(Boolean),
+          total_pages: expect.any(Number),
+          has_next_page: expect.any(Boolean),
+          has_prev_page: expect.any(Boolean),
         }),
       });
     });
@@ -138,8 +139,8 @@ describe('GET /v1/users - Contract Test', () => {
         page: 2,
         limit: 2,
         total: expect.any(Number),
-        hasNext: expect.any(Boolean),
-        hasPrev: true, // Should have previous page since we're on page 2
+        has_next_page: expect.any(Boolean),
+        has_prev_page: true, // Should have previous page since we're on page 2
       });
     });
 
@@ -319,8 +320,8 @@ describe('GET /v1/users - Contract Test', () => {
       const { pagination } = response.body;
 
       // Verify pagination logic consistency
-      expect(pagination.hasPrev).toBe(pagination.page > 1);
-      expect(pagination.hasNext).toBe(
+      expect(pagination.has_prev_page).toBe(pagination.page > 1);
+      expect(pagination.has_next_page).toBe(
         pagination.page * pagination.limit < pagination.total,
       );
     });

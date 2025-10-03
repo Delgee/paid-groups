@@ -10,17 +10,11 @@ import { CreateTelegramGroupDto } from './dto/create-telegram-group.dto';
 import { UpdateTelegramGroupDto } from './dto/update-telegram-group.dto';
 import { ConnectChannelDto } from './dto/connect-channel.dto';
 import { GetTelegramGroupsDto } from './dto/get-telegram-groups.dto';
+import { PaginationDto, calculatePagination } from '../../common/dto';
 
 export interface TelegramGroupsListResponse {
   data: TelegramGroup[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    total_pages: number;
-    has_next_page: boolean;
-    has_prev_page: boolean;
-  };
+  pagination: PaginationDto;
 }
 
 export interface ConnectChannelResponse {
@@ -183,22 +177,11 @@ export class TelegramGroupsService {
         take: limit,
       });
 
-      const total_pages = Math.ceil(total / limit);
-      const has_next_page = page < total_pages;
-      const has_prev_page = page > 1;
-
-      this.logger.log(`Found ${total} telegram groups for tenant ${tenantId} (page ${page}/${total_pages})`);
+      this.logger.log(`Found ${total} telegram groups for tenant ${tenantId} (page ${page}/${Math.ceil(total / limit)})`);
 
       return {
         data: groups,
-        pagination: {
-          total,
-          page,
-          limit,
-          total_pages,
-          has_next_page,
-          has_prev_page,
-        },
+        pagination: calculatePagination(total, page, limit),
       };
     } catch (error) {
       this.logger.error(`Failed to fetch telegram groups for tenant ${tenantId}: ${error.message}`, error.stack);

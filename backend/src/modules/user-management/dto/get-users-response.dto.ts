@@ -3,6 +3,7 @@ import { IsOptional, IsInt, Min, Max, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 
 import { UserRole } from '../../auth/entities/user.entity';
+import { PaginationDto } from '../../../common/dto';
 
 export type AllUserRoles = UserRole.OWNER | UserRole.ADMIN | UserRole.MODERATOR;
 
@@ -93,38 +94,6 @@ export class UserSummaryDto {
     format: 'date-time',
   })
   createdAt: string;
-}
-
-export class PaginationDto {
-  @ApiProperty({
-    description: 'Total number of users',
-    example: 5,
-  })
-  total: number;
-
-  @ApiProperty({
-    description: 'Current page number',
-    example: 1,
-  })
-  page: number;
-
-  @ApiProperty({
-    description: 'Number of items per page',
-    example: 20,
-  })
-  limit: number;
-
-  @ApiProperty({
-    description: 'Whether there is a next page',
-    example: false,
-  })
-  hasNext: boolean;
-
-  @ApiProperty({
-    description: 'Whether there is a previous page',
-    example: false,
-  })
-  hasPrev: boolean;
 }
 
 export class GetUsersResponseDto {

@@ -62,8 +62,9 @@ export interface Pagination {
   total: number;
   page: number;
   limit: number;
-  hasNext: boolean;
-  hasPrev: boolean;
+  total_pages: number;
+  has_next_page: boolean;
+  has_prev_page: boolean;
 }
 
 export interface GetUsersResponse {

@@ -213,7 +213,7 @@ export function UserList({ onCreateUser }: UserListProps) {
                       variant="outline"
                       size="sm"
                       onClick={() => setPage(page - 1)}
-                      disabled={!data.pagination.hasPrev}
+                      disabled={!data.pagination.has_prev_page}
                     >
                       <ChevronLeft className="h-4 w-4" />
                       Previous
@@ -222,7 +222,7 @@ export function UserList({ onCreateUser }: UserListProps) {
                       variant="outline"
                       size="sm"
                       onClick={() => setPage(page + 1)}
-                      disabled={!data.pagination.hasNext}
+                      disabled={!data.pagination.has_next_page}
                     >
                       Next
                       <ChevronRight className="h-4 w-4" />

@@ -137,7 +137,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
 
       // Verify connection succeeded
       expect(result.success).toBe(true);
-      expect(result.channelInfo).toBeDefined();
+      expect(result.channel_info).toBeDefined();
 
       // Verify database record was updated
       const dbGroup = await telegramGroupRepository.findOne({
@@ -314,7 +314,7 @@ describe('Telegram Channel Connection - Integration Test', () => {
 
       // Verify connection succeeded
       expect(result.success).toBe(true);
-      expect(result.channelInfo).toBeDefined();
+      expect(result.channel_info).toBeDefined();
 
       // Verify database was updated
       const dbGroup = await telegramGroupRepository.findOne({
