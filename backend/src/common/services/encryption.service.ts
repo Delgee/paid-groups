@@ -29,13 +29,15 @@ export class EncryptionService {
   encrypt(text: string): string {
     try {
       const iv = crypto.randomBytes(this.ivLength);
-      const cipher = crypto.createCipher('aes256', this.key);
+      const cipher = crypto.createCipheriv(this.algorithm, this.key, iv);
 
-      let encrypted = iv.toString('hex') + ':';
-      encrypted += cipher.update(text, 'utf8', 'hex');
+      let encrypted = cipher.update(text, 'utf8', 'hex');
       encrypted += cipher.final('hex');
 
-      return encrypted;
+      const authTag = cipher.getAuthTag();
+
+      // Format: iv:authTag:encrypted
+      return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
     } catch (error) {
       throw new Error(`Encryption failed: ${error.message}`);
     }
@@ -44,10 +46,12 @@ export class EncryptionService {
   decrypt(encryptedData: string): string {
     try {
       const parts = encryptedData.split(':');
-      Buffer.from(parts.shift()!, 'hex');
+      const iv = Buffer.from(parts.shift()!, 'hex');
+      const authTag = Buffer.from(parts.shift()!, 'hex');
       const encrypted = parts.join(':');
 
-      const decipher = crypto.createDecipher('aes256', this.key);
+      const decipher = crypto.createDecipheriv(this.algorithm, this.key, iv);
+      decipher.setAuthTag(authTag);
 
       let decrypted = decipher.update(encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');

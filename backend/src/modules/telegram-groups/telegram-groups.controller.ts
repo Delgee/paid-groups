@@ -106,7 +106,7 @@ export class TelegramGroupsController {
             },
           },
         },
-        meta: {
+        pagination: {
           type: 'object',
           properties: {
             total: { type: 'number' },

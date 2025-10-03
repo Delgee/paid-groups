@@ -238,20 +238,20 @@ describe('Telegram Groups Multi-Tenant Isolation - Integration Test', () => {
       });
 
       // Verify tenant 1 only sees its groups
-      expect(tenant1Result.groups).toHaveLength(2);
-      tenant1Result.groups.forEach((group) => {
+      expect(tenant1Result.data).toHaveLength(2);
+      tenant1Result.data.forEach((group) => {
         expect([tenant1Groups[0].id, tenant1Groups[1].id]).toContain(group.id);
       });
 
       // Verify tenant 2 only sees its groups
-      expect(tenant2Result.groups).toHaveLength(2);
-      tenant2Result.groups.forEach((group) => {
+      expect(tenant2Result.data).toHaveLength(2);
+      tenant2Result.data.forEach((group) => {
         expect([tenant2Groups[0].id, tenant2Groups[1].id]).toContain(group.id);
       });
 
       // Verify no cross-tenant visibility
-      const tenant1GroupIds = tenant1Result.groups.map((g) => g.id);
-      const tenant2GroupIds = tenant2Result.groups.map((g) => g.id);
+      const tenant1GroupIds = tenant1Result.data.map((g) => g.id);
+      const tenant2GroupIds = tenant2Result.data.map((g) => g.id);
 
       expect(tenant1GroupIds.some((id) => tenant2GroupIds.includes(id))).toBe(false);
     });
@@ -289,13 +289,13 @@ describe('Telegram Groups Multi-Tenant Isolation - Integration Test', () => {
       });
 
       // Verify filtering works within tenant scope
-      expect(tenant1Result.groups).toHaveLength(2);
-      tenant1Result.groups.forEach((group) => {
+      expect(tenant1Result.data).toHaveLength(2);
+      tenant1Result.data.forEach((group) => {
         expect(group.bot.id).toBe(tenant1BotId);
       });
 
-      expect(tenant2Result.groups).toHaveLength(2);
-      tenant2Result.groups.forEach((group) => {
+      expect(tenant2Result.data).toHaveLength(2);
+      tenant2Result.data.forEach((group) => {
         expect(group.bot.id).toBe(tenant2BotId);
       });
 
@@ -305,7 +305,7 @@ describe('Telegram Groups Multi-Tenant Isolation - Integration Test', () => {
         limit: 10,
       });
 
-      expect(crossTenantResult.groups).toHaveLength(2);
+      expect(crossTenantResult.data).toHaveLength(2);
     });
   });
 
@@ -448,8 +448,8 @@ describe('Telegram Groups Multi-Tenant Isolation - Integration Test', () => {
 
       expect(tenant1Connection.success).toBe(true);
       expect(tenant2Connection.success).toBe(true);
-      expect(tenant1Connection.channelInfo?.id.toString()).toBe(tenant1ChatId);
-      expect(tenant2Connection.channelInfo?.id.toString()).toBe(tenant2ChatId);
+      expect(tenant1Connection.channel_info?.id.toString()).toBe(tenant1ChatId);
+      expect(tenant2Connection.channel_info?.id.toString()).toBe(tenant2ChatId);
     });
 
     it.skip('should enforce tenant isolation in channel disconnection', async () => {
@@ -582,7 +582,7 @@ describe('Telegram Groups Multi-Tenant Isolation - Integration Test', () => {
 
       const queryTime = Date.now() - startTime;
 
-      expect(result.groups).toHaveLength(2); // Only tenant 1's original groups
+      expect(result.data).toHaveLength(2); // Only tenant 1's original groups
       expect(queryTime).toBeLessThan(1000); // Should be fast
     });
   });

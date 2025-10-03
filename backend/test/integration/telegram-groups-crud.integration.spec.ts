@@ -256,13 +256,13 @@ describe('Telegram Groups CRUD Workflow - Integration Test', () => {
 
     it('should filter groups by connectionStatus', async () => {
       const result = await telegramGroupsService.findAll(testTenantId, {
-        connectionStatus: 'pending' as ConnectionStatus,
+        connection_status: 'pending' as ConnectionStatus,
         page: 1,
         limit: 10,
       });
 
-      expect(result.groups).toHaveLength(2);
-      result.groups.forEach((group) => {
+      expect(result.data).toHaveLength(2);
+      result.data.forEach((group) => {
         expect(group.connection_status).toBe('pending');
       });
     });

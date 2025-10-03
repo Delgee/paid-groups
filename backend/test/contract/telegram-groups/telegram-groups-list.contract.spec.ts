@@ -99,18 +99,18 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .expect(200);
 
       // Validate TelegramGroupsListResponse schema per OpenAPI contract
-      expect(response.body.groups).toBeDefined();
-      expect(Array.isArray(response.body.groups)).toBe(true);
-      expect(response.body.groups.length).toBeGreaterThan(0);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThan(0);
 
       // Validate pagination fields
-      expect(response.body.total).toBeDefined();
-      expect(response.body.page).toBeDefined();
-      expect(response.body.limit).toBeDefined();
-      expect(response.body.totalPages).toBeDefined();
+      expect(response.body.pagination.total).toBeDefined();
+      expect(response.body.pagination.page).toBeDefined();
+      expect(response.body.pagination.limit).toBeDefined();
+      expect(response.body.pagination.total_pages).toBeDefined();
 
       // Validate first group structure
-      const group = response.body.groups[0];
+      const group = response.body.data[0];
       expect(group.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
       expect(typeof group.group_name).toBe('string');
       expect(['group', 'supergroup', 'channel']).toContain(group.group_type);
@@ -133,8 +133,8 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .expect(200);
 
       // Should have the 2 groups created in setup
-      expect(response.body.groups.length).toBe(2);
-      expect(response.body.total).toBe(2);
+      expect(response.body.data.length).toBe(2);
+      expect(response.body.pagination.total).toBe(2);
     });
   });
 
@@ -145,13 +145,13 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      expect(response.body.pagination).toMatchObject({
         page: 1,
         limit: 1,
         total: 2,
-        totalPages: 2,
+        total_pages: 2,
       });
-      expect(response.body.groups.length).toBe(1);
+      expect(response.body.data.length).toBe(1);
     });
 
     // Note: bot_id filter is not supported by the API
@@ -164,7 +164,7 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .expect(200);
 
       // All returned groups should have pending connection status
-      response.body.groups.forEach((group: any) => {
+      response.body.data.forEach((group: any) => {
         expect(group.connection_status).toBe('pending');
       });
     });
@@ -176,7 +176,7 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .expect(200);
 
       // All returned groups should have bot_assigned as false
-      response.body.groups.forEach((group: any) => {
+      response.body.data.forEach((group: any) => {
         expect(group.bot_assigned).toBe(false);
       });
     });
@@ -223,7 +223,7 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      expect(response.body.pagination).toMatchObject({
         page: 1,
         limit: 10, // Default limit
       });
@@ -260,8 +260,8 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
 
-      expect(response.body.groups).toBeDefined();
-      expect(Array.isArray(response.body.groups)).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
     });
 
     it('should allow admin users to list telegram groups', async () => {
@@ -270,8 +270,8 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.groups).toBeDefined();
-      expect(Array.isArray(response.body.groups)).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
     });
   });
 
@@ -283,11 +283,11 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .expect(200);
 
       // All groups should belong to the same tenant as the requesting owner
-      expect(response.body.groups).toBeDefined();
-      expect(Array.isArray(response.body.groups)).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
 
       // Verify we got the groups we created
-      const groupNames = response.body.groups.map((g: any) => g.group_name);
+      const groupNames = response.body.data.map((g: any) => g.group_name);
       expect(groupNames).toContain('VIP Group 1');
       expect(groupNames).toContain('VIP Group 2');
     });
@@ -312,13 +312,13 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
 
-      const { page, limit, total, totalPages } = response.body;
+      const { page, limit, total, total_pages } = response.body.pagination;
 
       // Verify pagination logic consistency
       expect(page).toBe(1);
       expect(limit).toBe(1);
       expect(total).toBe(2);
-      expect(totalPages).toBe(Math.ceil(total / limit));
+      expect(total_pages).toBe(Math.ceil(total / limit));
     });
   });
 
@@ -329,8 +329,8 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
 
-      if (response.body.groups.length > 1) {
-        const groups = response.body.groups;
+      if (response.body.data.length > 1) {
+        const groups = response.body.data;
         for (let i = 0; i < groups.length - 1; i++) {
           const current = new Date(groups[i].created_at);
           const next = new Date(groups[i + 1].created_at);

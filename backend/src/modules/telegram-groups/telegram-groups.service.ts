@@ -9,33 +9,31 @@ import { TelegramSyncService } from '../../integrations/telegram/telegram-sync.s
 import { CreateTelegramGroupDto } from './dto/create-telegram-group.dto';
 import { UpdateTelegramGroupDto } from './dto/update-telegram-group.dto';
 import { ConnectChannelDto } from './dto/connect-channel.dto';
-
-export interface TelegramGroupsQueryDto {
-  page?: number;
-  limit?: number;
-  syncEnabled?: boolean;
-  connectionStatus?: ConnectionStatus;
-  botAssigned?: boolean;
-}
+import { GetTelegramGroupsDto } from './dto/get-telegram-groups.dto';
 
 export interface TelegramGroupsListResponse {
-  groups: TelegramGroup[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  data: TelegramGroup[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+    has_next_page: boolean;
+    has_prev_page: boolean;
+  };
 }
 
 export interface ConnectChannelResponse {
   success: boolean;
-  channelInfo?: {
-    id: number;
+  message: string;
+  channel_info?: {
+    id: string;
     type: string;
-    title?: string;
-    username?: string;
-    memberCount?: number;
+    title: string;
+    username?: string | null;
+    member_count?: number | null;
   };
-  error?: string;
+  connection_status: ConnectionStatus;
 }
 
 export interface SyncResponse {
@@ -147,7 +145,7 @@ export class TelegramGroupsService {
    * @param query - Optional query parameters for filtering and pagination
    * @returns Promise<TelegramGroupsListResponse> - Paginated list of groups with metadata
    */
-  async findAll(tenantId: string, query?: TelegramGroupsQueryDto): Promise<TelegramGroupsListResponse> {
+  async findAll(tenantId: string, query?: GetTelegramGroupsDto): Promise<TelegramGroupsListResponse> {
     try {
       this.logger.log(`Fetching telegram groups for tenant ${tenantId} with query:`, query);
 
@@ -161,16 +159,16 @@ export class TelegramGroupsService {
         is_active: true,
       };
 
-      if (query?.syncEnabled !== undefined) {
-        whereConditions.sync_enabled = query.syncEnabled;
+      if (query?.sync_enabled !== undefined) {
+        whereConditions.sync_enabled = query.sync_enabled;
       }
 
-      if (query?.connectionStatus) {
-        whereConditions.connection_status = query.connectionStatus;
+      if (query?.connection_status) {
+        whereConditions.connection_status = query.connection_status;
       }
 
-      if (query?.botAssigned !== undefined) {
-        whereConditions.bot_assigned = query.botAssigned;
+      if (query?.bot_assigned !== undefined) {
+        whereConditions.bot_assigned = query.bot_assigned;
       }
 
       // Execute query with pagination
@@ -185,16 +183,22 @@ export class TelegramGroupsService {
         take: limit,
       });
 
-      const totalPages = Math.ceil(total / limit);
+      const total_pages = Math.ceil(total / limit);
+      const has_next_page = page < total_pages;
+      const has_prev_page = page > 1;
 
-      this.logger.log(`Found ${total} telegram groups for tenant ${tenantId} (page ${page}/${totalPages})`);
+      this.logger.log(`Found ${total} telegram groups for tenant ${tenantId} (page ${page}/${total_pages})`);
 
       return {
-        groups,
-        total,
-        page,
-        limit,
-        totalPages,
+        data: groups,
+        pagination: {
+          total,
+          page,
+          limit,
+          total_pages,
+          has_next_page,
+          has_prev_page,
+        },
       };
     } catch (error) {
       this.logger.error(`Failed to fetch telegram groups for tenant ${tenantId}: ${error.message}`, error.stack);
@@ -407,7 +411,8 @@ export class TelegramGroupsService {
       if (!group.bot || !group.bot.bot_token) {
         return {
           success: false,
-          error: 'Bot configuration is missing or invalid',
+          message: 'Bot configuration is missing or invalid',
+          connection_status: ConnectionStatus.FAILED,
         };
       }
 
@@ -424,7 +429,8 @@ export class TelegramGroupsService {
       if (existingConnection) {
         return {
           success: false,
-          error: `Channel is already connected to group "${existingConnection.group_name}"`,
+          message: `Channel is already connected to group "${existingConnection.group_name}"`,
+          connection_status: ConnectionStatus.FAILED,
         };
       }
 
@@ -442,7 +448,8 @@ export class TelegramGroupsService {
 
         return {
           success: false,
-          error: connectionResult.error,
+          message: connectionResult.error || 'Failed to connect to channel',
+          connection_status: ConnectionStatus.FAILED,
         };
       }
 
@@ -480,13 +487,15 @@ export class TelegramGroupsService {
 
       return {
         success: true,
-        channelInfo: {
-          id: channelInfo.id,
+        message: 'Channel connected successfully',
+        channel_info: {
+          id: channelInfo.id.toString(),
           type: channelInfo.type,
-          title: channelInfo.title,
-          username: channelInfo.username,
-          memberCount: channelInfo.member_count,
+          title: channelInfo.title || '',
+          username: channelInfo.username || null,
+          member_count: channelInfo.member_count || null,
         },
+        connection_status: ConnectionStatus.CONNECTED,
       };
     } catch (error) {
       this.logger.error(`Failed to connect channel for group ${id}: ${error.message}`, error.stack);
@@ -497,7 +506,8 @@ export class TelegramGroupsService {
 
       return {
         success: false,
-        error: `Connection failed: ${error.message}`,
+        message: `Connection failed: ${error.message}`,
+        connection_status: ConnectionStatus.FAILED,
       };
     }
   }
