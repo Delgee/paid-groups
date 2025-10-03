@@ -110,8 +110,8 @@ export interface CreateUserResponse {
   email: string;
   name: string;
   role: UserRole;
-  isActive: boolean;
-  createdAt: string;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface Bot {

@@ -83,8 +83,8 @@ export class UserManagementService {
       email: savedUser.email,
       name: savedUser.name,
       role: savedUser.role as UserRole,
-      isActive: savedUser.is_active,
-      createdAt: savedUser.created_at.toISOString(),
+      is_active: savedUser.is_active,
+      created_at: savedUser.created_at.toISOString(),
     };
   }
 
@@ -134,9 +134,9 @@ export class UserManagementService {
       email: user.email,
       name: user.name,
       role: user.role as AllUserRoles,
-      isActive: user.is_active,
-      lastLoginAt: user.last_login_at ? user.last_login_at.toISOString() : null,
-      createdAt: user.created_at.toISOString(),
+      is_active: user.is_active,
+      last_login_at: user.last_login_at ? user.last_login_at.toISOString() : null,
+      created_at: user.created_at.toISOString(),
     }));
 
     this.logger.log(`Retrieved ${users.length} users out of ${total} total`);

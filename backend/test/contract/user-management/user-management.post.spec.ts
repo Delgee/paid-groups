@@ -103,8 +103,8 @@ describe('POST /v1/users - Contract Test', () => {
         email: validRequest.email,
         name: validRequest.name,
         role: validRequest.role,
-        isActive: true,
-        createdAt: expect.stringMatching(
+        is_active: true,
+        created_at: expect.stringMatching(
           /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
         ),
       });

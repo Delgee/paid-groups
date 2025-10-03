@@ -78,7 +78,7 @@ export class UserSummaryDto {
     description: 'Whether the user account is active',
     example: true,
   })
-  isActive: boolean;
+  is_active: boolean;
 
   @ApiProperty({
     description: 'Timestamp of last login, null if never logged in',
@@ -86,14 +86,14 @@ export class UserSummaryDto {
     format: 'date-time',
     nullable: true,
   })
-  lastLoginAt: string | null;
+  last_login_at: string | null;
 
   @ApiProperty({
     description: 'Timestamp when the user was created',
     example: '2025-09-10T14:20:00.000Z',
     format: 'date-time',
   })
-  createdAt: string;
+  created_at: string;
 }
 
 export class GetUsersResponseDto {

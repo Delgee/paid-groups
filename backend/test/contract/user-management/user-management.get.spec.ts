@@ -98,9 +98,9 @@ describe('GET /v1/users - Contract Test', () => {
             email: expect.stringMatching(/^[^\s@]+@[^\s@]+\.[^\s@]+$/),
             name: expect.any(String),
             role: expect.stringMatching(/^(owner|admin|moderator)$/),
-            isActive: expect.any(Boolean),
-            lastLoginAt: expect.any(Object), // Can be string (ISO date) or null
-            createdAt: expect.stringMatching(
+            is_active: expect.any(Boolean),
+            last_login_at: expect.any(Object), // Can be string (ISO date) or null
+            created_at: expect.stringMatching(
               /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
             ),
           }),
@@ -337,8 +337,8 @@ describe('GET /v1/users - Contract Test', () => {
       if (response.body.users.length > 1) {
         const users = response.body.users;
         for (let i = 0; i < users.length - 1; i++) {
-          const current = new Date(users[i].createdAt);
-          const next = new Date(users[i + 1].createdAt);
+          const current = new Date(users[i].created_at);
+          const next = new Date(users[i + 1].created_at);
           expect(current.getTime()).toBeGreaterThanOrEqual(next.getTime());
         }
       }
