@@ -87,8 +87,8 @@
 - [x] T044 Add telegram groups to existing RLS policies and tenant context
 
 ### E2E Tests
-- [ ] T045 [P] E2E test complete telegram group management workflow in frontend/tests/e2e/telegram-groups-workflow.spec.ts
-- [ ] T046 [P] E2E test channel connection and sync operations in frontend/tests/e2e/telegram-channel-connection.spec.ts
+- [x] T045 [P] E2E test complete telegram group management workflow in frontend/tests/e2e/telegram-groups-workflow.spec.ts
+- [x] T046 [P] E2E test channel connection and sync operations in frontend/tests/e2e/telegram-channel-connection.spec.ts
 
 ### Polish and Documentation
 - [x] T047 [P] Add rate limiting for Telegram API calls
