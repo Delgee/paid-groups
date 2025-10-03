@@ -402,7 +402,12 @@ export class TelegramApiService {
   cleanupBotInstance(botToken: string): void {
     if (this.bots.has(botToken)) {
       const bot = this.bots.get(botToken)!;
-      bot.stop();
+      try {
+        bot.stop();
+      } catch (error) {
+        // Bot may not be running, ignore the error
+        this.logger.debug(`Bot cleanup: ${error.message}`);
+      }
       this.bots.delete(botToken);
     }
   }
