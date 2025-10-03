@@ -401,6 +401,104 @@ curl -X POST http://localhost:3001/v1/auth/register \
   }'
 ```
 
+## Reference Implementations
+
+**⚠️ CRITICAL: Before implementing any new module, analyze these reference implementations for established patterns.**
+
+### CRUD Operations & Multi-Tenant Access Control
+**Reference Module**: `backend/src/modules/user-management/`
+
+**Analyze for**:
+- Controller structure with role-based guards: `@UseGuards(JwtAuthGuard, RoleGuard('owner'))`
+- DTO validation patterns (CreateUserDto, GetUsersDto)
+- Service layer CRUD operations with tenant isolation
+- Response format consistency (201 for create, 200 for list, pagination structure)
+- Error handling (400/409/403 status codes)
+- Audit logging with `@UseInterceptors(AuditLogInterceptor)`
+
+**Test Patterns** (`backend/src/modules/user-management/__tests__/`):
+- Contract test structure: One file per endpoint, schema validation
+- Integration test setup: Database seeding, tenant context, cleanup
+- Helper functions: `createTestUser()`, `setupTestTenant()`
+- beforeAll/beforeEach patterns: Database connection, test data setup
+- Assertion patterns: Status codes, response shape, error messages
+
+### External API Integration with Caching & Rate Limiting
+**Reference Module**: `backend/src/modules/telegram-groups/`
+
+**Analyze for**:
+- Service architecture: TelegramApiService, TelegramChannelService, TelegramSyncService separation
+- Redis caching pattern: Cache key generation, TTL strategy, cache invalidation
+- Rate limiting implementation: Token bucket algorithm with Redis storage
+- Structured logging: `logger.telegram(operation, metadata, level)`
+- Error handling for external APIs: Retry logic, timeout handling
+- Bot permission verification patterns
+
+**Test Patterns** (`backend/src/modules/telegram-groups/__tests__/`):
+- External API integration tests with real Telegram Bot API
+- Cache verification tests: Check cache hits/misses
+- Rate limiting tests: Verify token bucket behavior
+- Error scenario tests: API timeouts, rate limit exceeded
+- Mock strategy: No mocks for Redis/PostgreSQL, mock only Telegram API when needed
+
+### Frontend CRUD UI Components
+**Reference Implementation**: `frontend/app/dashboard/users/` and `frontend/components/user-management/`
+
+**Analyze for**:
+- Form structure: react-hook-form + Zod validation
+- API client patterns with React Query: `useMutation`, `useQuery`, cache invalidation
+- Error handling: Toast notifications, inline error display
+- Loading states: Button disabled states, skeleton loaders
+- Pagination components: Page size, current page, total count
+- data-testid patterns for E2E tests
+
+### E2E Test Patterns
+**Reference Tests**: `frontend/tests/e2e/user-management.spec.ts`
+
+**Analyze for**:
+- Test data setup: Creating test users, authentication flow
+- Page object patterns: Selectors, actions, assertions
+- Navigation testing: Desktop vs mobile viewport handling
+- Form interaction patterns: Fill, submit, verify success/error
+- data-testid usage: Consistent naming conventions
+- Cleanup patterns: Delete test data after tests
+
+### Database Migrations & RLS Policies
+**Reference Migration**: `backend/migrations/[timestamp]-create-telegram-groups-table.ts`
+
+**Analyze for**:
+- Table creation with tenant_id column (uuid NOT NULL)
+- RLS policy patterns: tenant_isolation_select, tenant_isolation_insert
+- Index creation: tenant_id + frequently queried columns
+- Foreign key constraints with CASCADE behavior
+- Timestamp columns: created_at, updated_at with default values
+
+### DTO & Validation Patterns
+**Reference DTOs**: `backend/src/modules/user-management/dto/`
+
+**Analyze for**:
+- Class validator decorators: `@IsEmail()`, `@MinLength()`, `@IsEnum()`
+- Custom validation decorators for business rules
+- Transform decorators: `@Transform()`, `@Type()`
+- ApiProperty decorators for OpenAPI documentation
+- Nested DTO validation with `@ValidateNested()`
+
+---
+
+**Workflow for New Module Implementation**:
+
+1. **Identify the closest reference module** based on feature requirements
+2. **Read the reference implementation files** (controller, service, DTOs, tests)
+3. **Document observed patterns** in task planning comments
+4. **Copy the structure, not the code** - adapt patterns to new domain
+5. **Maintain consistency** in naming, error handling, response formats
+6. **Verify pattern compliance** before marking tasks as complete
+
+**Deviation Protocol**:
+- If you need to deviate from established patterns, document WHY in code comments
+- Add justification to plan.md Complexity Tracking table
+- Propose pattern update if the deviation should become the new standard
+
 ---
 
 **NOTE**: Core development standards, best practices, and governance rules are defined in `.specify/memory/constitution.md`. This file contains project-specific context and current feature implementation status only. When conflicts arise, the constitution takes precedence.

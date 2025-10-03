@@ -1,13 +1,14 @@
 <!--
 Sync Impact Report:
-Version: 1.0.0 (initial constitution)
+Version: 1.1.0 (added pattern consistency principle)
 Date: 2025-01-20
 
 Modified Principles:
-- Created initial constitution from CLAUDE.md guidance
+- Created initial constitution from CLAUDE.md guidance (v1.0.0)
+- Added Principle VI: Pattern Consistency (v1.1.0)
 
 Added Sections:
-- Core Principles: Multi-Tenancy, Test-First Development, Type Safety, Performance & Caching, Security by Design
+- Core Principles: Multi-Tenancy, Test-First Development, Type Safety, Performance & Caching, Security by Design, Pattern Consistency
 - Development Standards: Backend API Patterns, Frontend React Best Practices, Code Quality Requirements
 - Testing Requirements: TDD Workflow, E2E Testing Standards
 - Governance: Amendment Process and Compliance
@@ -19,8 +20,9 @@ Templates Status:
 ✅ All command files reviewed
 
 Follow-up Actions:
-- Remove redundant content from CLAUDE.md (best practices sections moved to constitution)
-- CLAUDE.md will retain only project-specific context and current feature status
+- Remove redundant content from CLAUDE.md (best practices sections moved to constitution) ✅
+- CLAUDE.md will retain only project-specific context and current feature status ✅
+- Add reference implementation section to CLAUDE.md for pattern guidance ✅
 -->
 
 # Telegram Groups SaaS Platform Constitution
@@ -51,6 +53,13 @@ External API calls (Telegram Bot API) MUST be cached in Redis with appropriate T
 Authentication MUST use JWT with role-based guards. Password validation MUST enforce complexity (min 8 chars, mixed case, numbers). Payment webhooks MUST verify HMAC signatures. Audit logging is mandatory for sensitive operations (user management, payment processing). Input validation MUST use Zod schemas.
 
 **Rationale**: Security vulnerabilities in payment and authentication systems have severe business consequences. Multiple layers of validation and logging provide defense-in-depth.
+
+### VI. Pattern Consistency (NON-NEGOTIABLE)
+Before implementing any new module, MUST analyze existing reference implementations for established patterns. CRUD operations MUST return consistent response formats across modules. Test structure (describe blocks, beforeAll/beforeEach usage, helper functions) MUST follow patterns from reference modules. DTOs, validators, error handling, and logging patterns MUST be consistent. Deviations from established patterns MUST be justified in code comments and plan.md.
+
+**Rationale**: Inconsistent patterns increase cognitive load, make code reviews harder, introduce bugs, and reduce AI agent effectiveness. Learning from existing implementations is faster and more reliable than creating new patterns.
+
+**Implementation**: See "Reference Implementations" section in CLAUDE.md for module-specific pattern guidance.
 
 ## Development Standards
 
@@ -161,4 +170,4 @@ These errors MUST be documented with resolution plan and fixed before feature co
 - Constitution contains immutable principles and standards
 - When conflict arises, constitution takes precedence over CLAUDE.md
 
-**Version**: 1.0.0 | **Ratified**: 2025-01-20 | **Last Amended**: 2025-01-20
+**Version**: 1.1.0 | **Ratified**: 2025-01-20 | **Last Amended**: 2025-01-20
