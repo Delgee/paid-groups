@@ -80,21 +80,21 @@
 - [x] T041 Fix sync integration test signatures and types in backend/test/integration/telegram-sync.integration.spec.ts
 
 ### Redis Caching and Environment
-- [ ] T042 Implement caching for Telegram API responses using Redis
+- [x] T042 Implement caching for Telegram API responses using Redis
 
 ### Testing Environment Setup
-- [ ] T043 Configure test bot token and channel for development environment
-- [ ] T044 Add telegram groups to existing RLS policies and tenant context
+- [x] T043 Configure test bot token and channel for development environment
+- [x] T044 Add telegram groups to existing RLS policies and tenant context
 
 ### E2E Tests
 - [ ] T045 [P] E2E test complete telegram group management workflow in frontend/tests/e2e/telegram-groups-workflow.spec.ts
 - [ ] T046 [P] E2E test channel connection and sync operations in frontend/tests/e2e/telegram-channel-connection.spec.ts
 
 ### Polish and Documentation
-- [ ] T047 [P] Add rate limiting for Telegram API calls
-- [ ] T048 [P] Implement structured logging for telegram operations
-- [ ] T049 [P] Update CLAUDE.md with telegram groups patterns
-- [ ] T050 Run quickstart.md validation scenarios and fix any issues
+- [x] T047 [P] Add rate limiting for Telegram API calls
+- [x] T048 [P] Implement structured logging for telegram operations
+- [x] T049 [P] Update CLAUDE.md with telegram groups patterns
+- [x] T050 Run quickstart.md validation scenarios and fix any issues
 
 ## Dependencies
 

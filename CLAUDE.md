@@ -332,8 +332,138 @@ The complete telegram group management system is now functional with:
 - **API**: REST endpoints with OpenAPI documentation and validation
 - **Integration**: Module registration and navigation system integration
 - **Security**: Multi-tenant isolation and bot permission verification
+- **Performance**: Redis caching for Telegram API responses (T042)
+- **Rate Limiting**: Token bucket algorithm for Telegram API calls (T047)
+- **Logging**: Structured logging for all telegram operations (T048)
+- **Tenant Context**: RLS policies and global tenant interceptor (T044)
 
 Remember: Follow TDD, maintain tenant isolation, validate all inputs, audit sensitive operations, and handle Telegram API errors gracefully.
+
+## Telegram Groups Best Practices
+
+### Redis Caching for Telegram API
+
+**Implementation Pattern:**
+```typescript
+// TelegramApiService uses Redis caching for read operations
+async getChatInfo(botToken: string, chatId: string | number): Promise<TelegramChat | null> {
+  const cacheKey = this.generateCacheKey('chat:info', chatId);
+
+  // Check cache first
+  const cached = await this.cacheManager.get<TelegramChat>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  // Fetch from Telegram API
+  const result = await bot.telegram.getChat(chatId);
+
+  // Cache for 1 hour
+  await this.cacheManager.set(cacheKey, result, 3600000);
+
+  return result;
+}
+
+// Invalidate cache after write operations
+await this.invalidateChatCache(chatId);
+```
+
+**Cache TTL Guidelines:**
+- Bot verification: 1 hour (rarely changes)
+- Chat info: 1 hour (metadata changes infrequently)
+- Member count: 5 minutes (changes more frequently)
+- Channel info: 1 hour (same as chat info)
+
+### Rate Limiting for Telegram Bot API
+
+**Implementation Pattern:**
+```typescript
+// Token bucket algorithm: 30 requests per second per bot
+private async executeWithRateLimit<T>(
+  botToken: string,
+  operation: () => Promise<T>
+): Promise<T> {
+  const isAllowed = await this.checkRateLimit(botToken);
+
+  if (!isAllowed) {
+    throw new Error('Rate limit exceeded. Please try again later.');
+  }
+
+  return operation();
+}
+
+// Apply to all write operations
+await this.executeWithRateLimit(botToken, async () => {
+  const bot = this.getBotInstance(botToken);
+  await bot.telegram.sendMessage(chatId, message, options);
+});
+```
+
+**Rate Limit Configuration:**
+- Max tokens: 30 requests/second (Telegram's limit)
+- Refill rate: 30 tokens/second
+- Tracked per bot token (not global)
+- Stored in Redis for distributed rate limiting
+
+### Structured Logging for Telegram Operations
+
+**Implementation Pattern:**
+```typescript
+// Use LoggerService with telegram() method
+this.logger.telegram('SendMessage', {
+  chatId,
+  messageLength: message.length,
+  duration: Date.now() - startTime,
+  success: true,
+});
+
+// Log errors with context
+this.logger.telegram('SendMessage', {
+  chatId,
+  error: error.message,
+  duration,
+  success: false,
+}, 'error');
+
+// Log rate limit events
+this.logger.telegram('RateLimitExceeded', {
+  botToken: botToken.slice(-8),
+  tokensAvailable: tokens,
+}, 'warn');
+```
+
+**Logged Metrics:**
+- Operation name and type
+- Performance duration (ms)
+- Success/failure status
+- Error messages and stack traces
+- Rate limiting events
+- Chat/channel IDs
+
+### Tenant Isolation with RLS
+
+**Implementation Pattern:**
+```typescript
+// Global TenantInterceptor automatically sets tenant context
+// in app.module.ts:
+{
+  provide: APP_INTERCEPTOR,
+  useClass: TenantInterceptor,
+}
+
+// Interceptor sets PostgreSQL session variable:
+await dataSource.query(`SET LOCAL app.current_tenant = $1`, [tenantId]);
+
+// RLS policies automatically filter by tenant_id:
+CREATE POLICY tenant_isolation_select ON telegram_groups
+FOR SELECT USING (tenant_id::text = current_setting('app.current_tenant', true));
+```
+
+**Security Requirements:**
+- All database queries automatically scoped by tenant_id
+- No need to manually add tenant_id to WHERE clauses
+- RLS enforced at database level (defense in depth)
+- Tenant context extracted from JWT token
 
 ## React/Frontend Best Practices & Anti-Patterns
 

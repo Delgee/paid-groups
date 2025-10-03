@@ -191,6 +191,31 @@ export class LoggerService implements NestLoggerService {
     }
   }
 
+  /**
+   * Log Telegram API operations
+   */
+  telegram(operation: string, details: Record<string, any>, level: 'info' | 'warn' | 'error' = 'info'): void {
+    const message = `Telegram: ${operation}`;
+    const metadata = {
+      ...this.getLogMeta(),
+      type: 'telegram',
+      operation,
+      timestamp: new Date().toISOString(),
+      ...details,
+    };
+
+    switch (level) {
+      case 'error':
+        winstonLogger.error(message, metadata);
+        break;
+      case 'warn':
+        winstonLogger.warn(message, metadata);
+        break;
+      default:
+        winstonLogger.info(message, metadata);
+    }
+  }
+
   private formatMessage(message: any): string {
     if (typeof message === 'object') {
       try {

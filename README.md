@@ -121,6 +121,47 @@ The project follows Test-Driven Development (TDD):
 2. **Integration Tests**: End-to-end workflows
 3. **Unit Tests**: Individual component logic
 
+#### Setting Up Test Bot and Channel
+
+For running integration and E2E tests that involve Telegram Bot API:
+
+1. **Create a Test Bot**:
+   ```bash
+   # 1. Open Telegram and search for @BotFather
+   # 2. Send /newbot and follow the prompts
+   # 3. Copy the bot token
+   # 4. Add to .env.test:
+   TEST_TELEGRAM_BOT_TOKEN=your-bot-token-here
+   ```
+
+2. **Create a Test Channel**:
+   ```bash
+   # 1. Create a new Telegram channel
+   # 2. Add your test bot as an administrator with:
+   #    - Post messages permission
+   #    - Edit messages permission
+   #    - Delete messages permission
+   # 3. Get the channel ID (send a message to the channel and use:
+   #    https://api.telegram.org/bot<BOT_TOKEN>/getUpdates
+   # 4. Add to .env.test:
+   TEST_TELEGRAM_CHANNEL_ID=-1001234567890
+   TEST_TELEGRAM_CHAT_ID=-1001234567890
+   ```
+
+3. **Run Tests**:
+   ```bash
+   # Set environment variables
+   export NODE_ENV=test
+   export DB_NAME=telegram_saas_test
+
+   # Run migrations for test database
+   npm run migration:run
+
+   # Run tests
+   npm run test:integration
+   npm run test:e2e
+   ```
+
 ### Environment Variables
 
 Key environment variables (see `.env.example`):

@@ -1,5 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { Telegraf } from 'telegraf';
+import { LoggerService } from '../../../common/logger/logger.service';
 
 export interface TelegramUser {
   id: number;
@@ -26,8 +29,16 @@ export interface SendMessageOptions {
 
 @Injectable()
 export class TelegramApiService {
-  private readonly logger = new Logger(TelegramApiService.name);
+  private readonly logger: LoggerService;
   private bots: Map<string, Telegraf> = new Map();
+
+  constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    loggerService: LoggerService,
+  ) {
+    this.logger = loggerService;
+    this.logger.setContext('TelegramApiService');
+  }
 
   private getBotInstance(botToken: string): Telegraf {
     if (!this.bots.has(botToken)) {
@@ -37,18 +48,119 @@ export class TelegramApiService {
     return this.bots.get(botToken)!;
   }
 
-  async verifyBotToken(botToken: string): Promise<TelegramUser | null> {
+  private generateCacheKey(prefix: string, ...args: (string | number)[]): string {
+    return `telegram:${prefix}:${args.join(':')}`;
+  }
+
+  private async invalidateChatCache(chatId: string | number): Promise<void> {
     try {
+      const keys = [
+        this.generateCacheKey('chat:info', chatId),
+        this.generateCacheKey('channel:info', chatId),
+        this.generateCacheKey('chat:members:count', chatId),
+      ];
+
+      await Promise.all(keys.map(key => this.cacheManager.del(key)));
+      this.logger.debug(`Cache invalidated for chat ${chatId}`);
+    } catch (error) {
+      this.logger.error(`Failed to invalidate cache for chat ${chatId}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Rate limiter using token bucket algorithm
+   * Telegram allows 30 requests per second per bot
+   * @param botToken - The bot token to rate limit
+   * @returns Promise<boolean> - True if request is allowed, false if rate limited
+   */
+  private async checkRateLimit(botToken: string): Promise<boolean> {
+    const rateLimitKey = this.generateCacheKey('ratelimit', botToken.slice(-8));
+    const maxTokens = 30; // Max requests per second
+    const refillRate = 30; // Tokens refilled per second
+    const now = Date.now();
+
+    try {
+      const cached = await this.cacheManager.get<{ tokens: number; lastRefill: number }>(rateLimitKey);
+
+      let tokens = maxTokens;
+      let lastRefill = now;
+
+      if (cached) {
+        // Calculate tokens to refill based on time elapsed
+        const timePassed = (now - cached.lastRefill) / 1000; // Convert to seconds
+        const tokensToAdd = Math.floor(timePassed * refillRate);
+        tokens = Math.min(cached.tokens + tokensToAdd, maxTokens);
+        lastRefill = cached.lastRefill + (tokensToAdd * 1000 / refillRate);
+      }
+
+      // Check if we have tokens available
+      if (tokens < 1) {
+        this.logger.telegram('RateLimitExceeded', {
+          botToken: botToken.slice(-8),
+          tokensAvailable: tokens,
+        }, 'warn');
+        return false;
+      }
+
+      // Consume one token
+      tokens -= 1;
+
+      // Update cache with new token count
+      await this.cacheManager.set(rateLimitKey, { tokens, lastRefill }, 60000); // 1 minute TTL
+
+      return true;
+    } catch (error) {
+      this.logger.error(`Rate limit check failed: ${error.message}`);
+      // On error, allow the request (fail open)
+      return true;
+    }
+  }
+
+  /**
+   * Executes a Telegram API call with rate limiting
+   * @param botToken - The bot token
+   * @param operation - The operation to execute
+   * @returns Promise<T> - The result of the operation
+   */
+  private async executeWithRateLimit<T>(
+    botToken: string,
+    operation: () => Promise<T>
+  ): Promise<T> {
+    const isAllowed = await this.checkRateLimit(botToken);
+
+    if (!isAllowed) {
+      throw new Error('Rate limit exceeded. Please try again later.');
+    }
+
+    return operation();
+  }
+
+  async verifyBotToken(botToken: string): Promise<TelegramUser | null> {
+    const cacheKey = this.generateCacheKey('bot:verify', botToken.slice(-8));
+
+    try {
+      // Check cache first
+      const cached = await this.cacheManager.get<TelegramUser>(cacheKey);
+      if (cached) {
+        this.logger.debug(`Bot verification cache hit for key: ${cacheKey}`);
+        return cached;
+      }
+
       const bot = this.getBotInstance(botToken);
       const botInfo = await bot.telegram.getMe();
-      
-      return {
+
+      const result: TelegramUser = {
         id: botInfo.id,
         first_name: botInfo.first_name,
         last_name: botInfo.last_name,
         username: botInfo.username,
         is_bot: botInfo.is_bot,
       };
+
+      // Cache for 1 hour
+      await this.cacheManager.set(cacheKey, result, 3600000);
+
+      return result;
     } catch (error) {
       this.logger.error(`Failed to verify bot token: ${error.message}`);
       return null;
@@ -56,11 +168,20 @@ export class TelegramApiService {
   }
 
   async getChatInfo(botToken: string, chatId: string | number): Promise<TelegramChat | null> {
+    const cacheKey = this.generateCacheKey('chat:info', chatId);
+
     try {
+      // Check cache first
+      const cached = await this.cacheManager.get<TelegramChat>(cacheKey);
+      if (cached) {
+        this.logger.debug(`Chat info cache hit for ${chatId}`);
+        return cached;
+      }
+
       const bot = this.getBotInstance(botToken);
       const chat = await bot.telegram.getChat(chatId);
-      
-      return {
+
+      const result: TelegramChat = {
         id: chat.id,
         type: chat.type,
         title: 'title' in chat ? chat.title : undefined,
@@ -68,6 +189,11 @@ export class TelegramApiService {
         description: 'description' in chat ? chat.description : undefined,
         member_count: await this.getChatMemberCount(botToken, chatId),
       };
+
+      // Cache for 1 hour
+      await this.cacheManager.set(cacheKey, result, 3600000);
+
+      return result;
     } catch (error) {
       this.logger.error(`Failed to get chat info for ${chatId}: ${error.message}`);
       return null;
@@ -75,9 +201,23 @@ export class TelegramApiService {
   }
 
   async getChatMemberCount(botToken: string, chatId: string | number): Promise<number> {
+    const cacheKey = this.generateCacheKey('chat:members:count', chatId);
+
     try {
+      // Check cache first - shorter TTL for member count (5 minutes)
+      const cached = await this.cacheManager.get<number>(cacheKey);
+      if (cached !== undefined && cached !== null) {
+        this.logger.debug(`Chat member count cache hit for ${chatId}`);
+        return cached;
+      }
+
       const bot = this.getBotInstance(botToken);
-      return await bot.telegram.getChatMembersCount(chatId);
+      const count = await bot.telegram.getChatMembersCount(chatId);
+
+      // Cache for 5 minutes (member count changes more frequently)
+      await this.cacheManager.set(cacheKey, count, 300000);
+
+      return count;
     } catch (error) {
       this.logger.error(`Failed to get chat member count for ${chatId}: ${error.message}`);
       return 0;
@@ -85,18 +225,36 @@ export class TelegramApiService {
   }
 
   async sendMessage(
-    botToken: string, 
-    chatId: string | number, 
-    message: string, 
+    botToken: string,
+    chatId: string | number,
+    message: string,
     options?: SendMessageOptions
   ): Promise<boolean> {
+    const startTime = Date.now();
     try {
-      const bot = this.getBotInstance(botToken);
-      await bot.telegram.sendMessage(chatId, message, options);
-      this.logger.log(`Message sent successfully to chat ${chatId}`);
+      await this.executeWithRateLimit(botToken, async () => {
+        const bot = this.getBotInstance(botToken);
+        await bot.telegram.sendMessage(chatId, message, options);
+      });
+
+      const duration = Date.now() - startTime;
+      this.logger.telegram('SendMessage', {
+        chatId,
+        messageLength: message.length,
+        duration,
+        success: true,
+      });
+
       return true;
     } catch (error) {
-      this.logger.error(`Failed to send message to chat ${chatId}: ${error.message}`);
+      const duration = Date.now() - startTime;
+      this.logger.telegram('SendMessage', {
+        chatId,
+        error: error.message,
+        duration,
+        success: false,
+      }, 'error');
+
       return false;
     }
   }
@@ -273,13 +431,34 @@ export class TelegramApiService {
    * @returns Promise<boolean> - True if successful, false otherwise
    */
   async setChatTitle(botToken: string, chatId: string | number, title: string): Promise<boolean> {
+    const startTime = Date.now();
     try {
-      const bot = this.getBotInstance(botToken);
-      await bot.telegram.setChatTitle(chatId, title);
-      this.logger.log(`Chat title updated successfully for chat ${chatId}`);
+      await this.executeWithRateLimit(botToken, async () => {
+        const bot = this.getBotInstance(botToken);
+        await bot.telegram.setChatTitle(chatId, title);
+      });
+
+      // Invalidate cache after update
+      await this.invalidateChatCache(chatId);
+
+      const duration = Date.now() - startTime;
+      this.logger.telegram('SetChatTitle', {
+        chatId,
+        title,
+        duration,
+        success: true,
+      });
+
       return true;
     } catch (error) {
-      this.logger.error(`Failed to set chat title for chat ${chatId}: ${error.message}`);
+      const duration = Date.now() - startTime;
+      this.logger.telegram('SetChatTitle', {
+        chatId,
+        error: error.message,
+        duration,
+        success: false,
+      }, 'error');
+
       return false;
     }
   }
@@ -293,8 +472,14 @@ export class TelegramApiService {
    */
   async setChatDescription(botToken: string, chatId: string | number, description: string): Promise<boolean> {
     try {
-      const bot = this.getBotInstance(botToken);
-      await bot.telegram.setChatDescription(chatId, description);
+      await this.executeWithRateLimit(botToken, async () => {
+        const bot = this.getBotInstance(botToken);
+        await bot.telegram.setChatDescription(chatId, description);
+      });
+
+      // Invalidate cache after update
+      await this.invalidateChatCache(chatId);
+
       this.logger.log(`Chat description updated successfully for chat ${chatId}`);
       return true;
     } catch (error) {
@@ -310,7 +495,16 @@ export class TelegramApiService {
    * @returns Promise<TelegramChat | null> - Channel info if successful, null otherwise
    */
   async getChannelInfo(botToken: string, channelId: string | number): Promise<TelegramChat | null> {
+    const cacheKey = this.generateCacheKey('channel:info', channelId);
+
     try {
+      // Check cache first
+      const cached = await this.cacheManager.get<TelegramChat>(cacheKey);
+      if (cached) {
+        this.logger.debug(`Channel info cache hit for ${channelId}`);
+        return cached;
+      }
+
       const bot = this.getBotInstance(botToken);
       const chat = await bot.telegram.getChat(channelId);
 
@@ -320,7 +514,7 @@ export class TelegramApiService {
         return null;
       }
 
-      return {
+      const result: TelegramChat = {
         id: chat.id,
         type: chat.type,
         title: 'title' in chat ? chat.title : undefined,
@@ -328,6 +522,11 @@ export class TelegramApiService {
         description: 'description' in chat ? chat.description : undefined,
         member_count: await this.getChatMemberCount(botToken, channelId),
       };
+
+      // Cache for 1 hour
+      await this.cacheManager.set(cacheKey, result, 3600000);
+
+      return result;
     } catch (error) {
       this.logger.error(`Failed to get channel info for ${channelId}: ${error.message}`);
       return null;
@@ -407,8 +606,10 @@ export class TelegramApiService {
     options?: SendMessageOptions
   ): Promise<{ success: boolean; messageId?: number }> {
     try {
-      const bot = this.getBotInstance(botToken);
-      const sentMessage = await bot.telegram.sendMessage(channelId, message, options);
+      const sentMessage = await this.executeWithRateLimit(botToken, async () => {
+        const bot = this.getBotInstance(botToken);
+        return await bot.telegram.sendMessage(channelId, message, options);
+      });
 
       this.logger.log(`Message posted successfully to channel ${channelId}, message ID: ${sentMessage.message_id}`);
 

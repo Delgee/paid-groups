@@ -2,8 +2,10 @@ import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
+import { CacheModule } from '@nestjs/cache-manager';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import * as redisStore from 'cache-manager-redis-store';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -16,6 +18,7 @@ import { UserManagementModule } from './modules/user-management/user-management.
 import { TelegramGroupsModule } from './modules/telegram-groups/telegram-groups.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 
 @Module({
@@ -47,6 +50,16 @@ import { RequestContextMiddleware } from './common/middleware/request-context.mi
         },
       }),
     }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: () => ({
+        store: redisStore,
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT) || 6379,
+        password: process.env.REDIS_PASSWORD,
+        ttl: 3600, // 1 hour default TTL
+      }),
+    }),
     ScheduleModule.forRoot(),
     LoggerModule,
     AuthModule,
@@ -64,6 +77,10 @@ import { RequestContextMiddleware } from './common/middleware/request-context.mi
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TenantInterceptor,
     },
   ],
 })
