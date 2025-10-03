@@ -483,6 +483,135 @@ curl -X POST http://localhost:3001/v1/auth/register \
 - ApiProperty decorators for OpenAPI documentation
 - Nested DTO validation with `@ValidateNested()`
 
+### Error Handling Patterns
+**Reference Implementation**: `backend/src/common/filters/http-exception.filter.ts` (create if not exists)
+
+**Required Error Response Format**:
+```typescript
+// Consistent error structure (Principle VII)
+{
+  error: {
+    code: 'DUPLICATE_EMAIL' | 'VALIDATION_ERROR' | 'PAYMENT_FAILED',
+    message: 'Email address already exists. Please use a different email.',
+    details?: {
+      field: 'email',              // For validation errors
+      transactionId: 'txn_123',    // For payment errors
+      retryAfter: 60               // For rate limits (seconds)
+    }
+  }
+}
+```
+
+**Status Code Usage**:
+- `400`: Malformed request syntax
+- `401`: Authentication required or failed
+- `403`: Authenticated but not authorized (wrong role)
+- `404`: Resource not found
+- `409`: Conflict (duplicate email, username taken)
+- `422`: Business rule violation (invalid state transition)
+- `429`: Rate limit exceeded
+- `500`: System error (hide details from user, log with correlation ID)
+
+**Example Controller Error Handling**:
+```typescript
+// User-friendly operational errors
+if (existingUser) {
+  throw new ConflictException({
+    error: {
+      code: 'DUPLICATE_EMAIL',
+      message: 'Email address already exists. Please use a different email.',
+      details: { field: 'email' }
+    }
+  });
+}
+
+// Payment errors with tracking
+catch (paymentError) {
+  logger.error('Payment processing failed', {
+    correlationId,
+    tenantId,
+    transactionId: payment.id,
+    error: paymentError.message
+  });
+
+  throw new UnprocessableEntityException({
+    error: {
+      code: 'PAYMENT_FAILED',
+      message: 'Payment could not be processed. Please check your payment method.',
+      details: {
+        transactionId: payment.id,
+        correlationId
+      }
+    }
+  });
+}
+```
+
+### Observability Patterns
+**Reference Implementation**: `backend/src/common/interceptors/logging.interceptor.ts`
+
+**Correlation ID Tracking**:
+```typescript
+// Add to all requests
+@Injectable()
+export class CorrelationIdMiddleware implements NestMiddleware {
+  use(req: Request, res: Response, next: NextFunction) {
+    req['correlationId'] = req.headers['x-correlation-id'] || uuidv4();
+    res.setHeader('X-Correlation-ID', req['correlationId']);
+    next();
+  }
+}
+
+// Include in all logs
+logger.info('User created', {
+  correlationId: req.correlationId,
+  tenantId,
+  userId,
+  duration: Date.now() - startTime
+});
+```
+
+**Metrics Emission**:
+```typescript
+// Track business metrics (Principle VIII)
+import { Counter, Histogram } from 'prom-client';
+
+const paymentCounter = new Counter({
+  name: 'payments_total',
+  help: 'Total payment attempts',
+  labelNames: ['status', 'gateway', 'tenant_id']
+});
+
+const apiDuration = new Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'API request duration',
+  labelNames: ['method', 'path', 'status']
+});
+
+// In payment service
+paymentCounter.inc({ status: 'success', gateway: 'qpay', tenant_id: tenantId });
+
+// In API interceptor
+const duration = Date.now() - startTime;
+apiDuration.observe({ method: req.method, path: req.path, status: res.statusCode }, duration / 1000);
+```
+
+**Alert Configuration** (add to monitoring setup):
+```yaml
+# Critical business alerts
+- alert: HighPaymentFailureRate
+  expr: rate(payments_total{status="failed"}[5m]) > 0.05
+  severity: critical
+  annotations:
+    summary: "Payment failure rate above 5% in last 5 minutes"
+
+- alert: HighAPILatency
+  expr: histogram_quantile(0.95, http_request_duration_seconds) > 0.5
+  severity: warning
+  annotations:
+    summary: "API p95 latency above 500ms"
+```
+
 ---
 
 **Workflow for New Module Implementation**:

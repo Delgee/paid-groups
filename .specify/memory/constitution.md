@@ -1,20 +1,22 @@
 <!--
 Sync Impact Report:
-Version: 1.1.0 (added pattern consistency principle)
+Version: 1.2.0 (added error handling and observability principles)
 Date: 2025-01-20
 
 Modified Principles:
 - Created initial constitution from CLAUDE.md guidance (v1.0.0)
 - Added Principle VI: Pattern Consistency (v1.1.0)
+- Added Principle VII: Error Handling & User Communication (v1.2.0)
+- Added Principle VIII: Observability & Monitoring (v1.2.0)
 
 Added Sections:
-- Core Principles: Multi-Tenancy, Test-First Development, Type Safety, Performance & Caching, Security by Design, Pattern Consistency
-- Development Standards: Backend API Patterns, Frontend React Best Practices, Code Quality Requirements
+- Core Principles: Multi-Tenancy, Test-First Development, Type Safety, Performance & Caching, Security by Design, Pattern Consistency, Error Handling & User Communication, Observability & Monitoring
+- Development Standards: Backend API Patterns, Frontend React Best Practices, Code Quality Requirements, Error Response Standards
 - Testing Requirements: TDD Workflow, E2E Testing Standards
 - Governance: Amendment Process and Compliance
 
 Templates Status:
-✅ plan-template.md - Constitution Check section aligned
+✅ plan-template.md - Constitution Check section aligned (error handling gates added)
 ✅ spec-template.md - Requirements alignment verified
 ✅ tasks-template.md - Task categorization matches principles
 ✅ All command files reviewed
@@ -23,6 +25,8 @@ Follow-up Actions:
 - Remove redundant content from CLAUDE.md (best practices sections moved to constitution) ✅
 - CLAUDE.md will retain only project-specific context and current feature status ✅
 - Add reference implementation section to CLAUDE.md for pattern guidance ✅
+- Update error response format across existing modules to match new standard (next sprint)
+- Set up monitoring dashboards for payment failures and API performance (next sprint)
 -->
 
 # Telegram Groups SaaS Platform Constitution
@@ -61,6 +65,16 @@ Before implementing any new module, MUST analyze existing reference implementati
 
 **Implementation**: See "Reference Implementations" section in CLAUDE.md for module-specific pattern guidance.
 
+### VII. Error Handling & User Communication
+All errors MUST be categorized as operational (expected, user-facing) or programmer errors (unexpected, internal). User-facing errors MUST include actionable messages without exposing system internals. HTTP status codes MUST be semantically correct: 400 for validation errors, 401 for authentication failures, 403 for authorization failures, 404 for not found, 409 for conflicts (duplicate email, etc.), 422 for unprocessable entities, 500 for system errors. Error responses MUST follow consistent format: `{ error: { code: string, message: string, details?: object } }`. Payment errors MUST include transaction IDs for support tracking. Stack traces MUST NEVER be exposed to end users.
+
+**Rationale**: Inconsistent error handling leads to poor UX, increased support burden, and security leaks (stack traces exposed to users). Users need actionable guidance, not technical jargon. Payment error traceability is critical for dispute resolution.
+
+### VIII. Observability & Monitoring
+All production services MUST emit structured metrics (request count, duration, error rate, status code distribution). Critical operations (payment processing, tenant creation, Telegram Bot API calls, webhook delivery) MUST be traced with correlation IDs for distributed tracing. Alerts MUST be defined for business-critical failures: payment failures >5% in 5min window, API p95 latency >500ms, Telegram rate limit exceeded, database connection pool exhaustion >80%. Dashboards MUST track per-tenant usage metrics (API calls, active groups, bot message count). All async jobs (BullMQ) MUST report success/failure metrics and duration. Log levels MUST be appropriate: ERROR for failures requiring action, WARN for degraded states, INFO for business events, DEBUG for troubleshooting.
+
+**Rationale**: Reactive incident response is too slow for SaaS platforms. Proactive monitoring prevents revenue loss, identifies performance degradation before user complaints, and enables data-driven capacity planning. Correlation IDs enable debugging distributed transactions across services.
+
 ## Development Standards
 
 ### Backend API Patterns
@@ -80,6 +94,96 @@ Before implementing any new module, MUST analyze existing reference implementati
 - Implement Redis caching with cache key pattern: `telegram:{operation}:{identifier}`
 - Apply rate limiting via `executeWithRateLimit<T>()` wrapper
 - Use structured logging with `logger.telegram(operation, metadata, level)`
+
+### Error Response Standards
+
+**Consistent Error Format**:
+```typescript
+// All error responses MUST follow this structure
+{
+  error: {
+    code: 'VALIDATION_ERROR' | 'DUPLICATE_EMAIL' | 'PAYMENT_FAILED' | 'TENANT_NOT_FOUND',
+    message: 'User-friendly actionable message',
+    details?: {
+      field?: string,           // For validation errors
+      transactionId?: string,   // For payment errors
+      retryAfter?: number       // For rate limit errors
+    }
+  }
+}
+```
+
+**HTTP Status Code Mapping**:
+- `400 Bad Request`: Malformed request, invalid input format
+- `401 Unauthorized`: Missing or invalid authentication token
+- `403 Forbidden`: Valid auth but insufficient permissions (wrong role)
+- `404 Not Found`: Resource doesn't exist
+- `409 Conflict`: Duplicate resource (email exists, group name taken)
+- `422 Unprocessable Entity`: Valid format but business rule violation
+- `429 Too Many Requests`: Rate limit exceeded (include retryAfter)
+- `500 Internal Server Error`: Unexpected system failure (log correlation ID)
+
+**Error Categories**:
+- **Operational Errors**: Expected failures users can resolve (validation, duplicates, rate limits) - user-friendly messages
+- **Programmer Errors**: Unexpected bugs (null reference, type errors) - generic message to user, detailed logs for developers
+
+**Error Logging**:
+- User-facing errors (4xx): Log at INFO or WARN level with sanitized details
+- System errors (5xx): Log at ERROR level with full stack trace and correlation ID
+- Payment errors: Log at ERROR with transaction ID, tenant ID, amount, gateway response
+
+### Monitoring & Alerting Standards
+
+**Required Metrics (Prometheus/StatsD format)**:
+```typescript
+// Request metrics
+http_requests_total{method, path, status, tenant_id}
+http_request_duration_seconds{method, path, status}
+
+// Business metrics
+payments_total{status, gateway, tenant_id}
+telegram_api_calls_total{operation, status, bot_id}
+background_jobs_total{queue, status, job_type}
+
+// Resource metrics
+database_pool_connections{state: 'active' | 'idle' | 'waiting'}
+redis_cache_hit_rate{operation}
+```
+
+**Alert Rules**:
+```yaml
+# Payment failures
+- alert: HighPaymentFailureRate
+  expr: rate(payments_total{status="failed"}[5m]) > 0.05
+  severity: critical
+
+# API performance degradation
+- alert: HighAPILatency
+  expr: histogram_quantile(0.95, http_request_duration_seconds) > 0.5
+  severity: warning
+
+# Telegram rate limiting
+- alert: TelegramRateLimitExceeded
+  expr: rate(telegram_api_calls_total{status="rate_limited"}[1m]) > 0
+  severity: warning
+
+# Database connection exhaustion
+- alert: DatabasePoolExhaustion
+  expr: database_pool_connections{state="waiting"} / database_pool_connections > 0.8
+  severity: critical
+```
+
+**Correlation ID Implementation**:
+```typescript
+// Generate at request entry point
+const correlationId = req.headers['x-correlation-id'] || uuidv4();
+
+// Pass to all services and log messages
+logger.info('Processing payment', { correlationId, tenantId, amount });
+
+// Return in error responses for support tracking
+{ error: { code: 'PAYMENT_FAILED', correlationId } }
+```
 
 ### Frontend React Best Practices
 
@@ -170,4 +274,4 @@ These errors MUST be documented with resolution plan and fixed before feature co
 - Constitution contains immutable principles and standards
 - When conflict arises, constitution takes precedence over CLAUDE.md
 
-**Version**: 1.1.0 | **Ratified**: 2025-01-20 | **Last Amended**: 2025-01-20
+**Version**: 1.2.0 | **Ratified**: 2025-01-20 | **Last Amended**: 2025-01-20
