@@ -11,15 +11,17 @@ import { BotValidationService } from './services/bot-validation.service';
 import { BotHealthMonitorService } from './services/bot-health-monitor.service';
 import { BotSecurityService } from './services/bot-security.service';
 import { MessageTemplateService } from './services/message-template.service';
+import { BotCommandHandlerService } from './services/bot-command-handler.service';
 import { EncryptionService } from '../../common/services/encryption.service';
 import { TelegramBot } from './entities/telegram-bot.entity';
 import { TelegramGroup } from '../telegram-groups/telegram-groups.entity';
+import { User } from '../auth/entities/user.entity';
 import { MembershipModule } from '../membership/membership.module';
 import { TelegramGroupsModule } from '../telegram-groups/telegram-groups.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TelegramBot, TelegramGroup]),
+    TypeOrmModule.forFeature([TelegramBot, TelegramGroup, User]),
     ConfigModule,
     ScheduleModule.forRoot(),
     forwardRef(() => MembershipModule),
@@ -34,6 +36,7 @@ import { TelegramGroupsModule } from '../telegram-groups/telegram-groups.module'
     BotHealthMonitorService,
     BotSecurityService,
     MessageTemplateService,
+    BotCommandHandlerService,
     EncryptionService,
   ],
   exports: [

@@ -332,4 +332,205 @@ export class MembershipService {
     // For now, return empty array
     return [];
   }
+
+  /**
+   * Cancel all memberships for a member in a specific group (by chat ID)
+   */
+  async cancelMembershipsByMemberAndChat(
+    memberId: string,
+    chatId: number,
+    reason?: string
+  ): Promise<void> {
+    // Find all active memberships for this member and group (by chat ID)
+    const memberships = await this.membershipRepository
+      .createQueryBuilder('membership')
+      .leftJoinAndSelect('membership.group', 'group')
+      .where('membership.member_id = :memberId', { memberId })
+      .andWhere('group.telegram_chat_id = :chatId', { chatId })
+      .andWhere('membership.status = :status', { status: MembershipStatus.ACTIVE })
+      .getMany();
+
+    // Cancel all found memberships
+    for (const membership of memberships) {
+      membership.status = MembershipStatus.CANCELLED;
+      membership.auto_renew = false;
+      if (reason) {
+        membership.cancellation_reason = reason;
+      }
+      await this.membershipRepository.save(membership);
+    }
+  }
+
+  /**
+   * Get active membership for a specific member and group
+   */
+  async getActiveMembershipForGroupAndMember(
+    memberId: string,
+    groupId: string
+  ): Promise<Membership | null> {
+    return await this.membershipRepository.findOne({
+      where: {
+        member_id: memberId,
+        group_id: groupId,
+        status: MembershipStatus.ACTIVE,
+      },
+      relations: ['plan', 'member', 'group'],
+    });
+  }
+
+  /**
+   * Create membership with minimal required fields (for bot commands)
+   */
+  async createMembership(data: {
+    member_id: string;
+    plan_id: string;
+    status: string;
+    tenant_id: string;
+  }): Promise<Membership> {
+    // Get the plan to calculate expiration
+    const plan = await this.planRepository.findOne({
+      where: { id: data.plan_id, tenant_id: data.tenant_id },
+    });
+
+    if (!plan) {
+      throw new NotFoundException('Membership plan not found');
+    }
+
+    const startsAt = new Date();
+    const expiresAt = this.calculateExpirationDate(plan.duration_days);
+
+    const membership = this.membershipRepository.create({
+      tenant_id: data.tenant_id,
+      member_id: data.member_id,
+      plan_id: data.plan_id,
+      status: data.status as MembershipStatus,
+      starts_at: startsAt,
+      expires_at: expiresAt,
+      auto_renew: false,
+    });
+
+    return this.membershipRepository.save(membership);
+  }
+
+  /**
+   * Extend membership by ID (wrapper for extend method)
+   */
+  async extendMembership(membershipId: string, days: number): Promise<Date> {
+    // Get membership first to get tenant_id
+    const membership = await this.membershipRepository.findOne({
+      where: { id: membershipId },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('Membership not found');
+    }
+
+    const updated = await this.extend(membership.tenant_id, membershipId, days);
+    return updated.expires_at;
+  }
+
+  /**
+   * Get statistics for a specific group
+   */
+  async getGroupStatistics(groupId: string): Promise<{
+    total_members: number;
+    active_memberships: number;
+    trial_memberships: number;
+    expired_memberships: number;
+    total_revenue: number;
+    monthly_revenue: number;
+    churn_rate?: number;
+  }> {
+    const totalMembers = await this.membershipRepository
+      .createQueryBuilder('membership')
+      .where('membership.group_id = :groupId', { groupId })
+      .getCount();
+
+    const activeMemberships = await this.membershipRepository.count({
+      where: { group_id: groupId, status: MembershipStatus.ACTIVE },
+    });
+
+    const trialMemberships = await this.membershipRepository.count({
+      where: { group_id: groupId, status: MembershipStatus.TRIAL },
+    });
+
+    const expiredMemberships = await this.membershipRepository.count({
+      where: { group_id: groupId, status: MembershipStatus.EXPIRED },
+    });
+
+    // Calculate total revenue (sum of all payments for this group's memberships)
+    const memberships = await this.membershipRepository.find({
+      where: { group_id: groupId },
+      relations: ['plan'],
+    });
+
+    let totalRevenue = 0;
+    let monthlyRevenue = 0;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    for (const membership of memberships) {
+      if (membership.plan && membership.plan.price_mnt) {
+        totalRevenue += membership.plan.price_mnt;
+
+        if (membership.created_at >= thirtyDaysAgo) {
+          monthlyRevenue += membership.plan.price_mnt;
+        }
+      }
+    }
+
+    return {
+      total_members: totalMembers,
+      active_memberships: activeMemberships,
+      trial_memberships: trialMemberships,
+      expired_memberships: expiredMemberships,
+      total_revenue: totalRevenue,
+      monthly_revenue: monthlyRevenue,
+    };
+  }
+
+  /**
+   * Get members by group with filter
+   */
+  async getMembersByGroup(
+    groupId: string,
+    filter: string = 'active'
+  ): Promise<any[]> {
+    const query = this.membershipRepository
+      .createQueryBuilder('membership')
+      .leftJoinAndSelect('membership.member', 'member')
+      .leftJoinAndSelect('membership.plan', 'plan')
+      .where('membership.group_id = :groupId', { groupId });
+
+    switch (filter) {
+      case 'active':
+        query.andWhere('membership.status = :status', { status: MembershipStatus.ACTIVE });
+        break;
+      case 'trial':
+        query.andWhere('membership.status = :status', { status: MembershipStatus.TRIAL });
+        break;
+      case 'expired':
+        query.andWhere('membership.status = :status', { status: MembershipStatus.EXPIRED });
+        break;
+      case 'all':
+        // No additional filter
+        break;
+      default:
+        query.andWhere('membership.status = :status', { status: MembershipStatus.ACTIVE });
+    }
+
+    const memberships = await query
+      .orderBy('membership.created_at', 'DESC')
+      .getMany();
+
+    // Format the response to include member info and membership details
+    return memberships.map(membership => ({
+      ...membership.member,
+      membership: {
+        status: membership.status,
+        expires_at: membership.expires_at,
+        plan: membership.plan,
+      },
+    }));
+  }
 }

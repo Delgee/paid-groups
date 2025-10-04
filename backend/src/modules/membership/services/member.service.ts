@@ -37,7 +37,10 @@ export class MemberService {
     private memberRepository: Repository<Member>,
   ) {}
 
-  async create(tenantId: string, createMemberDto: CreateMemberDto): Promise<Member> {
+  async create(
+    tenantId: string,
+    createMemberDto: CreateMemberDto,
+  ): Promise<Member> {
     const member = this.memberRepository.create({
       telegram_user_id: createMemberDto.telegram_user_id,
       username: createMemberDto.telegram_username,
@@ -71,9 +74,22 @@ export class MemberService {
     return member;
   }
 
-  async findByTelegramId(tenantId: string, telegramUserId: number): Promise<Member | null> {
+  async findByTelegramId(
+    tenantId: string,
+    telegramUserId: number,
+  ): Promise<Member | null> {
     return this.memberRepository.findOne({
       where: { telegram_user_id: telegramUserId, tenant_id: tenantId },
+      relations: ['memberships'],
+    });
+  }
+
+  async findByUsername(
+    tenantId: string,
+    username: string,
+  ): Promise<Member | null> {
+    return this.memberRepository.findOne({
+      where: { username: username, tenant_id: tenantId },
       relations: ['memberships'],
     });
   }
@@ -81,7 +97,7 @@ export class MemberService {
   async update(
     tenantId: string,
     memberId: string,
-    updateMemberDto: UpdateMemberDto
+    updateMemberDto: UpdateMemberDto,
   ): Promise<Member> {
     const member = await this.findById(tenantId, memberId);
     Object.assign(member, updateMemberDto);
@@ -187,7 +203,10 @@ export class MemberService {
   /**
    * Find member by Telegram user ID
    */
-  async findByTelegramUserId(telegramUserId: number, tenantId: string): Promise<Member | null> {
+  async findByTelegramUserId(
+    telegramUserId: number,
+    tenantId: string,
+  ): Promise<Member | null> {
     return await this.memberRepository.findOne({
       where: {
         telegram_user_id: telegramUserId,

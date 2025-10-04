@@ -6,6 +6,7 @@ import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { TelegramApiService } from './telegram-api.service';
 import { MemberService } from '../../membership/services/member.service';
 import { MembershipService } from '../../membership/services/membership.service';
+import { BotCommandHandlerService } from './bot-command-handler.service';
 
 export interface TelegramUpdate {
   update_id: number;
@@ -70,6 +71,7 @@ export class WebhookService {
     private readonly telegramApiService: TelegramApiService,
     private readonly memberService: MemberService,
     private readonly membershipService: MembershipService,
+    private readonly commandHandler: BotCommandHandlerService,
   ) {}
 
   /**
@@ -230,30 +232,63 @@ export class WebhookService {
    * Handle text commands
    */
   private async handleTextCommand(bot: TelegramBot, message: any): Promise<void> {
-    const text = message.text.toLowerCase().trim();
+    const text = message.text.trim();
+    const textLower = text.toLowerCase();
     const userId = message.from.id;
+    const chatId = message.chat.id;
 
-    // Handle common commands
-    switch (text) {
+    // Parse command and arguments
+    const parts = text.split(' ');
+    const command = parts[0].toLowerCase();
+    const args = parts.slice(1);
+
+    // Create command context
+    const ctx = {
+      bot,
+      message,
+      chatId,
+      userId,
+      args,
+    };
+
+    // Handle commands
+    switch (command) {
       case '/start':
         await this.handleStartCommand(bot, message);
         break;
-      
+
       case '/help':
         await this.handleHelpCommand(bot, message);
         break;
-      
+
       case '/status':
         await this.handleStatusCommand(bot, message);
         break;
-      
+
       case '/subscribe':
         await this.handleSubscribeCommand(bot, message);
         break;
-      
+
+      // Admin commands
+      case '/ban':
+        await this.commandHandler.handleBanCommand(ctx);
+        break;
+
+      case '/extend':
+        await this.commandHandler.handleExtendCommand(ctx);
+        break;
+
+      case '/stats':
+        await this.commandHandler.handleStatsCommand(ctx);
+        break;
+
+      case '/members':
+        await this.commandHandler.handleMembersCommand(ctx);
+        break;
+
       default:
         // Handle other text or ignore
-        this.logger.debug(`Unhandled text command: ${text} from user ${userId}`);
+        this.logger.debug(`Unhandled text command: ${textLower} from user ${userId}`);
         break;
     }
   }
