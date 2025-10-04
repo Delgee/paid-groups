@@ -8,6 +8,9 @@ import { Payment, PaymentStatus } from '../entities/payment.entity';
 import { Member } from '../../membership/entities/member.entity';
 import { Membership, MembershipStatus } from '../../membership/entities/membership.entity';
 import { MembershipPlan } from '../../membership/entities/membership-plan.entity';
+import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
+import { TelegramApiService } from '../../bot/services/telegram-api.service';
+import { MessageTemplateService } from '../../bot/services/message-template.service';
 
 export interface ProcessPaymentCompletedData {
   paymentId: string;
@@ -46,8 +49,12 @@ export class PaymentService {
     private membershipRepository: Repository<Membership>,
     @InjectRepository(MembershipPlan)
     private planRepository: Repository<MembershipPlan>,
+    @InjectRepository(TelegramGroup)
+    private telegramGroupRepository: Repository<TelegramGroup>,
     @InjectQueue('payment-processing')
     private paymentQueue: Queue,
+    private telegramApiService: TelegramApiService,
+    private messageTemplateService: MessageTemplateService,
   ) {}
 
   async createPayment(data: Partial<Payment>): Promise<Payment> {
@@ -193,8 +200,8 @@ export class PaymentService {
   }
 
   private async createOrExtendMembership(
-    tenantId: string, 
-    memberId: string, 
+    tenantId: string,
+    memberId: string,
     planId: string | undefined,
     paymentId: string
   ): Promise<void> {
@@ -212,9 +219,10 @@ export class PaymentService {
       throw new NotFoundException(`Member ${memberId} not found`);
     }
 
-    // Get the plan details
+    // Get the plan details with group relation
     const plan = await this.planRepository.findOne({
       where: { id: planId, tenant_id: tenantId },
+      relations: ['group'],
     });
 
     if (!plan) {
@@ -235,6 +243,9 @@ export class PaymentService {
       },
     });
 
+    let membership: Membership;
+    let isNewMembership = false;
+
     if (existingMembership) {
       // Extend existing membership
       if (existingMembership.expires_at > new Date()) {
@@ -247,15 +258,16 @@ export class PaymentService {
         existingMembership.expires_at = expiresAt;
       }
       existingMembership.status = MembershipStatus.ACTIVE;
-      
-      await this.membershipRepository.save(existingMembership);
-      this.logger.log(`Extended membership ${existingMembership.id} for member ${memberId}`);
+      existingMembership.group_id = plan.group_id; // Update group_id
+
+      membership = await this.membershipRepository.save(existingMembership);
+      this.logger.log(`Extended membership ${membership.id} for member ${memberId}`);
     } else {
       // Create new membership
-      const membership = this.membershipRepository.create({
+      membership = this.membershipRepository.create({
         tenant_id: tenantId,
         member_id: memberId,
-        group_id: '', // Will be set when member joins a group
+        group_id: plan.group_id,
         plan_id: planId,
         status: MembershipStatus.ACTIVE,
         starts_at: startsAt,
@@ -263,9 +275,129 @@ export class PaymentService {
         auto_renew: false,
       });
 
-      await this.membershipRepository.save(membership);
+      membership = await this.membershipRepository.save(membership);
+      isNewMembership = true;
       this.logger.log(`Created new membership ${membership.id} for member ${memberId}`);
     }
+
+    // Auto-add user to Telegram group (only for new memberships)
+    if (isNewMembership) {
+      try {
+        await this.addMemberToTelegramGroup(member, plan, membership, expiresAt);
+      } catch (error) {
+        this.logger.error(`Failed to add member ${memberId} to Telegram group: ${error.message}`);
+        // Don't throw - membership is still valid, user can join manually
+      }
+    }
+  }
+
+  /**
+   * Add member to Telegram group by generating invite link and sending DM
+   */
+  private async addMemberToTelegramGroup(
+    member: Member,
+    plan: MembershipPlan,
+    membership: Membership,
+    expiresAt: Date
+  ): Promise<void> {
+    // Get the telegram group with bot details
+    const telegramGroup = await this.telegramGroupRepository.findOne({
+      where: { id: plan.group_id },
+      relations: ['bot'],
+    });
+
+    if (!telegramGroup) {
+      this.logger.warn(`Telegram group ${plan.group_id} not found for plan ${plan.id}`);
+      return;
+    }
+
+    if (!telegramGroup.telegram_chat_id) {
+      this.logger.warn(`Telegram group ${plan.group_id} has no chat_id configured`);
+      return;
+    }
+
+    if (!telegramGroup.bot || !telegramGroup.bot.bot_token) {
+      this.logger.warn(`No bot configured for telegram group ${plan.group_id}`);
+      return;
+    }
+
+    const botToken = telegramGroup.bot.bot_token;
+    const chatId = telegramGroup.telegram_chat_id;
+
+    // Generate a personalized invite link (expires in 7 days, single use)
+    const linkExpireDate = new Date();
+    linkExpireDate.setDate(linkExpireDate.getDate() + 7);
+
+    const inviteLink = await this.telegramApiService.generateInviteLink(
+      botToken,
+      chatId,
+      linkExpireDate,
+      1 // Single use
+    );
+
+    if (!inviteLink) {
+      this.logger.error(`Failed to generate invite link for chat ${chatId}`);
+      return;
+    }
+
+    // Send welcome message with invite link to user via DM
+    const welcomeMessage = this.buildWelcomeMessage(
+      member,
+      telegramGroup.group_name,
+      plan.name,
+      inviteLink,
+      expiresAt,
+      telegramGroup.bot.message_templates || {}
+    );
+
+    const sent = await this.telegramApiService.sendMessage(
+      botToken,
+      member.telegram_user_id,
+      welcomeMessage,
+      { parse_mode: 'HTML' }
+    );
+
+    if (sent) {
+      this.logger.log(`Sent invite link to member ${member.telegram_user_id} for group ${telegramGroup.group_name}`);
+
+      // Store invite link in membership metadata
+      membership.metadata = {
+        ...membership.metadata,
+        invite_link: inviteLink,
+        invite_sent_at: new Date().toISOString(),
+      };
+      await this.membershipRepository.save(membership);
+    } else {
+      this.logger.error(`Failed to send invite link to member ${member.telegram_user_id}`);
+    }
+  }
+
+  /**
+   * Build welcome message with invite link
+   */
+  private buildWelcomeMessage(
+    member: Member,
+    groupName: string,
+    planName: string,
+    inviteLink: string,
+    expiresAt: Date,
+    botTemplates: Record<string, any>
+  ): string {
+    const fullName = [member.first_name, member.last_name].filter(Boolean).join(' ') || member.username || `User ${member.telegram_user_id}`;
+    const firstName = member.first_name || member.username || `User ${member.telegram_user_id}`;
+
+    return this.messageTemplateService.buildWelcomeMessage(botTemplates, {
+      user_name: fullName,
+      user_first_name: firstName,
+      plan_name: planName,
+      group_name: groupName,
+      expires_at: expiresAt.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      invite_link: inviteLink,
+    });
   }
 
   private async queuePaymentNotification(paymentId: string, type: 'completed' | 'failed'): Promise<void> {
@@ -314,5 +446,113 @@ export class PaymentService {
       failed,
       totalRevenue: parseFloat(revenueResult?.total) || 0,
     };
+  }
+
+  /**
+   * Send payment notification to user via Telegram
+   */
+  async sendPaymentNotification(payment: Payment, type: 'completed' | 'failed'): Promise<void> {
+    if (!payment.member || !payment.member.telegram_user_id) {
+      this.logger.warn(`Cannot send payment notification - no Telegram user ID for payment ${payment.id}`);
+      return;
+    }
+
+    try {
+      // Get membership to find the group and bot
+      let membership: Membership | null = null;
+      let telegramGroup: TelegramGroup | null = null;
+      let botToken: string | null = null;
+
+      if (payment.membership_id) {
+        membership = await this.membershipRepository.findOne({
+          where: { id: payment.membership_id },
+          relations: ['plan', 'plan.group', 'plan.group.bot'],
+        });
+
+        if (membership?.plan?.group?.bot) {
+          telegramGroup = membership.plan.group;
+          botToken = telegramGroup.bot.bot_token;
+        }
+      }
+
+      // If no bot token found, try to get the first active bot for the tenant
+      if (!botToken) {
+        this.logger.warn(`No bot token found for payment ${payment.id}, skipping notification`);
+        return;
+      }
+
+      // Build and send notification message
+      const message = this.buildPaymentNotificationMessage(
+        payment,
+        membership,
+        telegramGroup,
+        type,
+        telegramGroup?.bot?.message_templates || {}
+      );
+
+      const sent = await this.telegramApiService.sendMessage(
+        botToken,
+        payment.member.telegram_user_id,
+        message,
+        { parse_mode: 'HTML' }
+      );
+
+      if (sent) {
+        this.logger.log(`Payment notification sent to user ${payment.member.telegram_user_id} for payment ${payment.id}`);
+      } else {
+        this.logger.error(`Failed to send payment notification to user ${payment.member.telegram_user_id}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error sending payment notification for payment ${payment.id}:`, error);
+      // Don't throw - notifications are best effort
+    }
+  }
+
+  /**
+   * Build payment notification message
+   */
+  private buildPaymentNotificationMessage(
+    payment: Payment,
+    membership: Membership | null,
+    telegramGroup: TelegramGroup | null,
+    type: 'completed' | 'failed',
+    botTemplates: Record<string, any>
+  ): string {
+    const member = payment.member;
+    const fullName = member
+      ? ([member.first_name, member.last_name].filter(Boolean).join(' ') || member.username || `User ${member.telegram_user_id}`)
+      : '';
+    const firstName = member
+      ? (member.first_name || member.username || `User ${member.telegram_user_id}`)
+      : '';
+
+    const variables = {
+      user_name: fullName,
+      user_first_name: firstName,
+      amount: payment.amount_mnt.toLocaleString(),
+      currency: payment.currency,
+      payment_id: payment.qpay_payment_id || payment.id,
+      payment_date: payment.paid_at?.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) || '',
+      group_name: telegramGroup?.group_name || '',
+      plan_name: membership?.plan?.name || '',
+      expires_at: membership?.expires_at.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }) || '',
+      failure_reason: payment.failure_reason ? `<b>Reason:</b> ${payment.failure_reason}` : '',
+    };
+
+    if (type === 'completed') {
+      return this.messageTemplateService.buildPaymentSuccessMessage(botTemplates, variables);
+    } else {
+      return this.messageTemplateService.buildPaymentFailedMessage(botTemplates, variables);
+    }
   }
 }

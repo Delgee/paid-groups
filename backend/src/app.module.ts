@@ -16,6 +16,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { HealthModule } from './modules/health/health.module';
 import { UserManagementModule } from './modules/user-management/user-management.module';
 import { TelegramGroupsModule } from './modules/telegram-groups/telegram-groups.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
@@ -70,6 +71,7 @@ import { RequestContextMiddleware } from './common/middleware/request-context.mi
     HealthModule,
     UserManagementModule,
     TelegramGroupsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [

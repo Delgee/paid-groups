@@ -70,6 +70,11 @@ export default function PlansPage() {
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<MembershipPlan | null>(null);
+  const [deleteConfirmPlan, setDeleteConfirmPlan] = useState<MembershipPlan | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     register,
@@ -125,6 +130,51 @@ export default function PlansPage() {
       setPlans(prev => prev.map(p => p.id === plan.id ? updatedPlan : p));
     } catch (err) {
       console.error('Failed to toggle plan:', err);
+    }
+  };
+
+  const handleEditPlan = (plan: MembershipPlan) => {
+    setEditingPlan(plan);
+    reset({
+      name: plan.name,
+      description: plan.description || '',
+      price: plan.price,
+      currency: plan.currency,
+      duration_days: plan.duration_days,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdatePlan = async (data: CreatePlanFormData) => {
+    if (!editingPlan) return;
+
+    try {
+      setIsUpdating(true);
+      const updatedPlan = await apiClient.updateMembershipPlan(editingPlan.id, data);
+      setPlans(prev => prev.map(p => p.id === editingPlan.id ? updatedPlan : p));
+      setIsEditModalOpen(false);
+      setEditingPlan(null);
+      reset();
+    } catch (err: any) {
+      console.error('Failed to update plan:', err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeletePlan = async () => {
+    if (!deleteConfirmPlan) return;
+
+    try {
+      setIsDeleting(true);
+      await apiClient.deleteMembershipPlan(deleteConfirmPlan.id);
+      setPlans(prev => prev.filter(p => p.id !== deleteConfirmPlan.id));
+      setDeleteConfirmPlan(null);
+    } catch (err: any) {
+      console.error('Failed to delete plan:', err);
+      // Handle error - could show a toast notification
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -279,7 +329,7 @@ export default function PlansPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEditPlan(plan)}>
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Plan
                       </DropdownMenuItem>
@@ -297,7 +347,10 @@ export default function PlansPage() {
                         )}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => setDeleteConfirmPlan(plan)}
+                      >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete Plan
                       </DropdownMenuItem>
@@ -465,6 +518,172 @@ export default function PlansPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Plan Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5" />
+              Edit Membership Plan
+            </DialogTitle>
+            <DialogDescription>
+              Update your subscription plan details.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit(handleUpdatePlan)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Plan Name</Label>
+              <Input
+                id="edit-name"
+                placeholder="Premium Membership"
+                {...register('name')}
+                className={errors.name ? 'border-red-500' : ''}
+              />
+              {errors.name && (
+                <p className="text-red-600 text-sm">{errors.name.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description (Optional)</Label>
+              <Input
+                id="edit-description"
+                placeholder="Access to premium content and features"
+                {...register('description')}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-price">Price</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  step="0.01"
+                  placeholder="9.99"
+                  {...register('price', { valueAsNumber: true })}
+                  className={errors.price ? 'border-red-500' : ''}
+                />
+                {errors.price && (
+                  <p className="text-red-600 text-sm">{errors.price.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-currency">Currency</Label>
+                <Input
+                  id="edit-currency"
+                  placeholder="USD"
+                  {...register('currency')}
+                  className={errors.currency ? 'border-red-500' : ''}
+                />
+                {errors.currency && (
+                  <p className="text-red-600 text-sm">{errors.currency.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-duration_days">Duration (Days)</Label>
+              <Input
+                id="edit-duration_days"
+                type="number"
+                placeholder="30"
+                {...register('duration_days', { valueAsNumber: true })}
+                className={errors.duration_days ? 'border-red-500' : ''}
+              />
+              {errors.duration_days && (
+                <p className="text-red-600 text-sm">{errors.duration_days.message}</p>
+              )}
+              <p className="text-xs text-gray-500">
+                Common values: 7 (week), 30 (month), 365 (year)
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditingPlan(null);
+                  reset();
+                }}
+                disabled={isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isUpdating}>
+                {isUpdating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Update Plan
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmPlan} onOpenChange={(open) => !open && setDeleteConfirmPlan(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Delete Membership Plan
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deleteConfirmPlan?.name}"?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 my-4">
+            <p className="text-sm text-yellow-800">
+              <strong>Warning:</strong> Deleting this plan will not affect existing members,
+              but new users won't be able to subscribe to this plan.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteConfirmPlan(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeletePlan}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Plan
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

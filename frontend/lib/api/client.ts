@@ -558,6 +558,23 @@ class ApiClient {
     return response.data;
   }
 
+  async deleteMembershipPlan(id: string): Promise<void> {
+    await this.instance.delete(`/membership-plans/${id}`);
+  }
+
+  async getMembershipPlanStats(id: string): Promise<{
+    total_members: number;
+    active_members: number;
+    total_revenue: number;
+  }> {
+    const response = await this.instance.get<{
+      total_members: number;
+      active_members: number;
+      total_revenue: number;
+    }>(`/membership-plans/${id}/stats`);
+    return response.data;
+  }
+
   // User management methods
   async createUser(userData: CreateUserRequest): Promise<CreateUserResponse> {
     const response = await this.instance.post<CreateUserResponse>(
@@ -571,6 +588,55 @@ class ApiClient {
     const response = await this.instance.get<GetUsersResponse>('/users', {
       params: query,
     });
+    return response.data;
+  }
+
+  // Analytics methods
+  async getDashboardMetrics(): Promise<{
+    active_members: number;
+    total_revenue: number;
+    monthly_revenue: number;
+    churn_rate: number;
+    trial_conversion_rate: number;
+    top_performing_groups: {
+      group_id: string;
+      group_name: string;
+      member_count: number;
+      revenue: number;
+      conversion_rate: number;
+    }[];
+  }> {
+    const response = await this.instance.get('/analytics/dashboard');
+    return response.data;
+  }
+
+  async getRevenueMetrics(days?: number): Promise<{
+    current_period: number;
+    previous_period: number;
+    growth_percentage: number;
+    mrr: number;
+    arr: number;
+    daily_revenue: {
+      date: string;
+      revenue: number;
+      transaction_count: number;
+    }[];
+  }> {
+    const response = await this.instance.get('/analytics/revenue', {
+      params: days ? { days } : undefined,
+    });
+    return response.data;
+  }
+
+  async getMembershipMetrics(): Promise<{
+    total_memberships: number;
+    active_memberships: number;
+    trial_memberships: number;
+    expired_memberships: number;
+    churn_rate: number;
+    average_lifetime_value: number;
+  }> {
+    const response = await this.instance.get('/analytics/memberships');
     return response.data;
   }
 

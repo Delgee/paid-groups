@@ -50,19 +50,23 @@ export class PaymentProcessor {
   @Process('send-payment-notification')
   async handlePaymentNotification(job: Job<PaymentNotificationData>) {
     this.logger.info(`Processing payment notification job: ${job.id}`);
-    
+
     try {
       const { paymentId, type } = job.data;
-      await this.paymentService.findById(paymentId);
-      
-      // TODO: Implement Telegram notification sending
-      // This would typically:
-      // 1. Get member's Telegram user ID
-      // 2. Send appropriate message based on payment status
-      // 3. Include payment details and membership information
-      
+
+      // Get payment with member and membership relations
+      const payment = await this.paymentService.findById(paymentId);
+
+      if (!payment.member || !payment.member.telegram_user_id) {
+        this.logger.warn(`Cannot send notification - no Telegram user ID for payment ${paymentId}`);
+        return;
+      }
+
+      // Send notification via payment service helper method
+      await this.paymentService.sendPaymentNotification(payment, type);
+
       this.logger.info(`Payment notification sent for payment ${paymentId} (${type})`);
-      
+
     } catch (error) {
       this.logger.error(`Failed to send payment notification for job ${job.id}:`, error.message);
       // Don't re-throw notification errors to avoid infinite retries

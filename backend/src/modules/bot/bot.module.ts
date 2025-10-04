@@ -10,14 +10,16 @@ import { WebhookService } from './services/webhook.service';
 import { BotValidationService } from './services/bot-validation.service';
 import { BotHealthMonitorService } from './services/bot-health-monitor.service';
 import { BotSecurityService } from './services/bot-security.service';
+import { MessageTemplateService } from './services/message-template.service';
 import { EncryptionService } from '../../common/services/encryption.service';
 import { TelegramBot } from './entities/telegram-bot.entity';
+import { TelegramGroup } from '../telegram-groups/telegram-groups.entity';
 import { MembershipModule } from '../membership/membership.module';
 import { TelegramGroupsModule } from '../telegram-groups/telegram-groups.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TelegramBot]),
+    TypeOrmModule.forFeature([TelegramBot, TelegramGroup]),
     ConfigModule,
     ScheduleModule.forRoot(),
     forwardRef(() => MembershipModule),
@@ -31,6 +33,7 @@ import { TelegramGroupsModule } from '../telegram-groups/telegram-groups.module'
     BotValidationService,
     BotHealthMonitorService,
     BotSecurityService,
+    MessageTemplateService,
     EncryptionService,
   ],
   exports: [
@@ -40,6 +43,7 @@ import { TelegramGroupsModule } from '../telegram-groups/telegram-groups.module'
     BotValidationService,
     BotHealthMonitorService,
     BotSecurityService,
+    MessageTemplateService,
     EncryptionService,
   ],
 })
