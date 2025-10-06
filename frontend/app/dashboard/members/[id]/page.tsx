@@ -353,7 +353,9 @@ export default function MemberDetailPage() {
                         </div>
                         <div className="text-right text-sm text-gray-500">
                           <p>
-                            {membership.plan?.price ? `$${membership.plan.price}` : 'Free'} / 
+                            {membership.plan?.price
+                              ? `${new Intl.NumberFormat('mn-MN').format(membership.plan.price)} ₮`
+                              : 'Free'} /
                             {membership.plan?.duration_days ? ` ${membership.plan.duration_days} days` : ' month'}
                           </p>
                         </div>

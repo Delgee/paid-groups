@@ -24,8 +24,8 @@ export class MembershipPlan {
   @Column('uuid')
   tenant_id: string;
 
-  @Column('uuid')
-  group_id: string;
+  @Column('uuid', { nullable: true })
+  group_id: string | null;
 
   @Column({ length: 255 })
   name: string;
@@ -64,9 +64,9 @@ export class MembershipPlan {
   @JoinColumn({ name: 'tenant_id' })
   tenant: Tenant;
 
-  @ManyToOne(() => TelegramGroup, group => group.membership_plans, { onDelete: 'CASCADE' })
+  @ManyToOne(() => TelegramGroup, group => group.membership_plans, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'group_id' })
-  group: TelegramGroup;
+  group: TelegramGroup | null;
 
   @OneToMany(() => Membership, membership => membership.plan)
   memberships: Membership[];

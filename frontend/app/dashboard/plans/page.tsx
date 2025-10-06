@@ -57,7 +57,7 @@ const createPlanSchema = z.object({
   name: z.string().min(1, 'Plan name is required').max(100, 'Name too long'),
   description: z.string().optional(),
   price: z.number().min(0, 'Price must be positive'),
-  currency: z.string().min(1, 'Currency is required'),
+  currency: z.string().default('MNT'),
   duration_days: z.number().min(1, 'Duration must be at least 1 day'),
   features: z.array(z.string()).optional(),
 });
@@ -84,7 +84,7 @@ export default function PlansPage() {
   } = useForm<CreatePlanFormData>({
     resolver: zodResolver(createPlanSchema),
     defaultValues: {
-      currency: 'USD',
+      currency: 'MNT',
       duration_days: 30,
     }
   });
@@ -110,13 +110,21 @@ export default function PlansPage() {
   const onSubmit = async (data: CreatePlanFormData) => {
     try {
       setIsCreating(true);
+      setError(null);
       const newPlan = await apiClient.createMembershipPlan(data);
       setPlans(prev => [newPlan, ...prev]);
       setIsCreateModalOpen(false);
       reset();
     } catch (err: any) {
       console.error('Failed to create plan:', err);
-      // Handle error (you could add error state to the modal)
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create plan';
+      setError(errorMessage);
+
+      // If it's a 401, the user might need to log in again
+      if (err.response?.status === 401) {
+        alert('Your session has expired. Please log in again.');
+        window.location.href = '/login';
+      }
     } finally {
       setIsCreating(false);
     }
@@ -139,7 +147,7 @@ export default function PlansPage() {
       name: plan.name,
       description: plan.description || '',
       price: plan.price,
-      currency: plan.currency,
+      currency: 'MNT',
       duration_days: plan.duration_days,
     });
     setIsEditModalOpen(true);
@@ -179,6 +187,15 @@ export default function PlansPage() {
   };
 
   const formatPrice = (price: number, currency: string) => {
+    // Format MNT currency properly
+    if (currency === 'MNT') {
+      return new Intl.NumberFormat('mn-MN', {
+        style: 'decimal',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(price) + ' ₮';
+    }
+
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
@@ -272,9 +289,11 @@ export default function PlansPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${plans.length > 0 
-                ? (plans.reduce((sum, p) => sum + p.price, 0) / plans.length).toFixed(0)
-                : '0'
+              {plans.length > 0
+                ? new Intl.NumberFormat('mn-MN').format(
+                    Math.round(plans.reduce((sum, p) => sum + p.price, 0) / plans.length)
+                  ) + ' ₮'
+                : '0 ₮'
               }
             </div>
           </CardContent>
@@ -395,7 +414,7 @@ export default function PlansPage() {
                   </div>
                   <div>
                     <span className="text-gray-500">Currency</span>
-                    <p className="font-medium">{plan.currency}</p>
+                    <p className="font-medium">MNT (₮)</p>
                   </div>
                 </div>
 
@@ -447,34 +466,27 @@ export default function PlansPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price">Price</Label>
+            <div className="space-y-2">
+              <Label htmlFor="price">Price (MNT)</Label>
+              <div className="relative">
                 <Input
                   id="price"
                   type="number"
-                  step="0.01"
-                  placeholder="9.99"
+                  step="1"
+                  placeholder="50000"
                   {...register('price', { valueAsNumber: true })}
                   className={errors.price ? 'border-red-500' : ''}
                 />
-                {errors.price && (
-                  <p className="text-red-600 text-sm">{errors.price.message}</p>
-                )}
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span className="text-gray-500">₮</span>
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
-                <Input
-                  id="currency"
-                  placeholder="USD"
-                  {...register('currency')}
-                  className={errors.currency ? 'border-red-500' : ''}
-                />
-                {errors.currency && (
-                  <p className="text-red-600 text-sm">{errors.currency.message}</p>
-                )}
-              </div>
+              {errors.price && (
+                <p className="text-red-600 text-sm">{errors.price.message}</p>
+              )}
+              <p className="text-xs text-gray-500">
+                Enter amount in Mongolian Tugrik (₮)
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -557,34 +569,27 @@ export default function PlansPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-price">Price</Label>
+            <div className="space-y-2">
+              <Label htmlFor="edit-price">Price (MNT)</Label>
+              <div className="relative">
                 <Input
                   id="edit-price"
                   type="number"
-                  step="0.01"
-                  placeholder="9.99"
+                  step="1"
+                  placeholder="50000"
                   {...register('price', { valueAsNumber: true })}
                   className={errors.price ? 'border-red-500' : ''}
                 />
-                {errors.price && (
-                  <p className="text-red-600 text-sm">{errors.price.message}</p>
-                )}
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span className="text-gray-500">₮</span>
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-currency">Currency</Label>
-                <Input
-                  id="edit-currency"
-                  placeholder="USD"
-                  {...register('currency')}
-                  className={errors.currency ? 'border-red-500' : ''}
-                />
-                {errors.currency && (
-                  <p className="text-red-600 text-sm">{errors.currency.message}</p>
-                )}
-              </div>
+              {errors.price && (
+                <p className="text-red-600 text-sm">{errors.price.message}</p>
+              )}
+              <p className="text-xs text-gray-500">
+                Enter amount in Mongolian Tugrik (₮)
+              </p>
             </div>
 
             <div className="space-y-2">

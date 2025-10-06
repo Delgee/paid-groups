@@ -88,7 +88,15 @@ export class MembershipPlanController {
     @Request() req,
     @Body(ValidationPipe) createPlanDto: CreateMembershipPlanRequestDto,
   ) {
-    return this.membershipPlanService.create(req.tenant_id, createPlanDto);
+    const plan = await this.membershipPlanService.create(req.tenant_id, createPlanDto);
+    return this.transformPlanResponse(plan);
+  }
+
+  private transformPlanResponse(plan: any) {
+    return {
+      ...plan,
+      price: plan.price_mnt,
+    };
   }
 
   @Get()
@@ -100,7 +108,7 @@ export class MembershipPlanController {
     @Query('include_inactive', new ParseBoolPipe({ optional: true })) includeInactive = false,
   ) {
     const plans = await this.membershipPlanService.findAllByTenant(req.tenant_id, includeInactive);
-    return { plans };
+    return { plans: plans.map(p => this.transformPlanResponse(p)) };
   }
 
   @Get('popular')
@@ -108,7 +116,7 @@ export class MembershipPlanController {
   @ApiResponse({ status: 200, description: 'List of popular membership plans' })
   async getPopularPlans(@Request() req) {
     const plans = await this.membershipPlanService.getPopularPlans(req.tenant_id);
-    return { plans };
+    return { plans: plans.map(p => this.transformPlanResponse(p)) };
   }
 
   @Get(':id')
@@ -119,7 +127,8 @@ export class MembershipPlanController {
     @Request() req,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.membershipPlanService.findById(req.tenant_id, id);
+    const plan = await this.membershipPlanService.findById(req.tenant_id, id);
+    return this.transformPlanResponse(plan);
   }
 
   @Get(':id/stats')
@@ -142,7 +151,8 @@ export class MembershipPlanController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body(ValidationPipe) updatePlanDto: UpdateMembershipPlanRequestDto,
   ) {
-    return this.membershipPlanService.update(req.tenant_id, id, updatePlanDto);
+    const plan = await this.membershipPlanService.update(req.tenant_id, id, updatePlanDto);
+    return this.transformPlanResponse(plan);
   }
 
   @Put(':id/activate')
@@ -153,7 +163,8 @@ export class MembershipPlanController {
     @Request() req,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.membershipPlanService.activate(req.tenant_id, id);
+    const plan = await this.membershipPlanService.activate(req.tenant_id, id);
+    return this.transformPlanResponse(plan);
   }
 
   @Put(':id/deactivate')
@@ -164,7 +175,8 @@ export class MembershipPlanController {
     @Request() req,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.membershipPlanService.deactivate(req.tenant_id, id);
+    const plan = await this.membershipPlanService.deactivate(req.tenant_id, id);
+    return this.transformPlanResponse(plan);
   }
 
   @Delete(':id')

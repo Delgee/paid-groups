@@ -533,9 +533,18 @@ class ApiClient {
     duration_days: number;
     features?: string[];
   }): Promise<MembershipPlan> {
+    // Backend expects price_mnt (Mongolian Tugrik), not price + currency
+    const requestData = {
+      name: data.name,
+      description: data.description,
+      price_mnt: data.price,
+      duration_days: data.duration_days,
+      features: data.features,
+    };
+
     const response = await this.instance.post<MembershipPlan>(
       '/membership-plans',
-      data,
+      requestData,
     );
     return response.data;
   }
@@ -551,9 +560,16 @@ class ApiClient {
       is_active: boolean;
     }>,
   ): Promise<MembershipPlan> {
+    // Backend expects price_mnt (Mongolian Tugrik), not price
+    const requestData: any = { ...data };
+    if (data.price !== undefined) {
+      requestData.price_mnt = data.price;
+      delete requestData.price;
+    }
+
     const response = await this.instance.put<MembershipPlan>(
       `/membership-plans/${id}`,
-      data,
+      requestData,
     );
     return response.data;
   }

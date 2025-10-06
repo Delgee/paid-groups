@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThan, LessThan } from 'typeorm';
 import { Payment } from '../payment/entities/payment.entity';
-import { Membership } from '../membership/entities/membership.entity';
+import {
+  Membership,
+  MembershipStatus,
+} from '../membership/entities/membership.entity';
 import { Member } from '../membership/entities/member.entity';
 import { MembershipPlan } from '../membership/entities/membership-plan.entity';
 import { TelegramGroup } from '../telegram-groups/telegram-groups.entity';
@@ -75,7 +78,7 @@ export class AnalyticsService {
     const activeMembers = await this.membershipRepository.count({
       where: {
         tenant_id: tenantId,
-        status: 'active',
+        status: MembershipStatus.ACTIVE,
       },
     });
 
@@ -104,7 +107,8 @@ export class AnalyticsService {
     const churnRate = await this.calculateChurnRate(tenantId);
 
     // Trial conversion rate
-    const trialConversionRate = await this.calculateTrialConversionRate(tenantId);
+    const trialConversionRate =
+      await this.calculateTrialConversionRate(tenantId);
 
     // Top performing groups
     const topPerformingGroups = await this.getTopPerformingGroups(tenantId, 5);
@@ -122,10 +126,17 @@ export class AnalyticsService {
   /**
    * Get revenue metrics including MRR and ARR
    */
-  async getRevenueMetrics(tenantId: string, days: number = 30): Promise<RevenueMetrics> {
+  async getRevenueMetrics(
+    tenantId: string,
+    days: number = 30,
+  ): Promise<RevenueMetrics> {
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthStart = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      1,
+    );
     const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
     // Current period revenue
@@ -145,16 +156,19 @@ export class AnalyticsService {
       .select('SUM(payment.amount_mnt)', 'total')
       .where('payment.tenant_id = :tenantId', { tenantId })
       .andWhere('payment.status = :status', { status: 'completed' })
-      .andWhere('payment.paid_at >= :previousMonthStart', { previousMonthStart })
+      .andWhere('payment.paid_at >= :previousMonthStart', {
+        previousMonthStart,
+      })
       .andWhere('payment.paid_at <= :previousMonthEnd', { previousMonthEnd })
       .getRawOne();
 
     const previousPeriod = parseFloat(previousPeriodResult?.total || '0');
 
     // Growth percentage
-    const growthPercentage = previousPeriod > 0
-      ? ((currentPeriod - previousPeriod) / previousPeriod) * 100
-      : 0;
+    const growthPercentage =
+      previousPeriod > 0
+        ? ((currentPeriod - previousPeriod) / previousPeriod) * 100
+        : 0;
 
     // Calculate MRR (Monthly Recurring Revenue)
     const mrr = await this.calculateMRR(tenantId);
@@ -188,7 +202,7 @@ export class AnalyticsService {
     const activeMemberships = await this.membershipRepository.count({
       where: {
         tenant_id: tenantId,
-        status: 'active',
+        status: MembershipStatus.ACTIVE,
       },
     });
 
@@ -196,7 +210,7 @@ export class AnalyticsService {
     const trialMemberships = await this.membershipRepository.count({
       where: {
         tenant_id: tenantId,
-        status: 'trial',
+        status: MembershipStatus.TRIAL,
       },
     });
 
@@ -204,7 +218,7 @@ export class AnalyticsService {
     const expiredMemberships = await this.membershipRepository.count({
       where: {
         tenant_id: tenantId,
-        status: 'expired',
+        status: MembershipStatus.EXPIRED,
       },
     });
 
@@ -232,7 +246,7 @@ export class AnalyticsService {
     const activeMemberships = await this.membershipRepository.find({
       where: {
         tenant_id: tenantId,
-        status: 'active',
+        status: MembershipStatus.ACTIVE,
       },
       relations: ['plan'],
     });
@@ -274,7 +288,7 @@ export class AnalyticsService {
     const churnedMembers = await this.membershipRepository.count({
       where: {
         tenant_id: tenantId,
-        status: 'expired',
+        status: MembershipStatus.EXPIRED,
         expires_at: Between(thirtyDaysAgo, new Date()),
       },
     });
@@ -285,7 +299,9 @@ export class AnalyticsService {
   /**
    * Calculate trial conversion rate
    */
-  private async calculateTrialConversionRate(tenantId: string): Promise<number> {
+  private async calculateTrialConversionRate(
+    tenantId: string,
+  ): Promise<number> {
     // Total trial memberships created
     const totalTrials = await this.membershipRepository.count({
       where: {
@@ -301,7 +317,7 @@ export class AnalyticsService {
     const convertedTrials = await this.membershipRepository.count({
       where: {
         tenant_id: tenantId,
-        status: 'active',
+        status: MembershipStatus.ACTIVE,
       },
     });
 
@@ -325,7 +341,10 @@ export class AnalyticsService {
   /**
    * Get daily revenue for the specified number of days
    */
-  private async getDailyRevenue(tenantId: string, days: number): Promise<DailyRevenue[]> {
+  private async getDailyRevenue(
+    tenantId: string,
+    days: number,
+  ): Promise<DailyRevenue[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
@@ -341,7 +360,7 @@ export class AnalyticsService {
       .orderBy('date', 'ASC')
       .getRawMany();
 
-    return results.map(row => ({
+    return results.map((row) => ({
       date: row.date,
       revenue: parseFloat(row.revenue || '0'),
       transaction_count: parseInt(row.transaction_count || '0', 10),
@@ -373,7 +392,7 @@ export class AnalyticsService {
       .limit(limit)
       .getRawMany();
 
-    return results.map(row => ({
+    return results.map((row) => ({
       group_id: row.group_id,
       group_name: row.group_name || 'Unknown Group',
       member_count: parseInt(row.member_count || '0', 10),
