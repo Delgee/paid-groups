@@ -35,43 +35,43 @@
 **Dependencies**: None
 **Estimated Time**: 2-3 hours
 
-- [ ] **T001** Create migration: `bot_configurations` table
-  **File**: `backend/src/database/migrations/[timestamp]-create-bot-configurations-table.ts`
+- [x] **T001** Create migration: `bot_configurations` table
+  **File**: `backend/src/database/migrations/1730000012000-CreateBotConfigurations.ts`
   **Details**: 12 fields (id, tenant_id, bot_token, bot_username, display_name, description, welcome_message, channel_id, channel_username, is_active, last_sync_at, created_at, updated_at), indexes on (tenant_id), (tenant_id, is_active), (bot_token UNIQUE), (channel_id WHERE NOT NULL)
 
-- [ ] **T002** Add RLS policies to `bot_configurations` table
+- [x] **T002** Add RLS policies to `bot_configurations` table
   **File**: Same migration file as T001
   **Details**: Enable RLS, create 4 policies (SELECT, INSERT, UPDATE, DELETE) scoped by `current_setting('app.current_tenant')`
 
-- [ ] **T003** Create migration: `membership_plans` table
-  **File**: `backend/src/database/migrations/[timestamp]-create-membership-plans-table.ts`
-  **Details**: 10 fields (id, tenant_id, bot_configuration_id FK, name, description, price INTEGER CHECK > 0, duration_days INTEGER CHECK > 0, is_active, sort_order, created_at, updated_at), indexes on (bot_configuration_id, is_active), (tenant_id)
+- [x] **T003** Create migration: `membership_plans` table enhancement
+  **File**: `backend/src/database/migrations/1730000013000-EnhanceMembershipPlansForBots.ts`
+  **Details**: Add bot_configuration_id FK and sort_order fields to existing membership_plans table, indexes on (bot_configuration_id, is_active, sort_order)
 
-- [ ] **T004** Add RLS policies to `membership_plans` table
-  **File**: Same migration file as T003
-  **Details**: Enable RLS, create 4 policies scoped by tenant_id
+- [x] **T004** Add RLS policies to `membership_plans` table
+  **File**: Already enabled in existing migration 1730000005000-CreateMembershipPlans.ts
+  **Details**: RLS policies already exist, no changes needed
 
-- [ ] **T005** Create migration: `payment_transactions` table
-  **File**: `backend/src/database/migrations/[timestamp]-create-payment-transactions-table.ts`
+- [x] **T005** Create migration: `payment_transactions` table
+  **File**: `backend/src/database/migrations/1730000014000-CreatePaymentTransactions.ts`
   **Details**: 17 fields including qpay_invoice_id (UNIQUE), qpay_transaction_id, status ENUM, amount, snapshot_plan_name, snapshot_price, snapshot_duration_days, membership_starts_at, membership_expires_at, indexes on (tenant_id, status, created_at DESC), (qpay_invoice_id UNIQUE), (telegram_user_id, status)
 
-- [ ] **T006** Add RLS policies to `payment_transactions` table
+- [x] **T006** Add RLS policies to `payment_transactions` table
   **File**: Same migration file as T005
   **Details**: Enable RLS, create 4 policies scoped by tenant_id
 
-- [ ] **T007** Create migration: `channel_members` table
-  **File**: `backend/src/database/migrations/[timestamp]-create-channel-members-table.ts`
+- [x] **T007** Create migration: `channel_members` table
+  **File**: `backend/src/database/migrations/1730000015000-CreateChannelMembers.ts`
   **Details**: 13 fields including transaction_id (UNIQUE FK), telegram_user_id, channel_id, invite_link, status ENUM ('active', 'expired', 'revoked'), joined_at, expires_at, renewal_reminder_sent_at, removed_at, indexes on (tenant_id, status, expires_at), (telegram_user_id, channel_id, status), (transaction_id UNIQUE)
 
-- [ ] **T008** Add RLS policies to `channel_members` table
+- [x] **T008** Add RLS policies to `channel_members` table
   **File**: Same migration file as T007
   **Details**: Enable RLS, create 4 policies scoped by tenant_id
 
-- [ ] **T009** Create migration: `bot_event_logs` table
-  **File**: `backend/src/database/migrations/[timestamp]-create-bot-event-logs-table.ts`
+- [x] **T009** Create migration: `bot_event_logs` table
+  **File**: `backend/src/database/migrations/1730000016000-CreateBotEventLogs.ts`
   **Details**: 8 fields including bot_configuration_id FK (ON DELETE CASCADE), event_type ENUM, event_data JSONB, correlation_id UUID, severity ENUM, occurred_at, indexes on (bot_configuration_id, occurred_at DESC), (tenant_id, event_type, occurred_at DESC), (correlation_id)
 
-- [ ] **T010** Add RLS policies to `bot_event_logs` table
+- [x] **T010** Add RLS policies to `bot_event_logs` table
   **File**: Same migration file as T009
   **Details**: Enable RLS, create 4 policies scoped by tenant_id
 

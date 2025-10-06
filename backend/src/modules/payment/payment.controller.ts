@@ -2,137 +2,215 @@ import {
   Controller,
   Get,
   Post,
+  Body,
   Param,
   Query,
   UseGuards,
-  Req,
+  ParseUUIDPipe,
+  ParseEnumPipe,
+  Headers,
+  UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { Request } from 'express';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PaymentService } from './services/payment.service';
-import { Payment } from './entities/payment.entity';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+  ApiHeader,
+} from '@nestjs/swagger';
+import { PaymentTransactionService } from './services/payment-transaction.service';
+import { CreatePaymentTransactionDto } from './dto/create-payment-transaction.dto';
+import { PaymentTransaction, PaymentStatus } from './entities/payment-transaction.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { TenantId } from '../auth/decorators/tenant-id.decorator';
+import * as crypto from 'crypto';
 
 @ApiTags('Payments')
 @Controller('payments')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class PaymentController {
-  constructor(private readonly paymentService: PaymentService) {}
+  private readonly logger = new Logger(PaymentController.name);
+  private readonly QPAY_SECRET = process.env.QPAY_WEBHOOK_SECRET || 'test-webhook-secret';
 
-  @Get()
-  @ApiOperation({ summary: 'Get all payments for tenant' })
-  @ApiResponse({ status: 200, description: 'Returns list of payments' })
-  async getPayments(
-    @Req() req: Request,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    @Query('status') _status?: string,
-  ): Promise<{
-    payments: Payment[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
-    const tenantId = (req.user as any).tenant_id;
-    
-    // TODO: Implement pagination and filtering
-    // For now, return basic stats to demonstrate the service
-    const stats = await this.paymentService.getPaymentStats(tenantId);
-    
-    return {
-      payments: [],
-      total: stats.total,
-      page,
-      limit,
-    };
+  constructor(private readonly paymentTransactionService: PaymentTransactionService) {}
+
+  @Post('initiate')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Initiate a new payment transaction' })
+  @ApiResponse({
+    status: 201,
+    description: 'Payment initiated successfully with QPay link',
+  })
+  @ApiResponse({ status: 404, description: 'Membership plan not found' })
+  @ApiResponse({ status: 422, description: 'Membership plan is inactive' })
+  async initiatePayment(
+    @TenantId() tenantId: string,
+    @Body() createDto: CreatePaymentTransactionDto,
+  ): Promise<{ transaction: PaymentTransaction; payment_link: string }> {
+    return this.paymentTransactionService.initiatePayment(tenantId, createDto);
   }
 
-  @Get('stats')
-  @ApiOperation({ summary: 'Get payment statistics for tenant' })
-  @ApiResponse({ status: 200, description: 'Returns payment statistics' })
-  async getPaymentStats(@Req() req: Request): Promise<{
-    total: number;
-    completed: number;
-    pending: number;
-    failed: number;
-    totalRevenue: number;
-  }> {
-    const tenantId = (req.user as any).tenant_id;
-    return this.paymentService.getPaymentStats(tenantId);
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all payment transactions for tenant' })
+  @ApiQuery({
+    name: 'bot_configuration_id',
+    required: false,
+    description: 'Filter by bot configuration',
+  })
+  @ApiQuery({
+    name: 'membership_plan_id',
+    required: false,
+    description: 'Filter by membership plan',
+  })
+  @ApiQuery({
+    name: 'telegram_user_id',
+    required: false,
+    description: 'Filter by Telegram user',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: PaymentStatus,
+    description: 'Filter by payment status',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of payment transactions',
+    type: [PaymentTransaction],
+  })
+  async findAll(
+    @TenantId() tenantId: string,
+    @Query('bot_configuration_id') botConfigurationId?: string,
+    @Query('membership_plan_id') membershipPlanId?: string,
+    @Query('telegram_user_id') telegramUserId?: string,
+    @Query('status', new ParseEnumPipe(PaymentStatus, { optional: true }))
+    status?: PaymentStatus,
+  ): Promise<PaymentTransaction[]> {
+    return this.paymentTransactionService.findAll(tenantId, {
+      bot_configuration_id: botConfigurationId,
+      membership_plan_id: membershipPlanId,
+      telegram_user_id: telegramUserId,
+      status,
+    });
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get payment by ID' })
-  @ApiResponse({ status: 200, description: 'Returns payment details' })
-  @ApiResponse({ status: 404, description: 'Payment not found' })
-  async getPayment(
-    @Param('id') paymentId: string,
-    @Req() req: Request,
-  ): Promise<Payment> {
-    const payment = await this.paymentService.findById(paymentId);
-    
-    // Verify payment belongs to user's tenant
-    const tenantId = (req.user as any).tenant_id;
-    if (payment.tenant_id !== tenantId) {
-      throw new Error('Payment not found');
-    }
-    
-    return payment;
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get payment transaction by ID' })
+  @ApiParam({ name: 'id', description: 'Payment transaction UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment transaction details',
+    type: PaymentTransaction,
+  })
+  @ApiResponse({ status: 404, description: 'Payment transaction not found' })
+  async findOne(
+    @TenantId() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PaymentTransaction> {
+    return this.paymentTransactionService.findOne(tenantId, id);
   }
 
-  @Post(':id/retry')
-  @ApiOperation({ 
-    summary: 'Retry processing a failed payment',
-    description: 'Manually retry processing for a failed payment by re-queuing it'
+  @Post('webhook/qpay')
+  @ApiOperation({ summary: 'QPay webhook endpoint for payment notifications' })
+  @ApiHeader({ name: 'X-QPay-Signature', description: 'HMAC signature for verification' })
+  @ApiResponse({
+    status: 200,
+    description: 'Webhook processed successfully',
   })
-  @ApiResponse({ status: 200, description: 'Payment retry queued successfully' })
-  @ApiResponse({ status: 404, description: 'Payment not found' })
-  @ApiResponse({ status: 400, description: 'Payment cannot be retried' })
-  async retryPayment(
-    @Param('id') paymentId: string,
-    @Req() req: Request,
-  ): Promise<{ success: boolean; message: string }> {
-    const payment = await this.paymentService.findById(paymentId);
-    
-    // Verify payment belongs to user's tenant
-    const tenantId = (req.user as any).tenant_id;
-    if (payment.tenant_id !== tenantId) {
-      throw new Error('Payment not found');
-    }
+  @ApiResponse({ status: 401, description: 'Invalid signature' })
+  async handleQPayWebhook(
+    @Headers('x-qpay-signature') signature: string,
+    @Body() payload: any,
+  ): Promise<any> {
+    this.logger.log('Received QPay webhook', { invoice_id: payload.invoice_id });
 
-    // Only retry failed or pending payments
-    if (!['failed', 'pending'].includes(payment.status)) {
-      return {
-        success: false,
-        message: 'Only failed or pending payments can be retried',
-      };
-    }
-
-    // Queue payment for retry processing
-    if (payment.qpay_payment_id) {
-      await this.paymentService.queuePaymentCompleted({
-        paymentId: payment.id,
-        qpayPaymentId: payment.qpay_payment_id,
-        invoiceId: payment.qpay_invoice_id,
-        amount: Number(payment.amount_mnt),
-        currency: payment.currency,
-        tenantId: payment.tenant_id,
-        memberId: payment.member_id,
-        planId: payment.metadata?.plan_id,
-        metadata: payment.metadata || {},
+    // Verify HMAC signature
+    if (!signature) {
+      this.logger.error('Missing signature header');
+      throw new UnauthorizedException({
+        error: {
+          code: 'MISSING_SIGNATURE',
+          message: 'Webhook signature is required',
+        },
       });
+    }
 
+    const expectedSignature = this.generateHmacSignature(payload);
+    if (signature !== expectedSignature) {
+      this.logger.error('Invalid webhook signature');
+      throw new UnauthorizedException({
+        error: {
+          code: 'INVALID_SIGNATURE',
+          message: 'Webhook signature verification failed',
+        },
+      });
+    }
+
+    // Find payment transaction by QPay invoice ID
+    const transaction = await this.paymentTransactionService.findByQPayInvoiceId(
+      payload.invoice_id,
+    );
+
+    if (!transaction) {
+      this.logger.warn(`Transaction not found for invoice ${payload.invoice_id}`);
       return {
-        success: true,
-        message: 'Payment retry queued successfully',
+        status: 'received',
+        received_at: new Date().toISOString(),
+        message: 'Transaction not found',
       };
+    }
+
+    // Check idempotency - if already processed, return success
+    if (transaction.status === PaymentStatus.COMPLETED) {
+      this.logger.log(`Payment ${transaction.id} already processed`);
+      return {
+        status: 'already_processed',
+        received_at: new Date().toISOString(),
+        payment_status: 'completed',
+      };
+    }
+
+    // Process payment based on status
+    let updatedTransaction: PaymentTransaction;
+
+    if (payload.payment_status === 'PAID' || payload.invoice_status === 'PAID') {
+      updatedTransaction = await this.paymentTransactionService.markAsCompleted(
+        transaction.tenant_id,
+        transaction.id,
+        {
+          qpay_transaction_id: payload.payment_id || payload.object_id,
+          qpay_payment_method: payload.payment_method,
+        },
+      );
+
+      this.logger.log(`Payment ${transaction.id} marked as completed`);
+
+      // TODO: Trigger channel member creation and Telegram invite link generation
+    } else if (payload.payment_status === 'FAILED' || payload.invoice_status === 'FAILED') {
+      updatedTransaction = await this.paymentTransactionService.markAsFailed(
+        transaction.tenant_id,
+        transaction.id,
+      );
+
+      this.logger.log(`Payment ${transaction.id} marked as failed`);
     }
 
     return {
-      success: false,
-      message: 'Cannot retry payment without QPay payment ID',
+      status: 'received',
+      received_at: new Date().toISOString(),
+      payment_status: updatedTransaction.status,
     };
+  }
+
+  private generateHmacSignature(payload: any): string {
+    const payloadString = JSON.stringify(payload);
+    return crypto.createHmac('sha256', this.QPAY_SECRET).update(payloadString).digest('hex');
   }
 }
