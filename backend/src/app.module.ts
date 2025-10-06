@@ -17,6 +17,8 @@ import { HealthModule } from './modules/health/health.module';
 import { UserManagementModule } from './modules/user-management/user-management.module';
 import { TelegramGroupsModule } from './modules/telegram-groups/telegram-groups.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { BotConfigurationModule } from './modules/bot-configuration/bot-configuration.module';
+import { MembershipPlanModule } from './modules/membership-plan/membership-plan.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
@@ -66,7 +68,9 @@ import { RequestContextMiddleware } from './common/middleware/request-context.mi
     AuthModule,
     TenantModule,
     BotModule,
+    BotConfigurationModule,
     MembershipModule,
+    MembershipPlanModule,
     PaymentModule,
     HealthModule,
     UserManagementModule,
