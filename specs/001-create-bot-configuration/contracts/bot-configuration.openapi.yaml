@@ -1,0 +1,695 @@
+openapi: 3.0.3
+info:
+  title: Bot Configuration API
+  description: Endpoints for managing Telegram bot configurations
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3001/v1
+    description: Development server
+  - url: https://api.example.com/v1
+    description: Production server
+
+tags:
+  - name: Bot Configuration
+    description: Manage Telegram bot settings and synchronization
+
+paths:
+  /bots:
+    get:
+      tags:
+        - Bot Configuration
+      summary: List all bot configurations for authenticated tenant
+      description: Retrieve paginated list of bot configurations with optional filtering
+      operationId: listBotConfigurations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: is_active
+          in: query
+          description: Filter by active status
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successfully retrieved bot configurations
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BotConfiguration'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+              example:
+                data:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                    bot_token: "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz123456789"
+                    bot_username: "my_awesome_bot"
+                    display_name: "My Awesome Bot"
+                    description: "Premium content access bot"
+                    welcome_message: "Welcome! Choose a membership plan to get started."
+                    channel_id: -1001234567890
+                    channel_username: "my_premium_channel"
+                    is_active: true
+                    last_sync_at: "2025-10-07T10:30:00Z"
+                    created_at: "2025-10-01T09:00:00Z"
+                    updated_at: "2025-10-07T10:30:00Z"
+                meta:
+                  page: 1
+                  limit: 10
+                  total: 3
+                  total_pages: 1
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Bot Configuration
+      summary: Create new bot configuration
+      description: Configure a new Telegram bot with validation and automatic synchronization
+      operationId: createBotConfiguration
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBotConfigurationDto'
+            example:
+              bot_token: "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz123456789"
+              display_name: "My Awesome Bot"
+              description: "Premium content access bot"
+              welcome_message: "Welcome! Choose a membership plan to get started."
+              channel_id: -1001234567890
+      responses:
+        '201':
+          description: Bot configuration created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotConfiguration'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                bot_token: "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz123456789"
+                bot_username: "my_awesome_bot"
+                display_name: "My Awesome Bot"
+                description: "Premium content access bot"
+                welcome_message: "Welcome! Choose a membership plan to get started."
+                channel_id: -1001234567890
+                channel_username: "my_premium_channel"
+                is_active: true
+                last_sync_at: "2025-10-07T10:30:00Z"
+                created_at: "2025-10-07T10:30:00Z"
+                updated_at: "2025-10-07T10:30:00Z"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Bot token invalid or bot permissions insufficient
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "BOT_TOKEN_INVALID"
+                  message: "The provided bot token is invalid or revoked. Please verify the token from @BotFather."
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /bots/{id}:
+    get:
+      tags:
+        - Bot Configuration
+      summary: Get bot configuration by ID
+      description: Retrieve detailed information about a specific bot configuration
+      operationId: getBotConfiguration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Bot configuration UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Bot configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotConfiguration'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                bot_token: "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz123456789"
+                bot_username: "my_awesome_bot"
+                display_name: "My Awesome Bot"
+                description: "Premium content access bot"
+                welcome_message: "Welcome! Choose a membership plan to get started."
+                channel_id: -1001234567890
+                channel_username: "my_premium_channel"
+                is_active: true
+                last_sync_at: "2025-10-07T10:30:00Z"
+                created_at: "2025-10-01T09:00:00Z"
+                updated_at: "2025-10-07T10:30:00Z"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Bot Configuration
+      summary: Update bot configuration
+      description: Update bot settings with automatic Telegram synchronization
+      operationId: updateBotConfiguration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Bot configuration UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBotConfigurationDto'
+            example:
+              display_name: "Updated Bot Name"
+              description: "New description for the bot"
+              welcome_message: "Welcome back! We've updated our offerings."
+      responses:
+        '200':
+          description: Bot configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotConfiguration'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                bot_token: "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz123456789"
+                bot_username: "my_awesome_bot"
+                display_name: "Updated Bot Name"
+                description: "New description for the bot"
+                welcome_message: "Welcome back! We've updated our offerings."
+                channel_id: -1001234567890
+                channel_username: "my_premium_channel"
+                is_active: true
+                last_sync_at: "2025-10-07T11:00:00Z"
+                created_at: "2025-10-01T09:00:00Z"
+                updated_at: "2025-10-07T11:00:00Z"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Bot Configuration
+      summary: Delete bot configuration
+      description: Delete bot configuration and all associated data (plans, transactions, members)
+      operationId: deleteBotConfiguration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Bot configuration UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Bot configuration deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: Cannot delete bot with active memberships
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "ACTIVE_MEMBERSHIPS_EXIST"
+                  message: "Cannot delete bot with active memberships. Please deactivate the bot instead."
+                  details:
+                    active_members_count: 42
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /bots/{id}/events:
+    get:
+      tags:
+        - Bot Configuration
+      summary: Get bot event logs
+      description: Retrieve audit trail and operational events for a bot
+      operationId: getBotEventLogs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Bot configuration UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: event_type
+          in: query
+          description: Filter by event type
+          required: false
+          schema:
+            type: string
+            enum:
+              - bot_created
+              - bot_updated
+              - bot_sync_success
+              - bot_sync_failed
+              - bot_token_invalid
+              - bot_permission_lost
+              - payment_initiated
+              - payment_completed
+              - payment_failed
+              - invite_link_generated
+              - member_joined
+              - member_expired
+              - member_removed
+        - name: severity
+          in: query
+          description: Filter by severity level
+          required: false
+          schema:
+            type: string
+            enum: [info, warning, error, critical]
+      responses:
+        '200':
+          description: Event logs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BotEventLog'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+              example:
+                data:
+                  - id: "770e8400-e29b-41d4-a716-446655440000"
+                    tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                    bot_configuration_id: "550e8400-e29b-41d4-a716-446655440000"
+                    event_type: "bot_sync_success"
+                    event_data:
+                      synced_fields: ["commands", "description"]
+                      duration_ms: 450
+                    severity: "info"
+                    telegram_user_id: null
+                    correlation_id: null
+                    occurred_at: "2025-10-07T10:30:00Z"
+                  - id: "880e8400-e29b-41d4-a716-446655440000"
+                    tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                    bot_configuration_id: "550e8400-e29b-41d4-a716-446655440000"
+                    event_type: "payment_completed"
+                    event_data:
+                      transaction_id: "990e8400-e29b-41d4-a716-446655440000"
+                      qpay_invoice_id: "INV123456"
+                      duration_ms: 3200
+                    severity: "info"
+                    telegram_user_id: 123456789
+                    correlation_id: "aa0e8400-e29b-41d4-a716-446655440000"
+                    occurred_at: "2025-10-07T09:15:00Z"
+                meta:
+                  page: 1
+                  limit: 20
+                  total: 156
+                  total_pages: 8
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    BotConfiguration:
+      type: object
+      required:
+        - id
+        - tenant_id
+        - bot_token
+        - bot_username
+        - display_name
+        - welcome_message
+        - is_active
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+        tenant_id:
+          type: string
+          format: uuid
+          description: Tenant UUID (multi-tenant isolation)
+        bot_token:
+          type: string
+          description: Telegram bot API token
+          pattern: '^\d+:[A-Za-z0-9_-]{35}$'
+        bot_username:
+          type: string
+          description: Bot's @username from Telegram
+          minLength: 5
+          maxLength: 32
+        display_name:
+          type: string
+          description: Bot display name shown to users
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+          description: Bot description
+          maxLength: 512
+        welcome_message:
+          type: string
+          description: Message sent on /start command
+          minLength: 1
+          maxLength: 4096
+        channel_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Associated Telegram channel ID (negative for channels)
+        channel_username:
+          type: string
+          nullable: true
+          description: Channel @username for verification
+        is_active:
+          type: boolean
+          description: Bot operational status
+        last_sync_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last successful Telegram API sync
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    CreateBotConfigurationDto:
+      type: object
+      required:
+        - bot_token
+        - display_name
+        - welcome_message
+      properties:
+        bot_token:
+          type: string
+          description: Telegram bot API token from @BotFather
+          pattern: '^\d+:[A-Za-z0-9_-]{35}$'
+          example: "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz123456789"
+        display_name:
+          type: string
+          description: Bot display name shown to users
+          minLength: 1
+          maxLength: 255
+          example: "My Awesome Bot"
+        description:
+          type: string
+          nullable: true
+          description: Bot description
+          maxLength: 512
+          example: "Premium content access bot"
+        welcome_message:
+          type: string
+          description: Message sent on /start command
+          minLength: 1
+          maxLength: 4096
+          example: "Welcome! Choose a membership plan to get started."
+        channel_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Associated Telegram channel ID (bot must be admin)
+          example: -1001234567890
+
+    UpdateBotConfigurationDto:
+      type: object
+      properties:
+        display_name:
+          type: string
+          description: Bot display name shown to users
+          minLength: 1
+          maxLength: 255
+          example: "Updated Bot Name"
+        description:
+          type: string
+          nullable: true
+          description: Bot description
+          maxLength: 512
+          example: "New description for the bot"
+        welcome_message:
+          type: string
+          description: Message sent on /start command
+          minLength: 1
+          maxLength: 4096
+          example: "Welcome back! We've updated our offerings."
+        channel_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Associated Telegram channel ID (bot must be admin)
+          example: -1001234567890
+        is_active:
+          type: boolean
+          description: Bot operational status
+          example: true
+
+    BotEventLog:
+      type: object
+      required:
+        - id
+        - tenant_id
+        - event_type
+        - event_data
+        - severity
+        - occurred_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+        tenant_id:
+          type: string
+          format: uuid
+          description: Tenant UUID
+        bot_configuration_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Related bot (null for tenant-wide events)
+        event_type:
+          type: string
+          description: Event category/name
+        event_data:
+          type: object
+          description: Event-specific data payload
+          additionalProperties: true
+        severity:
+          type: string
+          enum: [info, warning, error, critical]
+          description: Event severity level
+        telegram_user_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Related Telegram user (if applicable)
+        correlation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: For grouping related events
+        occurred_at:
+          type: string
+          format: date-time
+          description: Event timestamp
+
+    PaginationMeta:
+      type: object
+      required:
+        - page
+        - limit
+        - total
+        - total_pages
+      properties:
+        page:
+          type: integer
+          description: Current page number
+        limit:
+          type: integer
+          description: Number of items per page
+        total:
+          type: integer
+          description: Total number of items
+        total_pages:
+          type: integer
+          description: Total number of pages
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Error code for programmatic handling
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: object
+              description: Additional error context
+              additionalProperties: true
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required or JWT token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "UNAUTHORIZED"
+              message: "Authentication required. Please provide a valid JWT token."
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Request validation failed."
+              details:
+                field: "bot_token"
+                constraint: "pattern"
+                value: "invalid_token_format"
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "NOT_FOUND"
+              message: "Bot configuration not found."
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "INTERNAL_SERVER_ERROR"
+              message: "An unexpected error occurred. Please try again later."

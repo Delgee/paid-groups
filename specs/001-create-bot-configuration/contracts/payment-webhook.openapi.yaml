@@ -1,0 +1,421 @@
+openapi: 3.0.3
+info:
+  title: Payment Webhook API
+  description: Webhook endpoint for QPay payment gateway integration
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3001/v1
+    description: Development server
+  - url: https://api.example.com/v1
+    description: Production server
+
+tags:
+  - name: Payment Webhooks
+    description: Receive and process payment notifications from QPay
+
+paths:
+  /webhooks/qpay:
+    post:
+      tags:
+        - Payment Webhooks
+      summary: Handle QPay payment webhook
+      description: |
+        Receive payment status notifications from QPay gateway.
+
+        **Security Requirements:**
+        - HMAC signature verification (SHA-256)
+        - HTTPS/TLS 1.2+ required
+        - IP whitelist validation
+        - Idempotency via invoice_id
+
+        **Processing Flow:**
+        1. Verify HMAC signature
+        2. Check idempotency (duplicate invoice_id)
+        3. Update payment transaction status
+        4. Generate invite link (if status = PAID)
+        5. Send invite link to Telegram user
+        6. Create channel member record
+        7. Log event with correlation_id
+
+        **Retry Policy:**
+        - 3 retries with exponential backoff (1s, 5s, 15s)
+        - Returns 200 OK even if already processed (idempotency)
+      operationId: handleQPayWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QPayWebhookDto'
+            example:
+              invoice_id: "INV-20251007-123456"
+              transaction_id: "TXN-QPAY-789012345"
+              status: "PAID"
+              amount: 50000
+              payment_method: "qpay_wallet"
+              timestamp: "2025-10-07T10:30:00Z"
+              signature: "a3f8b2c9d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0"
+      responses:
+        '200':
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - transaction_id
+                properties:
+                  status:
+                    type: string
+                    enum: [processed, already_processed]
+                    description: Processing status
+                  transaction_id:
+                    type: string
+                    format: uuid
+                    description: Internal transaction UUID
+                  invite_link:
+                    type: string
+                    nullable: true
+                    description: Generated invite link (if status = PAID)
+                  message:
+                    type: string
+                    description: Processing result message
+              example:
+                status: "processed"
+                transaction_id: "990e8400-e29b-41d4-a716-446655440000"
+                invite_link: "https://t.me/+AbCdEfGhIjKlMn"
+                message: "Payment completed successfully. Invite link sent to user."
+        '400':
+          description: Invalid webhook payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "INVALID_PAYLOAD"
+                  message: "Webhook payload validation failed."
+                  details:
+                    field: "signature"
+                    constraint: "required"
+        '401':
+          description: HMAC signature verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "INVALID_SIGNATURE"
+                  message: "HMAC signature verification failed. This request may be fraudulent."
+                  details:
+                    invoice_id: "INV-20251007-123456"
+                    ip_address: "1.2.3.4"
+        '404':
+          description: Payment transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "TRANSACTION_NOT_FOUND"
+                  message: "No pending transaction found for the provided invoice_id."
+                  details:
+                    invoice_id: "INV-20251007-123456"
+        '422':
+          description: Business rule violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                bot_permission_lost:
+                  value:
+                    error:
+                      code: "BOT_PERMISSION_LOST"
+                      message: "Bot does not have admin permissions in the channel. Cannot generate invite link."
+                      details:
+                        bot_id: "550e8400-e29b-41d4-a716-446655440000"
+                        channel_id: -1001234567890
+                invalid_status_transition:
+                  value:
+                    error:
+                      code: "INVALID_STATUS_TRANSITION"
+                      message: "Cannot update completed transaction."
+                      details:
+                        current_status: "completed"
+                        requested_status: "failed"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          description: Telegram API unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "TELEGRAM_API_UNAVAILABLE"
+                  message: "Telegram Bot API is temporarily unavailable. Webhook will be retried."
+                  details:
+                    retry_count: 2
+                    next_retry_in_seconds: 15
+
+components:
+  schemas:
+    QPayWebhookDto:
+      type: object
+      required:
+        - invoice_id
+        - transaction_id
+        - status
+        - amount
+        - payment_method
+        - timestamp
+        - signature
+      properties:
+        invoice_id:
+          type: string
+          description: QPay invoice identifier (unique, used for idempotency)
+          minLength: 1
+          maxLength: 255
+          example: "INV-20251007-123456"
+        transaction_id:
+          type: string
+          description: QPay transaction identifier
+          minLength: 1
+          maxLength: 255
+          example: "TXN-QPAY-789012345"
+        status:
+          type: string
+          enum: [PAID, FAILED]
+          description: Payment status from QPay
+        amount:
+          type: integer
+          description: Amount paid in MNT (Mongolian Tugrik)
+          minimum: 1000
+          maximum: 10000000
+          example: 50000
+        payment_method:
+          type: string
+          enum: [qpay_wallet, mobile_bank, qr_code]
+          description: Payment method used by customer
+          example: "qpay_wallet"
+        timestamp:
+          type: string
+          format: date-time
+          description: Payment timestamp from QPay (ISO 8601)
+          example: "2025-10-07T10:30:00Z"
+        signature:
+          type: string
+          description: |
+            HMAC-SHA256 signature for webhook verification.
+
+            **Signature Calculation:**
+            ```
+            payload = invoice_id + transaction_id + status + amount
+            signature = HMAC-SHA256(payload, qpay_secret_key)
+            ```
+          pattern: '^[a-f0-9]{64}$'
+          example: "a3f8b2c9d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Error code for programmatic handling
+              enum:
+                - INVALID_PAYLOAD
+                - INVALID_SIGNATURE
+                - TRANSACTION_NOT_FOUND
+                - BOT_PERMISSION_LOST
+                - INVALID_STATUS_TRANSITION
+                - TELEGRAM_API_UNAVAILABLE
+                - INTERNAL_SERVER_ERROR
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: object
+              description: Additional error context
+              additionalProperties: true
+
+  responses:
+    InternalServerError:
+      description: Internal server error (webhook will be retried by QPay)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "INTERNAL_SERVER_ERROR"
+              message: "An unexpected error occurred. Webhook will be retried."
+              details:
+                correlation_id: "aa0e8400-e29b-41d4-a716-446655440000"
+
+  examples:
+    successful_payment_webhook:
+      summary: Successful payment notification
+      value:
+        invoice_id: "INV-20251007-123456"
+        transaction_id: "TXN-QPAY-789012345"
+        status: "PAID"
+        amount: 50000
+        payment_method: "qpay_wallet"
+        timestamp: "2025-10-07T10:30:00Z"
+        signature: "a3f8b2c9d1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0"
+
+    failed_payment_webhook:
+      summary: Failed payment notification
+      value:
+        invoice_id: "INV-20251007-789012"
+        transaction_id: "TXN-QPAY-345678901"
+        status: "FAILED"
+        amount: 50000
+        payment_method: "mobile_bank"
+        timestamp: "2025-10-07T10:45:00Z"
+        signature: "b4e9c3d0e2f5a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
+
+    mobile_bank_payment_webhook:
+      summary: Mobile bank payment notification
+      value:
+        invoice_id: "INV-20251007-345678"
+        transaction_id: "TXN-QPAY-901234567"
+        status: "PAID"
+        amount: 120000
+        payment_method: "mobile_bank"
+        timestamp: "2025-10-07T11:00:00Z"
+        signature: "c5f0d4e1f3a6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3"
+
+    qr_code_payment_webhook:
+      summary: QR code payment notification
+      value:
+        invoice_id: "INV-20251007-901234"
+        transaction_id: "TXN-QPAY-567890123"
+        status: "PAID"
+        amount: 75000
+        payment_method: "qr_code"
+        timestamp: "2025-10-07T11:15:00Z"
+        signature: "d6f1e5f2a7b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"
+
+# Security Scheme Documentation
+x-security-notes: |
+  ## HMAC Signature Verification
+
+  **Algorithm:** HMAC-SHA256
+
+  **Secret Key:** Provided by QPay merchant dashboard (store in environment variable `QPAY_SECRET_KEY`)
+
+  **Signature Payload:**
+  ```
+  payload = invoice_id + transaction_id + status + amount
+  signature = HMAC-SHA256(payload, qpay_secret_key).hexdigest()
+  ```
+
+  **Example (Node.js):**
+  ```typescript
+  import * as crypto from 'crypto';
+
+  function verifyQPaySignature(webhook: QPayWebhookDto, secret: string): boolean {
+    const payload = `${webhook.invoice_id}${webhook.transaction_id}${webhook.status}${webhook.amount}`;
+    const hmac = crypto.createHmac('sha256', secret);
+    const computedSignature = hmac.update(payload).digest('hex');
+    return computedSignature === webhook.signature;
+  }
+  ```
+
+  ## IP Whitelist (Optional)
+
+  QPay webhook IPs (verify with QPay support):
+  - 103.50.205.0/24
+  - 202.131.224.0/24
+
+  ## TLS Requirements
+
+  - Minimum TLS version: 1.2
+  - Required ciphers: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+
+  ## Idempotency
+
+  - `invoice_id` must be unique (enforced via database unique constraint)
+  - Duplicate webhooks return 200 OK with `status: "already_processed"`
+  - Prevents duplicate invite link generation
+
+  ## Retry Policy (QPay Side)
+
+  QPay retries webhook delivery:
+  - 5 minutes after first failure
+  - 15 minutes after second failure
+  - 1 hour after third failure
+  - Max 24 hours total retry window
+
+  ## Logging Requirements
+
+  Log all webhook events (including failures) with:
+  - `correlation_id` (for tracing related events)
+  - `invoice_id` (for debugging QPay issues)
+  - `ip_address` (for security audit)
+  - `signature_valid` (boolean)
+  - `processing_duration_ms` (for performance monitoring)
+
+# Testing Documentation
+x-testing-notes: |
+  ## QPay Sandbox Environment
+
+  **Sandbox URL:** https://sandbox.qpay.mn
+
+  **Test Merchant ID:** Obtain from QPay dashboard
+
+  **Test Webhook Simulator:**
+  ```bash
+  curl -X POST http://localhost:3001/v1/webhooks/qpay \
+    -H "Content-Type: application/json" \
+    -d '{
+      "invoice_id": "TEST-INV-123456",
+      "transaction_id": "TEST-TXN-789012",
+      "status": "PAID",
+      "amount": 50000,
+      "payment_method": "qpay_wallet",
+      "timestamp": "2025-10-07T10:30:00Z",
+      "signature": "computed_hmac_signature_here"
+    }'
+  ```
+
+  ## Test Scenarios
+
+  1. **Valid payment webhook (PAID)**
+     - Expected: 200 OK, invite link generated, user notified
+
+  2. **Failed payment webhook (FAILED)**
+     - Expected: 200 OK, transaction status updated to 'failed', no invite link
+
+  3. **Duplicate webhook (same invoice_id)**
+     - Expected: 200 OK, status: "already_processed", no duplicate processing
+
+  4. **Invalid signature**
+     - Expected: 401 Unauthorized, event logged for security audit
+
+  5. **Transaction not found (invalid invoice_id)**
+     - Expected: 404 Not Found
+
+  6. **Bot permission lost**
+     - Expected: 422 Unprocessable Entity, alert sent to SaaS user
+
+  7. **Telegram API timeout**
+     - Expected: 503 Service Unavailable, webhook retried by QPay

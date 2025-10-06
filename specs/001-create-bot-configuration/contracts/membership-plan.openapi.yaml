@@ -1,0 +1,522 @@
+openapi: 3.0.3
+info:
+  title: Membership Plan API
+  description: Endpoints for managing membership plans for Telegram bots
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3001/v1
+    description: Development server
+  - url: https://api.example.com/v1
+    description: Production server
+
+tags:
+  - name: Membership Plans
+    description: Manage subscription plans for bot-controlled channel access
+
+paths:
+  /bots/{botId}/plans:
+    get:
+      tags:
+        - Membership Plans
+      summary: List membership plans for a bot
+      description: Retrieve all membership plans for a specific bot with optional filtering
+      operationId: listMembershipPlans
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: botId
+          in: path
+          description: Bot configuration UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: is_active
+          in: query
+          description: Filter by active status
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successfully retrieved membership plans
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MembershipPlan'
+              example:
+                data:
+                  - id: "770e8400-e29b-41d4-a716-446655440000"
+                    tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                    bot_configuration_id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Monthly VIP"
+                    description: "Full access to premium content for 30 days"
+                    price: 50000
+                    duration_days: 30
+                    is_active: true
+                    sort_order: 1
+                    created_at: "2025-10-01T09:00:00Z"
+                    updated_at: "2025-10-01T09:00:00Z"
+                  - id: "880e8400-e29b-41d4-a716-446655440000"
+                    tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                    bot_configuration_id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Annual VIP"
+                    description: "Full access to premium content for 365 days (20% discount)"
+                    price: 480000
+                    duration_days: 365
+                    is_active: true
+                    sort_order: 2
+                    created_at: "2025-10-01T09:00:00Z"
+                    updated_at: "2025-10-01T09:00:00Z"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Bot configuration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "BOT_NOT_FOUND"
+                  message: "Bot configuration not found."
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Membership Plans
+      summary: Create new membership plan
+      description: Create a new membership plan for a bot (max 5 active plans per bot)
+      operationId: createMembershipPlan
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: botId
+          in: path
+          description: Bot configuration UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMembershipPlanDto'
+            example:
+              name: "Monthly VIP"
+              description: "Full access to premium content for 30 days"
+              price: 50000
+              duration_days: 30
+              sort_order: 1
+      responses:
+        '201':
+          description: Membership plan created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+              example:
+                id: "770e8400-e29b-41d4-a716-446655440000"
+                tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                bot_configuration_id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "Monthly VIP"
+                description: "Full access to premium content for 30 days"
+                price: 50000
+                duration_days: 30
+                is_active: true
+                sort_order: 1
+                created_at: "2025-10-07T10:30:00Z"
+                updated_at: "2025-10-07T10:30:00Z"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Bot configuration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "BOT_NOT_FOUND"
+                  message: "Bot configuration not found."
+        '422':
+          description: Business rule violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "MAX_PLANS_EXCEEDED"
+                  message: "Cannot create more than 5 active plans per bot. Please deactivate an existing plan first."
+                  details:
+                    current_active_plans: 5
+                    max_allowed_plans: 5
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /plans/{id}:
+    get:
+      tags:
+        - Membership Plans
+      summary: Get membership plan by ID
+      description: Retrieve detailed information about a specific membership plan
+      operationId: getMembershipPlan
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Membership plan UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Membership plan retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+              example:
+                id: "770e8400-e29b-41d4-a716-446655440000"
+                tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                bot_configuration_id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "Monthly VIP"
+                description: "Full access to premium content for 30 days"
+                price: 50000
+                duration_days: 30
+                is_active: true
+                sort_order: 1
+                created_at: "2025-10-01T09:00:00Z"
+                updated_at: "2025-10-01T09:00:00Z"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Membership Plans
+      summary: Update membership plan
+      description: Update plan details (only affects new purchases, existing members keep original terms)
+      operationId: updateMembershipPlan
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Membership plan UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMembershipPlanDto'
+            example:
+              name: "Monthly Premium"
+              price: 55000
+              description: "Updated description with new features"
+      responses:
+        '200':
+          description: Membership plan updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPlan'
+              example:
+                id: "770e8400-e29b-41d4-a716-446655440000"
+                tenant_id: "660e8400-e29b-41d4-a716-446655440000"
+                bot_configuration_id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "Monthly Premium"
+                description: "Updated description with new features"
+                price: 55000
+                duration_days: 30
+                is_active: true
+                sort_order: 1
+                created_at: "2025-10-01T09:00:00Z"
+                updated_at: "2025-10-07T11:00:00Z"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Membership Plans
+      summary: Delete membership plan
+      description: Delete plan if no active memberships exist (otherwise deactivate)
+      operationId: deleteMembershipPlan
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Membership plan UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Membership plan deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: Cannot delete plan with active memberships
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "ACTIVE_MEMBERSHIPS_EXIST"
+                  message: "Cannot delete plan with active memberships. Please deactivate the plan instead."
+                  details:
+                    active_members_count: 15
+                    plan_id: "770e8400-e29b-41d4-a716-446655440000"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    MembershipPlan:
+      type: object
+      required:
+        - id
+        - tenant_id
+        - bot_configuration_id
+        - name
+        - price
+        - duration_days
+        - is_active
+        - sort_order
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+        tenant_id:
+          type: string
+          format: uuid
+          description: Tenant UUID (multi-tenant isolation)
+        bot_configuration_id:
+          type: string
+          format: uuid
+          description: Parent bot configuration UUID
+        name:
+          type: string
+          description: Plan display name
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+          description: Plan description/benefits
+          maxLength: 1024
+        price:
+          type: integer
+          description: Price in MNT (Mongolian Tugrik)
+          minimum: 1000
+          maximum: 10000000
+        duration_days:
+          type: integer
+          description: Membership duration in days
+          minimum: 1
+          maximum: 365
+        is_active:
+          type: boolean
+          description: Plan availability status
+        sort_order:
+          type: integer
+          description: Display order (lower = higher priority)
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    CreateMembershipPlanDto:
+      type: object
+      required:
+        - name
+        - price
+        - duration_days
+      properties:
+        name:
+          type: string
+          description: Plan display name
+          minLength: 1
+          maxLength: 255
+          example: "Monthly VIP"
+        description:
+          type: string
+          nullable: true
+          description: Plan description/benefits
+          maxLength: 1024
+          example: "Full access to premium content for 30 days"
+        price:
+          type: integer
+          description: Price in MNT (Mongolian Tugrik)
+          minimum: 1000
+          maximum: 10000000
+          example: 50000
+        duration_days:
+          type: integer
+          description: Membership duration in days
+          minimum: 1
+          maximum: 365
+          example: 30
+        sort_order:
+          type: integer
+          description: Display order (lower = higher priority)
+          default: 0
+          example: 1
+
+    UpdateMembershipPlanDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Plan display name
+          minLength: 1
+          maxLength: 255
+          example: "Monthly Premium"
+        description:
+          type: string
+          nullable: true
+          description: Plan description/benefits
+          maxLength: 1024
+          example: "Updated description with new features"
+        price:
+          type: integer
+          description: Price in MNT (Mongolian Tugrik)
+          minimum: 1000
+          maximum: 10000000
+          example: 55000
+        duration_days:
+          type: integer
+          description: Membership duration in days
+          minimum: 1
+          maximum: 365
+          example: 30
+        is_active:
+          type: boolean
+          description: Plan availability status
+          example: true
+        sort_order:
+          type: integer
+          description: Display order (lower = higher priority)
+          example: 1
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Error code for programmatic handling
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: object
+              description: Additional error context
+              additionalProperties: true
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required or JWT token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "UNAUTHORIZED"
+              message: "Authentication required. Please provide a valid JWT token."
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Request validation failed."
+              details:
+                field: "price"
+                constraint: "minimum"
+                value: 500
+                minimum: 1000
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "NOT_FOUND"
+              message: "Membership plan not found."
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "INTERNAL_SERVER_ERROR"
+              message: "An unexpected error occurred. Please try again later."
