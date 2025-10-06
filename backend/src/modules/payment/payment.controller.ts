@@ -21,6 +21,8 @@ import {
   ApiQuery,
   ApiHeader,
 } from '@nestjs/swagger';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { PaymentTransactionService } from './services/payment-transaction.service';
 import { CreatePaymentTransactionDto } from './dto/create-payment-transaction.dto';
 import { PaymentTransaction, PaymentStatus } from './entities/payment-transaction.entity';
@@ -34,7 +36,10 @@ export class PaymentController {
   private readonly logger = new Logger(PaymentController.name);
   private readonly QPAY_SECRET = process.env.QPAY_WEBHOOK_SECRET || 'test-webhook-secret';
 
-  constructor(private readonly paymentTransactionService: PaymentTransactionService) {}
+  constructor(
+    private readonly paymentTransactionService: PaymentTransactionService,
+    @InjectQueue('membership') private membershipQueue: Queue,
+  ) {}
 
   @Post('initiate')
   @UseGuards(JwtAuthGuard)
@@ -192,7 +197,23 @@ export class PaymentController {
 
       this.logger.log(`Payment ${transaction.id} marked as completed`);
 
-      // TODO: Trigger channel member creation and Telegram invite link generation
+      // Queue membership creation job
+      await this.membershipQueue.add('create-membership', {
+        tenantId: transaction.tenant_id,
+        paymentTransactionId: transaction.id,
+        botConfigurationId: transaction.bot_configuration_id,
+        telegramUserId: transaction.telegram_user_id,
+        channelId: transaction.bot_configuration?.channel_id, // TODO: Get from bot config
+        expiresAt: transaction.membership_expires_at,
+      }, {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      });
+
+      this.logger.log(`Queued membership creation job for payment ${transaction.id}`);
     } else if (payload.payment_status === 'FAILED' || payload.invoice_status === 'FAILED') {
       updatedTransaction = await this.paymentTransactionService.markAsFailed(
         transaction.tenant_id,
