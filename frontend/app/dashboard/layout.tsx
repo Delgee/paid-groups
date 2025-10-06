@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   UserPlus,
-  MessageSquare
+  MessageSquare,
+  SettingsIcon
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -35,6 +36,7 @@ interface DashboardLayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Bot Configurations', href: '/dashboard/bot-configurations', icon: SettingsIcon },
   { name: 'Bots', href: '/dashboard/bots', icon: Bot },
   { name: 'Telegram Groups', href: '/dashboard/telegram-groups', icon: MessageSquare },
   { name: 'Members', href: '/dashboard/members', icon: Users },
