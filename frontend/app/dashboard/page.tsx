@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api/client';
 import type { Bot as BotType } from '@/lib/api/client';
+import { PaymentStatsCard } from '@/components/dashboard/PaymentStatsCard';
+import { RevenueChart } from '@/components/dashboard/RevenueChart';
+import { MembershipChart } from '@/components/dashboard/MembershipChart';
 
 interface DashboardStats {
   totalBots: number;
@@ -288,6 +291,46 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Payment Statistics */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Analytics</h2>
+        <PaymentStatsCard
+          stats={{
+            totalRevenue: stats.activeMemberships * 35000, // Mock calculation
+            totalPayments: stats.activeMemberships + 10,
+            completedPayments: stats.activeMemberships,
+            pendingPayments: 5,
+            failedPayments: 3,
+            averagePayment: 35000,
+            revenueGrowth: 12.5
+          }}
+        />
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid gap-6 lg:grid-cols-2 mt-8">
+        <RevenueChart
+          data={[
+            { date: 'Jan 1', revenue: 150000, payments: 15 },
+            { date: 'Jan 5', revenue: 280000, payments: 28 },
+            { date: 'Jan 10', revenue: 420000, payments: 42 },
+            { date: 'Jan 15', revenue: 560000, payments: 56 },
+            { date: 'Jan 20', revenue: 700000, payments: 70 },
+            { date: 'Jan 25', revenue: 850000, payments: 85 },
+            { date: 'Jan 30', revenue: 1000000, payments: 100 },
+          ]}
+        />
+
+        <MembershipChart
+          data={[
+            { month: 'Oct', active: 85, new: 20, expired: 5 },
+            { month: 'Nov', active: 100, new: 25, expired: 10 },
+            { month: 'Dec', active: 115, new: 30, expired: 15 },
+            { month: 'Jan', active: 130, new: 35, expired: 20 },
+          ]}
+        />
       </div>
     </div>
   );
