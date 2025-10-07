@@ -10,6 +10,7 @@ import { PaymentTransaction, PaymentStatus } from '../entities/payment-transacti
 import { CreatePaymentTransactionDto } from '../dto/create-payment-transaction.dto';
 import { UpdatePaymentTransactionDto } from '../dto/update-payment-transaction.dto';
 import { MembershipPlanService } from '../../membership-plan/services/membership-plan.service';
+import { MetricsService } from '../../../common/metrics/metrics.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class PaymentTransactionService {
     @InjectRepository(PaymentTransaction)
     private readonly paymentTransactionRepository: Repository<PaymentTransaction>,
     private readonly membershipPlanService: MembershipPlanService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   async create(
@@ -51,6 +53,9 @@ export class PaymentTransactionService {
 
     const saved = await this.paymentTransactionRepository.save(paymentTransaction);
     this.logger.log(`Payment transaction created: ${saved.id}`);
+
+    // Record metrics
+    this.metricsService.recordPayment('pending', 'qpay', tenantId);
 
     return saved;
   }
@@ -194,6 +199,15 @@ export class PaymentTransactionService {
     const updated = await this.paymentTransactionRepository.save(paymentTransaction);
     this.logger.log(`Payment ${id} marked as completed`);
 
+    // Record metrics
+    this.metricsService.recordPayment(
+      'completed',
+      'qpay',
+      tenantId,
+      paymentTransaction.amount,
+      paymentTransaction.snapshot_plan_name
+    );
+
     return updated;
   }
 
@@ -202,6 +216,9 @@ export class PaymentTransactionService {
 
     const paymentTransaction = await this.findOne(tenantId, id);
     paymentTransaction.status = PaymentStatus.FAILED;
+
+    // Record metrics
+    this.metricsService.recordPayment('failed', 'qpay', tenantId);
 
     return this.paymentTransactionRepository.save(paymentTransaction);
   }

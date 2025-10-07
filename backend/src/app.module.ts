@@ -20,6 +20,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BotConfigurationModule } from './modules/bot-configuration/bot-configuration.module';
 import { MembershipPlanModule } from './modules/membership-plan/membership-plan.module';
 import { LoggerModule } from './common/logger/logger.module';
+import { MetricsModule } from './common/metrics/metrics.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
@@ -65,6 +66,7 @@ import { RequestContextMiddleware } from './common/middleware/request-context.mi
     }),
     ScheduleModule.forRoot(),
     LoggerModule,
+    MetricsModule,
     AuthModule,
     TenantModule,
     BotModule,
