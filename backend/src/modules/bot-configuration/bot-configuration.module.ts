@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { BotConfiguration } from './entities/bot-configuration.entity';
@@ -14,8 +14,8 @@ import { PaymentModule } from '../payment/payment.module';
     BullModule.registerQueue({
       name: 'membership',
     }),
-    MembershipPlanModule,
-    PaymentModule,
+    forwardRef(() => MembershipPlanModule),
+    forwardRef(() => PaymentModule),
   ],
   controllers: [BotConfigurationController],
   providers: [BotConfigurationService, TelegramBotHandler],

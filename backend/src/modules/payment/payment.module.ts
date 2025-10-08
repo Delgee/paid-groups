@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { PaymentController } from './payment.controller';
@@ -22,7 +22,7 @@ import { MembershipSchedulerService } from './tasks/membership-scheduler.service
       },
     }),
     MembershipPlanModule,
-    BotConfigurationModule,
+    forwardRef(() => BotConfigurationModule),
   ],
   controllers: [PaymentController],
   providers: [

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MembershipPlan } from './entities/membership-plan.entity';
 import { MembershipPlanService } from './services/membership-plan.service';
@@ -8,7 +8,7 @@ import { BotConfigurationModule } from '../bot-configuration/bot-configuration.m
 @Module({
   imports: [
     TypeOrmModule.forFeature([MembershipPlan]),
-    BotConfigurationModule,
+    forwardRef(() => BotConfigurationModule),
   ],
   controllers: [MembershipPlanController],
   providers: [MembershipPlanService],

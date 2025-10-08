@@ -4,16 +4,12 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne,
-  OneToMany,
-  JoinColumn,
   Check,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BotConfiguration } from '../../bot-configuration/entities/bot-configuration.entity';
 
 @Entity('membership_plans')
-@Check('"price" > 0')
+@Check('"price_mnt" > 0')
 @Check('"duration_days" > 0')
 export class MembershipPlan {
   @ApiProperty({ description: 'Unique identifier', format: 'uuid' })
@@ -24,9 +20,9 @@ export class MembershipPlan {
   @Column('uuid')
   tenant_id: string;
 
-  @ApiProperty({ description: 'Parent bot configuration ID', format: 'uuid' })
-  @Column('uuid')
-  bot_configuration_id: string;
+  @ApiPropertyOptional({ description: 'Telegram group ID', format: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
+  group_id?: string;
 
   @ApiProperty({ description: 'Plan display name', maxLength: 255 })
   @Column({ type: 'varchar', length: 255 })
@@ -37,20 +33,32 @@ export class MembershipPlan {
   description?: string;
 
   @ApiProperty({ description: 'Price in MNT (Mongolian Tugrik)', minimum: 1000, maximum: 10000000 })
-  @Column({ type: 'integer' })
-  price: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  price_mnt: number;
+
+  @ApiProperty({ description: 'Currency code', default: 'MNT' })
+  @Column({ type: 'varchar', length: 3, default: 'MNT' })
+  currency: string;
 
   @ApiProperty({ description: 'Membership duration in days', minimum: 1, maximum: 365 })
   @Column({ type: 'integer' })
   duration_days: number;
 
+  @ApiProperty({ description: 'Trial period in days', default: 0 })
+  @Column({ type: 'integer', default: 0 })
+  trial_days: number;
+
+  @ApiProperty({ description: 'Plan features in JSON format', default: {} })
+  @Column({ type: 'jsonb', default: {} })
+  features: Record<string, any>;
+
   @ApiProperty({ description: 'Plan availability status', default: true })
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
-  @ApiProperty({ description: 'Display order (lower = higher priority)', default: 0 })
-  @Column({ type: 'integer', default: 0 })
-  sort_order: number;
+  @ApiPropertyOptional({ description: 'Maximum number of members', nullable: true })
+  @Column({ type: 'integer', nullable: true })
+  max_members?: number;
 
   @ApiProperty({ description: 'Record creation timestamp' })
   @CreateDateColumn()
@@ -60,11 +68,8 @@ export class MembershipPlan {
   @UpdateDateColumn()
   updated_at: Date;
 
-  // Relationships
-  @ManyToOne(() => BotConfiguration, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'bot_configuration_id' })
-  bot_configuration: BotConfiguration;
-
-  // @OneToMany(() => PaymentTransaction, transaction => transaction.membership_plan)
-  // payment_transactions: PaymentTransaction[];
+  // Relationships can be added here as needed
+  // @ManyToOne(() => TelegramGroup, { onDelete: 'CASCADE' })
+  // @JoinColumn({ name: 'group_id' })
+  // telegram_group: TelegramGroup;
 }

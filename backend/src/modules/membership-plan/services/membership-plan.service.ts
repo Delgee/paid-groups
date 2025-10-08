@@ -62,7 +62,7 @@ export class MembershipPlanService {
 
     return this.membershipPlanRepository.find({
       where,
-      order: { sort_order: 'ASC', created_at: 'DESC' },
+      order: { created_at: 'DESC' },
     });
   }
 
