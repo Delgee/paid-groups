@@ -23,7 +23,10 @@ export class TelegramBotHandler implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log('Initializing Telegram bots...');
-    await this.initializeBots();
+    // Don't block app startup - initialize bots in background
+    this.initializeBots().catch((error) => {
+      this.logger.error('Failed to initialize bots during startup', error.stack);
+    });
   }
 
   async initializeBots() {

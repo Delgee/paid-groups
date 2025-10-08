@@ -41,23 +41,19 @@ export interface UpdateBotConfigurationDto {
 
 export const botConfigurationApi = {
   getAll: async (): Promise<BotConfiguration[]> => {
-    const response = await apiClient.get('/bot-configurations');
-    return response.data;
+    return apiClient.get<BotConfiguration[]>('/bot-configurations');
   },
 
   getById: async (id: string): Promise<BotConfiguration> => {
-    const response = await apiClient.get(`/bot-configurations/${id}`);
-    return response.data;
+    return apiClient.get<BotConfiguration>(`/bot-configurations/${id}`);
   },
 
   create: async (data: CreateBotConfigurationDto): Promise<BotConfiguration> => {
-    const response = await apiClient.post('/bot-configurations', data);
-    return response.data;
+    return apiClient.post<BotConfiguration>('/bot-configurations', data);
   },
 
   update: async (id: string, data: UpdateBotConfigurationDto): Promise<BotConfiguration> => {
-    const response = await apiClient.put(`/bot-configurations/${id}`, data);
-    return response.data;
+    return apiClient.put<BotConfiguration>(`/bot-configurations/${id}`, data);
   },
 
   delete: async (id: string): Promise<void> => {
@@ -65,7 +61,6 @@ export const botConfigurationApi = {
   },
 
   sync: async (id: string): Promise<BotConfiguration> => {
-    const response = await apiClient.post(`/bot-configurations/${id}/sync`);
-    return response.data;
+    return apiClient.post<BotConfiguration>(`/bot-configurations/${id}/sync`);
   },
 };
