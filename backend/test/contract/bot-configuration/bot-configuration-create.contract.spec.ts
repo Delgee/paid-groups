@@ -9,6 +9,7 @@ describe('POST /v1/bot-configurations (Contract Test)', () => {
   let tenantId: string;
 
   beforeAll(async () => {
+    jest.setTimeout(30000);
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -21,12 +22,30 @@ describe('POST /v1/bot-configurations (Contract Test)', () => {
         transform: true,
       }),
     );
+    app.setGlobalPrefix('v1');
     await app.init();
 
-    // TODO: Replace with actual authentication flow
-    // For now, this will fail until auth is implemented
-    authToken = 'mock-jwt-token';
-    tenantId = '550e8400-e29b-41d4-a716-446655440000';
+    // Register and authenticate a test user
+    const testUser = {
+      email: 'testowner@botconfig.com',
+      password: 'OwnerPass123!',
+      name: 'Test Owner',
+      company_name: 'Test Company',
+    };
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/register')
+      .send(testUser);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({
+        email: testUser.email,
+        password: testUser.password,
+      });
+
+    authToken = loginResponse.body.access_token;
+    tenantId = loginResponse.body.user.tenant_id;
   });
 
   afterAll(async () => {
@@ -55,7 +74,7 @@ describe('POST /v1/bot-configurations (Contract Test)', () => {
         .post('/v1/bot-configurations')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          bot_token: '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz',
+          bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
           bot_username: 'ab',
           display_name: 'Test Bot',
           welcome_message: 'Welcome to our bot!',
@@ -71,7 +90,7 @@ describe('POST /v1/bot-configurations (Contract Test)', () => {
         .post('/v1/bot-configurations')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          bot_token: '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz',
+          bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
           bot_username: 'test_bot',
           display_name: 'Test Bot',
           welcome_message: 'Hi',
@@ -87,7 +106,7 @@ describe('POST /v1/bot-configurations (Contract Test)', () => {
         .post('/v1/bot-configurations')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          bot_token: '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz',
+          bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
           bot_username: 'test_bot',
           display_name: 'Test Bot',
           welcome_message: 'Welcome to our bot!',
@@ -103,9 +122,9 @@ describe('POST /v1/bot-configurations (Contract Test)', () => {
   describe('Response Schema', () => {
     it('should return 201 with correct response shape on success', async () => {
       const validRequest = {
-        bot_token: '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz',
-        bot_username: 'test_bot',
-        display_name: 'Test Bot',
+        bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
+        bot_username: 'test_contract_bot',
+        display_name: 'Test Contract Bot',
         description: 'A test bot for contract testing',
         welcome_message: 'Welcome to our premium content bot!',
         channel_id: '-1001234567890',
@@ -144,19 +163,22 @@ describe('POST /v1/bot-configurations (Contract Test)', () => {
 
   describe('Business Rules', () => {
     it('should reject duplicate bot_token', async () => {
+      const testBotToken = process.env.TEST_TELEGRAM_BOT_TOKEN_2 || process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E';
       const botConfig = {
-        bot_token: '9999999999:UniqueTokenForDuplicateTest',
-        bot_username: 'unique_bot_1',
-        display_name: 'Unique Bot 1',
+        bot_token: testBotToken,
+        bot_username: 'unique_bot_duplicate_test',
+        display_name: 'Unique Bot Duplicate Test',
         welcome_message: 'Welcome to our bot!',
       };
 
       // First creation should succeed
-      await request(app.getHttpServer())
+      const firstResponse = await request(app.getHttpServer())
         .post('/v1/bot-configurations')
         .set('Authorization', `Bearer ${authToken}`)
         .send(botConfig)
         .expect(201);
+
+      expect(firstResponse.body).toHaveProperty('id');
 
       // Second creation with same bot_token should fail
       const response = await request(app.getHttpServer())

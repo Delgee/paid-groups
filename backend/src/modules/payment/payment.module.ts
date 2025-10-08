@@ -8,6 +8,7 @@ import { PaymentTransaction } from './entities/payment-transaction.entity';
 import { ChannelMember } from './entities/channel-member.entity';
 import { MembershipPlanModule } from '../membership-plan/membership-plan.module';
 import { BotConfigurationModule } from '../bot-configuration/bot-configuration.module';
+import { MetricsModule } from '../../common/metrics/metrics.module';
 import { MembershipProcessor } from './processors/membership.processor';
 import { MembershipSchedulerService } from './tasks/membership-scheduler.service';
 
@@ -22,6 +23,7 @@ import { MembershipSchedulerService } from './tasks/membership-scheduler.service
       },
     }),
     MembershipPlanModule,
+    MetricsModule,
     forwardRef(() => BotConfigurationModule),
   ],
   controllers: [PaymentController],

@@ -10,6 +10,7 @@ describe('POST /v1/membership-plans (Contract Test)', () => {
   let botConfigurationId: string;
 
   beforeAll(async () => {
+    jest.setTimeout(30000);
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -22,12 +23,43 @@ describe('POST /v1/membership-plans (Contract Test)', () => {
         transform: true,
       }),
     );
+    app.setGlobalPrefix('v1');
     await app.init();
 
-    // TODO: Replace with actual authentication and bot configuration creation
-    authToken = 'mock-jwt-token';
-    tenantId = '550e8400-e29b-41d4-a716-446655440000';
-    botConfigurationId = '550e8400-e29b-41d4-a716-446655440001';
+    // Register and authenticate a test user
+    const testUser = {
+      email: 'testowner@membershipplan.com',
+      password: 'OwnerPass123!',
+      name: 'Test Owner',
+      company_name: 'Test Company',
+    };
+
+    await request(app.getHttpServer())
+      .post('/v1/auth/register')
+      .send(testUser);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({
+        email: testUser.email,
+        password: testUser.password,
+      });
+
+    authToken = loginResponse.body.access_token;
+    tenantId = loginResponse.body.user.tenant_id;
+
+    // Create a bot configuration for testing
+    const botResponse = await request(app.getHttpServer())
+      .post('/v1/bot-configurations')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
+        bot_username: 'test_membership_bot',
+        display_name: 'Test Membership Bot',
+        welcome_message: 'Welcome to our membership bot!',
+      });
+
+    botConfigurationId = botResponse.body.id;
   });
 
   afterAll(async () => {
