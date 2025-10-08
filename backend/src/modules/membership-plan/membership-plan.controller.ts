@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseBoolPipe,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -27,12 +28,15 @@ import { UpdateMembershipPlanDto } from './dto/update-membership-plan.dto';
 import { MembershipPlan } from './entities/membership-plan.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantId } from '../auth/decorators/tenant-id.decorator';
+import { CorrelationId } from '../../common/middleware/correlation-id.middleware';
 
 @ApiTags('Membership Plans')
 @Controller('membership-plans')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class MembershipPlanController {
+  private readonly logger = new Logger(MembershipPlanController.name);
+
   constructor(private readonly membershipPlanService: MembershipPlanService) {}
 
   @Post()

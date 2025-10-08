@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,12 +25,15 @@ import { UpdateBotConfigurationDto } from './dto/update-bot-configuration.dto';
 import { BotConfiguration } from './entities/bot-configuration.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantId } from '../auth/decorators/tenant-id.decorator';
+import { CorrelationId } from '../../common/middleware/correlation-id.middleware';
 
 @ApiTags('Bot Configuration')
 @Controller('bot-configurations')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class BotConfigurationController {
+  private readonly logger = new Logger(BotConfigurationController.name);
+
   constructor(private readonly botConfigurationService: BotConfigurationService) {}
 
   @Post()
@@ -43,9 +47,22 @@ export class BotConfigurationController {
   @ApiResponse({ status: 409, description: 'Duplicate bot token' })
   async create(
     @TenantId() tenantId: string,
+    @CorrelationId() correlationId: string,
     @Body() createDto: CreateBotConfigurationDto,
   ): Promise<BotConfiguration> {
-    return this.botConfigurationService.create(tenantId, createDto);
+    const startTime = Date.now();
+    this.logger.log('Creating bot configuration', { correlationId, tenantId, botUsername: createDto.bot_username });
+
+    try {
+      const result = await this.botConfigurationService.create(tenantId, createDto);
+      const duration = Date.now() - startTime;
+      this.logger.log('Bot configuration created successfully', { correlationId, botId: result.id, duration });
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.error('Failed to create bot configuration', error.stack, { correlationId, duration });
+      throw error;
+    }
   }
 
   @Get()
@@ -55,7 +72,11 @@ export class BotConfigurationController {
     description: 'List of bot configurations',
     type: [BotConfiguration],
   })
-  async findAll(@TenantId() tenantId: string): Promise<BotConfiguration[]> {
+  async findAll(
+    @TenantId() tenantId: string,
+    @CorrelationId() correlationId: string,
+  ): Promise<BotConfiguration[]> {
+    this.logger.log('Fetching all bot configurations', { correlationId, tenantId });
     return this.botConfigurationService.findAll(tenantId);
   }
 

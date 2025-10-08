@@ -24,6 +24,7 @@ import { MetricsModule } from './common/metrics/metrics.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
+import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 
 @Module({
   imports: [
@@ -95,7 +96,7 @@ import { RequestContextMiddleware } from './common/middleware/request-context.mi
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(RequestContextMiddleware)
+      .apply(CorrelationIdMiddleware, RequestContextMiddleware)
       .forRoutes('*');
   }
 }

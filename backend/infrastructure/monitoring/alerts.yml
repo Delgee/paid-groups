@@ -1,0 +1,186 @@
+# Prometheus Alert Rules for Telegram Groups SaaS
+# Feature: 001-create-bot-configuration
+# Task: T084 - Configure alert rules and dashboards
+
+groups:
+  - name: payment_alerts
+    interval: 30s
+    rules:
+      - alert: HighPaymentFailureRate
+        expr: rate(telegram_saas_payments_total{status="failed"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: payment
+        annotations:
+          summary: "Payment failure rate above 5% in last 5 minutes"
+          description: "{{ $value | humanizePercentage }} of payments are failing. Check QPay integration and logs."
+          dashboard: "{{ $externalURL }}/d/payments/payment-overview"
+          runbook: "https://docs.internal/runbooks/payment-failures"
+
+      - alert: PaymentWebhookProcessingDelay
+        expr: |
+          histogram_quantile(0.95,
+            rate(telegram_saas_payment_webhook_duration_seconds_bucket[5m])
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: payment
+        annotations:
+          summary: "Payment webhook processing p95 latency above 5 seconds"
+          description: "Webhook processing is slow. This may delay membership activation."
+
+  - name: api_performance_alerts
+    interval: 30s
+    rules:
+      - alert: HighAPILatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(telegram_saas_http_request_duration_seconds_bucket[5m])
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "API p95 latency above 500ms"
+          description: "{{ $labels.method }} {{ $labels.path }} is responding slowly ({{ $value }}s)"
+          dashboard: "{{ $externalURL }}/d/api/api-performance"
+
+      - alert: HighAPIErrorRate
+        expr: |
+          sum(rate(telegram_saas_http_requests_total{status=~"5.."}[5m]))
+          /
+          sum(rate(telegram_saas_http_requests_total[5m]))
+          > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "API error rate above 5%"
+          description: "{{ $value | humanizePercentage }} of API requests are failing with 5xx errors"
+
+  - name: telegram_bot_alerts
+    interval: 30s
+    rules:
+      - alert: TelegramRateLimitExceeded
+        expr: rate(telegram_saas_telegram_api_calls_total{status="rate_limited"}[1m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: telegram_bot
+        annotations:
+          summary: "Telegram API rate limit exceeded"
+          description: "Bot {{ $labels.bot_id }} is being rate limited. Consider implementing backoff."
+
+      - alert: BotPermissionLost
+        expr: increase(telegram_saas_bot_events_total{event_type="bot_permission_lost"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: telegram_bot
+        annotations:
+          summary: "Bot lost admin permissions in channel"
+          description: "Bot {{ $labels.bot_id }} lost admin permissions. New payments are blocked."
+          dashboard: "{{ $externalURL }}/d/bots/bot-overview?var-bot_id={{ $labels.bot_id }}"
+          runbook: "https://docs.internal/runbooks/bot-permission-lost"
+
+      - alert: HighTelegramAPIErrorRate
+        expr: |
+          sum(rate(telegram_saas_telegram_api_calls_total{status="error"}[5m])) by (operation)
+          /
+          sum(rate(telegram_saas_telegram_api_calls_total[5m])) by (operation)
+          > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          component: telegram_bot
+        annotations:
+          summary: "High Telegram API error rate for {{ $labels.operation }}"
+          description: "{{ $value | humanizePercentage }} of {{ $labels.operation }} calls are failing"
+
+  - name: background_job_alerts
+    interval: 1m
+    rules:
+      - alert: MembershipExpirationJobFailing
+        expr: |
+          sum(rate(telegram_saas_background_jobs_total{queue="membership",job_type="expire-membership",status="failed"}[15m]))
+          /
+          sum(rate(telegram_saas_background_jobs_total{queue="membership",job_type="expire-membership"}[15m]))
+          > 0.20
+        for: 10m
+        labels:
+          severity: critical
+          component: worker
+        annotations:
+          summary: "Membership expiration job failing frequently"
+          description: "{{ $value | humanizePercentage }} of membership expiration jobs are failing"
+
+      - alert: RenewalReminderJobStalled
+        expr: |
+          time() - max(telegram_saas_background_job_last_success_timestamp{job_type="send-renewal-reminder"})
+          > 86400
+        for: 5m
+        labels:
+          severity: warning
+          component: worker
+        annotations:
+          summary: "Renewal reminder job hasn't succeeded in 24 hours"
+          description: "Users may not receive renewal reminders. Check worker logs."
+
+  - name: database_alerts
+    interval: 30s
+    rules:
+      - alert: HighDatabaseConnectionPoolUsage
+        expr: |
+          telegram_saas_database_pool_connections{state="active"}
+          /
+          telegram_saas_database_pool_connections{state="total"}
+          > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database connection pool usage above 80%"
+          description: "Connection pool is nearly exhausted. Consider increasing pool size."
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: telegram_saas_database_pool_connections{state="waiting"} > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection pool exhausted"
+          description: "{{ $value }} requests are waiting for database connections"
+
+  - name: membership_business_alerts
+    interval: 1m
+    rules:
+      - alert: HighMembershipChurnRate
+        expr: |
+          sum(rate(telegram_saas_memberships_total{status="expired"}[1h]))
+          /
+          sum(telegram_saas_active_memberships)
+          > 0.15
+        for: 30m
+        labels:
+          severity: warning
+          component: business_metrics
+        annotations:
+          summary: "Membership churn rate above 15% (1-hour window)"
+          description: "High churn may indicate service quality issues"
+
+      - alert: NoNewMembershipsIn24Hours
+        expr: |
+          sum(increase(telegram_saas_memberships_total{status="active"}[24h])) == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: business_metrics
+        annotations:
+          summary: "No new memberships created in last 24 hours"
+          description: "Check payment processing and bot functionality"

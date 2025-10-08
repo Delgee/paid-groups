@@ -28,6 +28,7 @@ import { CreatePaymentTransactionDto } from './dto/create-payment-transaction.dt
 import { PaymentTransaction, PaymentStatus } from './entities/payment-transaction.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantId } from '../auth/decorators/tenant-id.decorator';
+import { CorrelationId } from '../../common/middleware/correlation-id.middleware';
 import * as crypto from 'crypto';
 
 @ApiTags('Payments')

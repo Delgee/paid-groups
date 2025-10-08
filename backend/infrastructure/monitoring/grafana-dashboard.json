@@ -1,0 +1,206 @@
+{
+  "dashboard": {
+    "title": "Telegram Groups SaaS - Overview",
+    "tags": ["telegram", "payments", "saas"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Payment Funnel",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(telegram_saas_payments_total{status=\"pending\"}[5m]))",
+            "legendFormat": "Pending"
+          },
+          {
+            "expr": "sum(rate(telegram_saas_payments_total{status=\"completed\"}[5m]))",
+            "legendFormat": "Completed"
+          },
+          {
+            "expr": "sum(rate(telegram_saas_payments_total{status=\"failed\"}[5m]))",
+            "legendFormat": "Failed"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+      },
+      {
+        "id": 2,
+        "title": "Payment Success Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "sum(rate(telegram_saas_payments_total{status=\"completed\"}[5m])) / sum(rate(telegram_saas_payments_total[5m]))",
+            "legendFormat": "Success Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 0.85, "color": "yellow"},
+                {"value": 0.95, "color": "green"}
+              ]
+            }
+          }
+        },
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 8}
+      },
+      {
+        "id": 3,
+        "title": "Revenue (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(telegram_saas_payment_amount_mnt_sum[24h]))",
+            "legendFormat": "Total Revenue MNT"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyMNT",
+            "decimals": 0
+          }
+        },
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4}
+      },
+      {
+        "id": 4,
+        "title": "Active Memberships",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(telegram_saas_active_memberships)",
+            "legendFormat": "Active Members"
+          }
+        ],
+        "gridPos": {"x": 18, "y": 4, "w": 6, "h": 4}
+      },
+      {
+        "id": 5,
+        "title": "API Response Time (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(telegram_saas_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95 latency"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(telegram_saas_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50 latency"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        },
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 6,
+        "title": "API Request Rate by Endpoint",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(telegram_saas_http_requests_total[5m])) by (path)",
+            "legendFormat": "{{path}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 7,
+        "title": "Telegram API Calls",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(telegram_saas_telegram_api_calls_total{status=\"success\"}[5m])) by (operation)",
+            "legendFormat": "{{operation}} (success)"
+          },
+          {
+            "expr": "sum(rate(telegram_saas_telegram_api_calls_total{status=\"error\"}[5m])) by (operation)",
+            "legendFormat": "{{operation}} (error)"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8}
+      },
+      {
+        "id": 8,
+        "title": "Background Jobs Status",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(telegram_saas_background_jobs_total{status=\"completed\"}[5m])) by (job_type)",
+            "legendFormat": "{{job_type}} (completed)"
+          },
+          {
+            "expr": "sum(rate(telegram_saas_background_jobs_total{status=\"failed\"}[5m])) by (job_type)",
+            "legendFormat": "{{job_type}} (failed)"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8}
+      },
+      {
+        "id": 9,
+        "title": "Database Connection Pool",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "telegram_saas_database_pool_connections{state=\"active\"}",
+            "legendFormat": "Active"
+          },
+          {
+            "expr": "telegram_saas_database_pool_connections{state=\"idle\"}",
+            "legendFormat": "Idle"
+          },
+          {
+            "expr": "telegram_saas_database_pool_connections{state=\"waiting\"}",
+            "legendFormat": "Waiting"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8}
+      },
+      {
+        "id": 10,
+        "title": "Bot Events by Type",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(telegram_saas_bot_events_total[5m])) by (event_type)",
+            "legendFormat": "{{event_type}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8}
+      },
+      {
+        "id": 11,
+        "title": "Membership Lifecycle",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(telegram_saas_memberships_total{status=\"active\"}[1h]))",
+            "legendFormat": "New Activations"
+          },
+          {
+            "expr": "sum(rate(telegram_saas_memberships_total{status=\"expired\"}[1h]))",
+            "legendFormat": "Expirations"
+          },
+          {
+            "expr": "sum(rate(telegram_saas_memberships_total{status=\"revoked\"}[1h]))",
+            "legendFormat": "Revocations"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 32, "w": 24, "h": 8}
+      }
+    ],
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    }
+  }
+}
