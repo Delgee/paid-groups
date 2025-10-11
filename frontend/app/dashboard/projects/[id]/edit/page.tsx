@@ -96,18 +96,59 @@ export default function EditProjectPage() {
 
       await projectApi.update(projectId, payload);
 
-      toast({
-        title: 'Success',
-        description: 'Project updated successfully',
-      });
+      toast.success('Project updated successfully');
 
       router.push(`/dashboard/projects/${projectId}`);
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to update project',
-        variant: 'destructive',
-      });
+      console.error('Project update error:', error);
+
+      // Handle validation errors from backend
+      const errorData = error.response?.data?.error || error.response?.data;
+
+      if (errorData?.code === 'DUPLICATE_BOT_TOKEN' || error.response?.status === 409) {
+        // Set error on specific field
+        const errorMessage = errorData?.message || 'This bot token is already registered. Please use a different bot.';
+
+        form.setError('bot_token', {
+          type: 'manual',
+          message: errorMessage,
+        });
+
+        toast.error('Failed to Update Project', {
+          description: errorMessage,
+        });
+      } else if (errorData?.code === 'VALIDATION_ERROR' && errorData?.details?.field) {
+        // Set error on the specific field mentioned in the error
+        const fieldName = errorData.details.field as keyof FormData;
+        form.setError(fieldName, {
+          type: 'manual',
+          message: errorData.message || 'Validation failed',
+        });
+
+        toast.error('Validation Error', {
+          description: errorData.message || 'Please check the form for errors',
+        });
+      } else if (error.response?.status === 401) {
+        toast.error('Authentication Error', {
+          description: 'Your session has expired. Please login again.',
+        });
+      } else if (error.response?.status === 403) {
+        toast.error('Permission Denied', {
+          description: 'You do not have permission to update projects.',
+        });
+      } else if (error.response?.status === 404) {
+        toast.error('Project Not Found', {
+          description: 'The project you are trying to update does not exist.',
+        });
+        router.push('/dashboard/projects');
+      } else {
+        // Generic error
+        const message = errorData?.message || error.response?.data?.message || error.message || 'Failed to update project. Please try again.';
+
+        toast.error('Error', {
+          description: message,
+        });
+      }
     } finally {
       setSubmitting(false);
     }

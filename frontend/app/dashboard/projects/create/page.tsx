@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { projectApi } from '@/lib/api/projects';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeftIcon, CheckCircleIcon } from 'lucide-react';
+import { ArrowLeftIcon } from 'lucide-react';
 
 const formSchema = z.object({
   bot_token: z.string()
@@ -75,8 +75,7 @@ export default function CreateProjectPage() {
       form.clearErrors('bot_username');
       form.clearErrors('display_name');
 
-      toast({
-        title: 'Bot Verified',
+      toast.success('Bot Verified', {
         description: `Successfully verified @${botInfo.username}`,
       });
     } catch (error: any) {
@@ -109,19 +108,55 @@ export default function CreateProjectPage() {
 
       const project = await projectApi.create(payload);
 
-      toast({
-        title: 'Success',
-        description: 'Project created successfully',
-      });
+      toast.success('Project created successfully');
 
       // Redirect to project detail page
       router.push(`/dashboard/projects/${project.id}`);
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to create project',
-        variant: 'destructive',
-      });
+      console.error('Project creation error:', error);
+
+      // Handle validation errors from backend
+      const errorData = error.response?.data?.error || error.response?.data;
+
+      if (errorData?.code === 'DUPLICATE_BOT_TOKEN' || error.response?.status === 409) {
+        // Set error on specific field
+        const errorMessage = errorData?.message || 'This bot token is already registered. Please use a different bot.';
+
+        form.setError('bot_token', {
+          type: 'manual',
+          message: errorMessage,
+        });
+
+        toast.error('Failed to Create Project', {
+          description: errorMessage,
+        });
+      } else if (errorData?.code === 'VALIDATION_ERROR' && errorData?.details?.field) {
+        // Set error on the specific field mentioned in the error
+        const fieldName = errorData.details.field as keyof FormData;
+        form.setError(fieldName, {
+          type: 'manual',
+          message: errorData.message || 'Validation failed',
+        });
+
+        toast.error('Validation Error', {
+          description: errorData.message || 'Please check the form for errors',
+        });
+      } else if (error.response?.status === 401) {
+        toast.error('Authentication Error', {
+          description: 'Your session has expired. Please login again.',
+        });
+      } else if (error.response?.status === 403) {
+        toast.error('Permission Denied', {
+          description: 'You do not have permission to create projects.',
+        });
+      } else {
+        // Generic error
+        const message = errorData?.message || error.response?.data?.message || error.message || 'Failed to create project. Please try again.';
+
+        toast.error('Error', {
+          description: message,
+        });
+      }
     } finally {
       setSubmitting(false);
     }
