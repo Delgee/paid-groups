@@ -13,16 +13,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { projectApi } from '@/lib/api/projects';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeftIcon } from 'lucide-react';
+import { ArrowLeftIcon, CheckCircleIcon } from 'lucide-react';
 
 const formSchema = z.object({
   bot_token: z.string()
     .min(1, 'Bot token is required')
     .regex(/^\d+:[A-Za-z0-9_-]+$/, 'Invalid bot token format'),
   bot_username: z.string()
-    .min(5, 'Username must be at least 5 characters')
-    .max(32, 'Username cannot exceed 32 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+    .min(1, 'Bot username is required. Please verify your bot token.')
+    .max(32, 'Username cannot exceed 32 characters'),
   display_name: z.string()
     .min(2, 'Display name must be at least 2 characters')
     .max(255, 'Display name cannot exceed 255 characters'),
@@ -39,6 +38,8 @@ export default function CreateProjectPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [lastVerifiedToken, setLastVerifiedToken] = useState<string>('');
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -51,6 +52,50 @@ export default function CreateProjectPage() {
       is_active: true,
     },
   });
+
+  const handleVerifyToken = async (botToken: string) => {
+    if (!botToken || !botToken.match(/^\d+:[A-Za-z0-9_-]+$/)) {
+      // Don't clear fields immediately - user might be editing
+      return;
+    }
+
+    try {
+      setVerifying(true);
+      const botInfo = await projectApi.verifyToken(botToken);
+
+      // Auto-fill fields
+      form.setValue('bot_username', botInfo.username);
+      form.setValue('display_name', botInfo.first_name);
+
+      // Store the verified token
+      setLastVerifiedToken(botToken);
+
+      // Clear any existing errors
+      form.clearErrors('bot_token');
+      form.clearErrors('bot_username');
+      form.clearErrors('display_name');
+
+      toast({
+        title: 'Bot Verified',
+        description: `Successfully verified @${botInfo.username}`,
+      });
+    } catch (error: any) {
+      // Clear fields on error
+      form.setValue('bot_username', '');
+      form.setValue('display_name', '');
+      setLastVerifiedToken('');
+
+      // Set error on bot_token field
+      const errorMessage = error.response?.data?.error?.message || 'Could not verify bot token. Please check that the token is correct and the bot is active.';
+
+      form.setError('bot_token', {
+        type: 'manual',
+        message: errorMessage,
+      });
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -114,10 +159,33 @@ export default function CreateProjectPage() {
                         placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
                         type="password"
                         {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const newToken = e.target.value;
+
+                          // Clear error when user starts typing
+                          form.clearErrors('bot_token');
+
+                          // Clear fields only if token has changed from verified one
+                          if (lastVerifiedToken && newToken !== lastVerifiedToken) {
+                            form.setValue('bot_username', '');
+                            form.setValue('display_name', '');
+                            setLastVerifiedToken('');
+                          }
+                        }}
+                        onBlur={(e) => {
+                          field.onBlur();
+                          handleVerifyToken(e.target.value);
+                        }}
+                        disabled={verifying}
                       />
                     </FormControl>
                     <FormDescription>
-                      Get your bot token from @BotFather on Telegram
+                      {verifying ? (
+                        <span className="text-blue-600">Verifying bot token...</span>
+                      ) : (
+                        'Get your bot token from @BotFather on Telegram. Bot details will be auto-filled.'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -131,10 +199,16 @@ export default function CreateProjectPage() {
                   <FormItem>
                     <FormLabel>Bot Username *</FormLabel>
                     <FormControl>
-                      <Input placeholder="my_payment_bot" {...field} />
+                      <Input
+                        placeholder="Automatically filled after verification"
+                        {...field}
+                        readOnly
+                        disabled
+                        className="bg-gray-50"
+                      />
                     </FormControl>
                     <FormDescription>
-                      Your bot's @username (without the @)
+                      Auto-filled from Telegram API (read-only)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -151,7 +225,7 @@ export default function CreateProjectPage() {
                       <Input placeholder="Premium Content Project" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Friendly name for this project
+                      Auto-filled from bot, but you can change it to anything you like
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -13,6 +13,14 @@ export interface Project {
   updated_at: string;
 }
 
+export interface PaginatedProjectsResponse {
+  data: Project[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface CreateProjectDto {
   bot_token: string;
   bot_username: string;
@@ -32,8 +40,8 @@ export interface UpdateProjectDto {
 }
 
 export const projectApi = {
-  getAll: async (): Promise<Project[]> => {
-    return apiClient.get<Project[]>('/projects');
+  getAll: async (): Promise<PaginatedProjectsResponse> => {
+    return apiClient.get<PaginatedProjectsResponse>('/projects');
   },
 
   getById: async (id: string): Promise<Project> => {
@@ -54,5 +62,9 @@ export const projectApi = {
 
   sync: async (id: string): Promise<Project> => {
     return apiClient.post<Project>(`/projects/${id}/sync`);
+  },
+
+  verifyToken: async (botToken: string): Promise<{ username: string; first_name: string; id: number; is_bot: boolean }> => {
+    return apiClient.post<{ username: string; first_name: string; id: number; is_bot: boolean }>('/projects/verify-token', { bot_token: botToken });
   },
 };

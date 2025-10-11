@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -14,6 +15,7 @@ import {
   ProjectResponseDto,
   PaginatedProjectsResponseDto,
 } from '../dto/project-response.dto';
+import { TelegramApiService } from '../../bot/services/telegram-api.service';
 
 @Injectable()
 export class ProjectService {
@@ -23,6 +25,7 @@ export class ProjectService {
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
     private readonly dataSource: DataSource,
+    private readonly telegramApiService: TelegramApiService,
   ) {}
 
   /**
@@ -197,7 +200,6 @@ export class ProjectService {
 
   /**
    * Sync project/bot info from Telegram API
-   * TODO: Implement actual Telegram API integration
    */
   async syncTelegramInfo(
     tenantId: string,
@@ -207,14 +209,55 @@ export class ProjectService {
 
     const project = await this.findOneRaw(tenantId, id);
 
-    // TODO: Call Telegram API to get bot info
-    // const botInfo = await this.telegramService.getBotInfo(project.bot_token);
-    // project.bot_username = botInfo.username;
-    // project.display_name = botInfo.first_name;
+    // Call Telegram API to get bot info
+    const botInfo = await this.telegramApiService.verifyBotToken(project.bot_token);
+
+    if (botInfo) {
+      project.bot_username = botInfo.username;
+      project.display_name = botInfo.first_name;
+    }
 
     project.last_sync_at = new Date();
     const updated = await this.projectRepository.save(project);
 
     return ProjectResponseDto.fromEntity(updated);
+  }
+
+  /**
+   * Verify bot token and return bot information
+   */
+  async verifyBotToken(
+    botToken: string,
+  ): Promise<{ username: string; first_name: string; id: number; is_bot: boolean }> {
+    this.logger.log('Verifying bot token');
+
+    if (!botToken || !botToken.match(/^\d+:[A-Za-z0-9_-]+$/)) {
+      throw new BadRequestException({
+        error: {
+          code: 'INVALID_BOT_TOKEN',
+          message: 'Invalid bot token format',
+          details: { field: 'bot_token' },
+        },
+      });
+    }
+
+    const botInfo = await this.telegramApiService.verifyBotToken(botToken);
+
+    if (!botInfo) {
+      throw new BadRequestException({
+        error: {
+          code: 'INVALID_BOT_TOKEN',
+          message: 'Could not verify bot token. Please check that the token is correct and the bot is active.',
+          details: { field: 'bot_token' },
+        },
+      });
+    }
+
+    return {
+      username: botInfo.username,
+      first_name: botInfo.first_name,
+      id: botInfo.id,
+      is_bot: botInfo.is_bot,
+    };
   }
 }

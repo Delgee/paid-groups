@@ -23,8 +23,8 @@ export default function ProjectsPage() {
   const loadProjects = async () => {
     try {
       setLoading(true);
-      const data = await projectApi.getAll();
-      setProjects(data);
+      const response = await projectApi.getAll();
+      setProjects(response.data || []);
     } catch (error) {
       toast({
         title: 'Error',

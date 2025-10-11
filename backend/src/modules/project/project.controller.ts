@@ -160,4 +160,26 @@ export class ProjectController {
   ): Promise<ProjectResponseDto> {
     return this.projectService.syncTelegramInfo(tenantId, id);
   }
+
+  @Post('verify-token')
+  @ApiOperation({ summary: 'Verify bot token and get bot info' })
+  @ApiResponse({
+    status: 200,
+    description: 'Bot token verified successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        username: { type: 'string' },
+        first_name: { type: 'string' },
+        id: { type: 'number' },
+        is_bot: { type: 'boolean' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid bot token' })
+  async verifyToken(
+    @Body() body: { bot_token: string },
+  ): Promise<{ username: string; first_name: string; id: number; is_bot: boolean }> {
+    return this.projectService.verifyBotToken(body.bot_token);
+  }
 }

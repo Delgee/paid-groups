@@ -4,11 +4,13 @@ import { ConfigModule } from '@nestjs/config';
 import { Project } from './entities/project.entity';
 import { ProjectService } from './services/project.service';
 import { ProjectController } from './project.controller';
+import { BotModule } from '../bot/bot.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Project]),
     ConfigModule,
+    BotModule,
   ],
   controllers: [ProjectController],
   providers: [ProjectService],

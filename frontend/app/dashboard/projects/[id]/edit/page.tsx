@@ -20,9 +20,8 @@ const formSchema = z.object({
     .min(1, 'Bot token is required')
     .regex(/^\d+:[A-Za-z0-9_-]+$/, 'Invalid bot token format'),
   bot_username: z.string()
-    .min(5, 'Username must be at least 5 characters')
-    .max(32, 'Username cannot exceed 32 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+    .min(1, 'Bot username is required')
+    .max(32, 'Username cannot exceed 32 characters'),
   display_name: z.string()
     .min(2, 'Display name must be at least 2 characters')
     .max(255, 'Display name cannot exceed 255 characters'),
@@ -174,10 +173,16 @@ export default function EditProjectPage() {
                   <FormItem>
                     <FormLabel>Bot Username *</FormLabel>
                     <FormControl>
-                      <Input placeholder="my_payment_bot" {...field} />
+                      <Input
+                        placeholder="my_payment_bot"
+                        {...field}
+                        readOnly
+                        disabled
+                        className="bg-gray-50"
+                      />
                     </FormControl>
                     <FormDescription>
-                      Your bot's @username (without the @)
+                      Bot username cannot be changed (read-only)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -194,7 +199,7 @@ export default function EditProjectPage() {
                       <Input placeholder="Premium Content Project" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Friendly name for this project
+                      You can customize the display name
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
