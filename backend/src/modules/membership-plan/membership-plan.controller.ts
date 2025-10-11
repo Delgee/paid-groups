@@ -40,14 +40,17 @@ export class MembershipPlanController {
   constructor(private readonly membershipPlanService: MembershipPlanService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new membership plan' })
+  @ApiOperation({
+    summary: 'Create a new membership plan',
+    description: 'Creates a membership plan for a project. Can optionally specify telegram_group_ids to grant multi-group access.'
+  })
   @ApiResponse({
     status: 201,
-    description: 'Membership plan created successfully',
+    description: 'Membership plan created successfully with telegram_groups relation',
     type: MembershipPlan,
   })
-  @ApiResponse({ status: 400, description: 'Invalid input' })
-  @ApiResponse({ status: 404, description: 'Bot configuration not found' })
+  @ApiResponse({ status: 400, description: 'Invalid input or invalid telegram groups' })
+  @ApiResponse({ status: 404, description: 'Project not found' })
   async create(
     @TenantId() tenantId: string,
     @Body() createDto: CreateMembershipPlanDto,
@@ -56,11 +59,14 @@ export class MembershipPlanController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all membership plans for tenant' })
+  @ApiOperation({
+    summary: 'Get all membership plans for tenant',
+    description: 'Returns all plans with their associated telegram_groups'
+  })
   @ApiQuery({
-    name: 'bot_configuration_id',
+    name: 'project_id',
     required: false,
-    description: 'Filter by bot configuration ID',
+    description: 'Filter by project ID',
   })
   @ApiQuery({
     name: 'is_active',
@@ -70,17 +76,17 @@ export class MembershipPlanController {
   })
   @ApiResponse({
     status: 200,
-    description: 'List of membership plans',
+    description: 'List of membership plans with telegram_groups',
     type: [MembershipPlan],
   })
   async findAll(
     @TenantId() tenantId: string,
-    @Query('bot_configuration_id') botConfigurationId?: string,
+    @Query('project_id') projectId?: string,
     @Query('is_active', new ParseBoolPipe({ optional: true }))
     isActive?: boolean,
   ): Promise<MembershipPlan[]> {
     return this.membershipPlanService.findAll(tenantId, {
-      bot_configuration_id: botConfigurationId,
+      project_id: projectId,
       is_active: isActive,
     });
   }
