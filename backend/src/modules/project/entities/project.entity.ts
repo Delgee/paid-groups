@@ -12,6 +12,11 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Tenant } from '../../tenant/entities/tenant.entity';
 
+// Forward declarations to avoid circular dependencies
+// These will be imported properly when the modules are fully integrated
+type TelegramGroup = any;
+type MembershipPlan = any;
+
 /**
  * Project Entity
  *
@@ -92,12 +97,11 @@ export class Project {
   @JoinColumn({ name: 'tenant_id' })
   tenant: Tenant;
 
-  // Note: These relationships will be added when updating other modules
-  // @OneToMany(() => TelegramGroup, group => group.project)
-  // telegram_groups: TelegramGroup[];
+  @OneToMany('TelegramGroup', 'project')
+  telegram_groups: TelegramGroup[];
 
-  // @OneToMany(() => MembershipPlan, plan => plan.project)
-  // membership_plans: MembershipPlan[];
+  @OneToMany('MembershipPlan', 'project')
+  membership_plans: MembershipPlan[];
 
   /**
    * Custom toJSON to exclude sensitive fields

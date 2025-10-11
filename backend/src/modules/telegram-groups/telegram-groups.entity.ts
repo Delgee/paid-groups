@@ -112,7 +112,11 @@ export class TelegramGroup {
   @OneToMany('Membership', 'group')
   memberships: any[];
 
-  // Note: membership_plans relation updated to many-to-many in MembershipPlan entity
+  // Many-to-many relationship with MembershipPlans
+  @OneToMany('MembershipPlanGroup', 'telegram_group')
+  plan_associations: any[];
+
+  // Legacy one-to-many (deprecated)
   @OneToMany('MembershipPlan', 'group')
   membership_plans: any[];
 

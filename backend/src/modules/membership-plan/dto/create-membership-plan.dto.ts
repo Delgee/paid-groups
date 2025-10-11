@@ -9,17 +9,28 @@ import {
   Max,
   IsBoolean,
   IsUUID,
+  IsArray,
 } from 'class-validator';
 
 export class CreateMembershipPlanDto {
   @ApiProperty({
-    description: 'Parent bot configuration ID',
+    description: 'Project ID that this plan belongs to',
     format: 'uuid',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @IsUUID()
   @IsNotEmpty()
-  bot_configuration_id: string;
+  project_id: string;
+
+  @ApiPropertyOptional({
+    description: 'Array of Telegram Group IDs that this plan grants access to',
+    type: [String],
+    example: ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002'],
+  })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  telegram_group_ids?: string[];
 
   @ApiProperty({
     description: 'Plan display name',

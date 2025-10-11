@@ -5,8 +5,16 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Check,
+  ManyToOne,
+  ManyToMany,
+  OneToMany,
+  JoinColumn,
+  JoinTable,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Project } from '../../project/entities/project.entity';
+import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
+import { MembershipPlanGroup } from './membership-plan-group.entity';
 
 @Entity('membership_plans')
 @Check('"price_mnt" > 0')
@@ -20,7 +28,11 @@ export class MembershipPlan {
   @Column('uuid')
   tenant_id: string;
 
-  @ApiPropertyOptional({ description: 'Telegram group ID', format: 'uuid' })
+  @ApiProperty({ description: 'Project ID', format: 'uuid' })
+  @Column('uuid')
+  project_id: string;
+
+  @ApiPropertyOptional({ description: 'Legacy: Telegram group ID (deprecated - use telegram_groups relation)', format: 'uuid' })
   @Column({ type: 'uuid', nullable: true })
   group_id?: string;
 
@@ -68,8 +80,28 @@ export class MembershipPlan {
   @UpdateDateColumn()
   updated_at: Date;
 
-  // Relationships can be added here as needed
+  // Relationships
+  @ManyToOne(() => Project, project => project.membership_plans, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'project_id' })
+  project: Project;
+
+  // Many-to-many relationship with TelegramGroups via junction table
+  @ManyToMany(() => TelegramGroup, group => group.membership_plans)
+  @JoinTable({
+    name: 'membership_plan_groups',
+    joinColumn: { name: 'membership_plan_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'telegram_group_id', referencedColumnName: 'id' },
+  })
+  telegram_groups: TelegramGroup[];
+
+  // Junction table associations
+  @OneToMany(() => MembershipPlanGroup, association => association.membership_plan)
+  group_associations: MembershipPlanGroup[];
+
+  // Legacy single group relationship (deprecated)
   // @ManyToOne(() => TelegramGroup, { onDelete: 'CASCADE' })
   // @JoinColumn({ name: 'group_id' })
-  // telegram_group: TelegramGroup;
+  // telegram_group?: TelegramGroup;
 }
