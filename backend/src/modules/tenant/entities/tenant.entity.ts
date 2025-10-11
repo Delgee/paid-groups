@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
 import { TelegramBot } from '../../bot/entities/telegram-bot.entity';
+import { Project } from '../../project/entities/project.entity';
 import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { MembershipPlan } from '../../membership/entities/membership-plan.entity';
 import { Member } from '../../membership/entities/member.entity';
@@ -76,6 +77,9 @@ export class Tenant {
 
   @OneToMany(() => TelegramBot, bot => bot.tenant)
   telegram_bots: TelegramBot[];
+
+  @OneToMany(() => Project, project => project.tenant)
+  projects: Project[];
 
   @OneToMany(() => TelegramGroup, group => group.tenant)
   telegram_groups: TelegramGroup[];

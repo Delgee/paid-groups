@@ -10,6 +10,7 @@ import {
   Index,
 } from 'typeorm';
 import { TelegramBot } from '../bot/entities/telegram-bot.entity';
+import { Project } from '../project/entities/project.entity';
 
 export enum GroupType {
   GROUP = 'group',
@@ -26,7 +27,7 @@ export enum ConnectionStatus {
 
 @Entity('telegram_groups')
 @Index(['tenant_id'])
-@Index(['bot_id'])
+@Index(['project_id'])
 @Index(['telegram_chat_id'])
 @Index(['bot_assigned'])
 @Index(['sync_enabled'])
@@ -39,7 +40,7 @@ export class TelegramGroup {
   tenant_id: string;
 
   @Column('uuid')
-  bot_id: string;
+  project_id: string;
 
   @Column({ type: 'bigint', nullable: true, unique: true })
   telegram_chat_id: number | null;
@@ -99,13 +100,19 @@ export class TelegramGroup {
   updated_at: Date;
 
   // Relations
-  @ManyToOne(() => TelegramBot, { eager: true })
+  @ManyToOne(() => Project, { eager: true })
+  @JoinColumn({ name: 'project_id' })
+  project: Project;
+
+  // Keep bot relation for backward compatibility during migration (will be deprecated)
+  @ManyToOne(() => TelegramBot, { eager: false })
   @JoinColumn({ name: 'bot_id' })
-  bot: TelegramBot;
+  bot?: TelegramBot;
 
   @OneToMany('Membership', 'group')
   memberships: any[];
 
+  // Note: membership_plans relation updated to many-to-many in MembershipPlan entity
   @OneToMany('MembershipPlan', 'group')
   membership_plans: any[];
 
