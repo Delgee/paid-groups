@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 import { TelegramGroup, GroupType, ConnectionStatus } from './telegram-groups.entity';
 import { TelegramBot } from '../bot/entities/telegram-bot.entity';
+import { Project } from '../project/entities/project.entity';
 import { TelegramApiService } from '../bot/services/telegram-api.service';
 import { TelegramChannelService } from '../../integrations/telegram/telegram-channel.service';
 import { TelegramSyncService } from '../../integrations/telegram/telegram-sync.service';
@@ -54,6 +55,8 @@ export class TelegramGroupsService {
     private readonly telegramGroupRepository: Repository<TelegramGroup>,
     @InjectRepository(TelegramBot)
     private readonly telegramBotRepository: Repository<TelegramBot>,
+    @InjectRepository(Project)
+    private readonly projectRepository: Repository<Project>,
     private readonly telegramApiService: TelegramApiService,
     private readonly telegramChannelService: TelegramChannelService,
     private readonly telegramSyncService: TelegramSyncService,
@@ -61,29 +64,29 @@ export class TelegramGroupsService {
 
   /**
    * Creates a new Telegram group with validation and tenant isolation.
-   * Validates bot existence and ownership before creating the group.
+   * Validates project existence and ownership before creating the group.
    *
    * @param createDto - The data for creating the telegram group
    * @param tenantId - The tenant UUID for isolation
-   * @returns Promise<TelegramGroup> - The created telegram group with bot relation
-   * @throws BadRequestException - When bot_id is invalid or doesn't belong to tenant
+   * @returns Promise<TelegramGroup> - The created telegram group with project relation
+   * @throws BadRequestException - When project_id is invalid or doesn't belong to tenant
    * @throws ConflictException - When group name already exists for the tenant
    */
   async create(createDto: CreateTelegramGroupDto, tenantId: string): Promise<TelegramGroup> {
     try {
       this.logger.log(`Creating new telegram group: ${createDto.group_name} for tenant ${tenantId}`);
 
-      // Validate that bot exists and belongs to tenant
-      const bot = await this.telegramBotRepository.findOne({
+      // Validate that project exists and belongs to tenant
+      const project = await this.projectRepository.findOne({
         where: {
-          id: createDto.bot_id,
+          id: createDto.project_id,
           tenant_id: tenantId,
           is_active: true
         },
       });
 
-      if (!bot) {
-        throw new BadRequestException('Bot not found or not accessible for this tenant');
+      if (!project) {
+        throw new BadRequestException('Project not found or not accessible for this tenant');
       }
 
       // Check for duplicate group name within tenant
@@ -103,7 +106,7 @@ export class TelegramGroupsService {
       const telegramGroup = this.telegramGroupRepository.create({
         group_name: createDto.group_name,
         description: createDto.description || null,
-        bot_id: createDto.bot_id,
+        project_id: createDto.project_id,
         tenant_id: tenantId,
         settings: createDto.settings || {},
         is_active: true,
@@ -116,15 +119,15 @@ export class TelegramGroupsService {
 
       const savedGroup = await this.telegramGroupRepository.save(telegramGroup);
 
-      // Fetch with bot relation for response
-      const groupWithBot = await this.telegramGroupRepository.findOne({
+      // Fetch with project relation for response
+      const groupWithProject = await this.telegramGroupRepository.findOne({
         where: { id: savedGroup.id },
-        relations: ['bot'],
+        relations: ['project'],
       });
 
       this.logger.log(`Telegram group created successfully: ${savedGroup.id} - ${createDto.group_name}`);
 
-      return groupWithBot!;
+      return groupWithProject!;
     } catch (error) {
       this.logger.error(`Failed to create telegram group: ${error.message}`, error.stack);
       throw error;
@@ -168,7 +171,7 @@ export class TelegramGroupsService {
       // Execute query with pagination
       const [groups, total] = await this.telegramGroupRepository.findAndCount({
         where: whereConditions,
-        relations: ['bot'],
+        relations: ['project'],
         order: {
           updated_at: 'DESC',
           created_at: 'DESC'
@@ -191,7 +194,7 @@ export class TelegramGroupsService {
 
   /**
    * Retrieves a single telegram group by ID with tenant isolation.
-   * Includes bot relation for complete group information.
+   * Includes project relation for complete group information.
    *
    * @param id - The UUID of the telegram group
    * @param tenantId - The tenant UUID for isolation
@@ -207,7 +210,7 @@ export class TelegramGroupsService {
           tenant_id: tenantId,
           is_active: true
         },
-        relations: ['bot'],
+        relations: ['project'],
       });
 
       if (!group) {
@@ -390,11 +393,11 @@ export class TelegramGroupsService {
         throw new NotFoundException(`Telegram group with ID ${id} not found`);
       }
 
-      // Verify bot exists and has valid token
-      if (!group.bot || !group.bot.bot_token) {
+      // Verify project exists and has valid bot token
+      if (!group.project || !group.project.bot_token) {
         return {
           success: false,
-          message: 'Bot configuration is missing or invalid',
+          message: 'Project configuration is missing or invalid bot token',
           connection_status: ConnectionStatus.FAILED,
         };
       }
@@ -419,7 +422,7 @@ export class TelegramGroupsService {
 
       // Connect to channel using channel service
       const connectionResult = await this.telegramChannelService.connectToChannel(
-        group.bot.bot_token,
+        group.project.bot_token,
         connectDto.telegram_chat_id,
         connectDto.verify_permissions ?? true,
       );
@@ -454,7 +457,7 @@ export class TelegramGroupsService {
       // Post welcome message to channel
       try {
         const welcomePosted = await this.telegramChannelService.postWelcomeMessage(
-          group.bot.bot_token,
+          group.project.bot_token,
           connectDto.telegram_chat_id,
           group.group_name,
         );

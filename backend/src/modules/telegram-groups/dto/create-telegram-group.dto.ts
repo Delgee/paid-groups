@@ -33,12 +33,12 @@ export class CreateTelegramGroupDto {
   description?: string;
 
   @ApiProperty({
-    description: 'UUID of the associated telegram bot',
+    description: 'UUID of the associated project',
     example: '123e4567-e89b-12d3-a456-426614174000',
     format: 'uuid',
   })
   @IsUUID()
-  bot_id: string;
+  project_id: string;
 
   @ApiPropertyOptional({
     description: 'Additional settings for the telegram group',
