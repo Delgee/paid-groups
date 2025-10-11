@@ -19,6 +19,7 @@ import { TelegramGroupsModule } from './modules/telegram-groups/telegram-groups.
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BotConfigurationModule } from './modules/bot-configuration/bot-configuration.module';
 import { MembershipPlanModule } from './modules/membership-plan/membership-plan.module';
+import { ProjectModule } from './modules/project/project.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { MetricsModule } from './common/metrics/metrics.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -72,6 +73,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     TenantModule,
     BotModule,
     BotConfigurationModule,
+    ProjectModule, // New: Replaces bot-configuration functionality with multi-group support
     MembershipModule,
     MembershipPlanModule,
     PaymentModule,

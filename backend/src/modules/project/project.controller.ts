@@ -29,13 +29,13 @@ import {
   PaginatedProjectsResponseDto,
 } from './dto/project-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RoleGuard } from '../auth/guards/role.guard';
+import { OwnerRoleGuard } from '../../common/guards/owner-role.guard';
 import { TenantId } from '../auth/decorators/tenant-id.decorator';
 import { CorrelationId } from '../../common/middleware/correlation-id.middleware';
 
 @ApiTags('Projects')
 @Controller('projects')
-@UseGuards(JwtAuthGuard, RoleGuard('owner'))
+@UseGuards(JwtAuthGuard, OwnerRoleGuard)
 @ApiBearerAuth()
 export class ProjectController {
   private readonly logger = new Logger(ProjectController.name);

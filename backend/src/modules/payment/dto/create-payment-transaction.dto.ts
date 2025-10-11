@@ -21,13 +21,23 @@ export class CreatePaymentTransactionDto {
   membership_plan_id: string;
 
   @ApiProperty({
-    description: 'Bot that processes this payment',
+    description: 'Project that processes this payment',
     format: 'uuid',
     example: '550e8400-e29b-41d4-a716-446655440001',
   })
   @IsUUID()
   @IsNotEmpty()
-  bot_configuration_id: string;
+  project_id: string;
+
+  // Legacy field for backward compatibility
+  @ApiPropertyOptional({
+    description: 'DEPRECATED: Use project_id instead. Bot configuration ID for backward compatibility.',
+    format: 'uuid',
+    deprecated: true,
+  })
+  @IsUUID()
+  @IsOptional()
+  bot_configuration_id?: string;
 
   @ApiProperty({
     description: "Payer's Telegram user ID",
