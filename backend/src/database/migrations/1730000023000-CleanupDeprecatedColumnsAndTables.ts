@@ -28,8 +28,10 @@ export class CleanupDeprecatedColumnsAndTables1730000023000 implements Migration
         DROP INDEX IF EXISTS "IDX_membership_plans_group_id";
       `);
 
-      // Drop column
-      await queryRunner.dropColumn('membership_plans', 'group_id');
+      // Drop column directly with SQL to avoid TypeORM's index checks
+      await queryRunner.query(`
+        ALTER TABLE membership_plans DROP COLUMN group_id;
+      `);
       console.log('  ✓ Dropped group_id column from membership_plans');
     }
 
@@ -54,8 +56,10 @@ export class CleanupDeprecatedColumnsAndTables1730000023000 implements Migration
         DROP INDEX IF EXISTS "IDX_membership_plans_bot_sort";
       `);
 
-      // Drop column
-      await queryRunner.dropColumn('membership_plans', 'bot_configuration_id');
+      // Drop column directly with SQL to avoid TypeORM's index checks
+      await queryRunner.query(`
+        ALTER TABLE membership_plans DROP COLUMN bot_configuration_id;
+      `);
       console.log('  ✓ Dropped bot_configuration_id column from membership_plans');
     }
 
@@ -82,8 +86,10 @@ export class CleanupDeprecatedColumnsAndTables1730000023000 implements Migration
         DROP INDEX IF EXISTS "IDX_telegram_groups_bot_id";
       `);
 
-      // Drop column
-      await queryRunner.dropColumn('telegram_groups', 'bot_id');
+      // Drop column directly with SQL to avoid TypeORM's index checks
+      await queryRunner.query(`
+        ALTER TABLE telegram_groups DROP COLUMN bot_id;
+      `);
       console.log('  ✓ Dropped bot_id column from telegram_groups');
     }
 

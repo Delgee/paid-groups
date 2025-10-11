@@ -2,15 +2,15 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class EnhanceTelegramGroups1730000011000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Add new columns to telegram_groups table
+    // Add new columns to telegram_groups table (with IF NOT EXISTS check)
     await queryRunner.query(`
       ALTER TABLE telegram_groups
-      ADD COLUMN description TEXT,
-      ADD COLUMN bot_assigned BOOLEAN DEFAULT false,
-      ADD COLUMN last_sync_at TIMESTAMP,
-      ADD COLUMN sync_enabled BOOLEAN DEFAULT false,
-      ADD COLUMN connection_status VARCHAR(20) DEFAULT 'pending',
-      ADD COLUMN sync_errors TEXT
+      ADD COLUMN IF NOT EXISTS description TEXT,
+      ADD COLUMN IF NOT EXISTS bot_assigned BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS last_sync_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS sync_enabled BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS connection_status VARCHAR(20) DEFAULT 'pending',
+      ADD COLUMN IF NOT EXISTS sync_errors TEXT
     `);
 
     // Add check constraint for connection_status

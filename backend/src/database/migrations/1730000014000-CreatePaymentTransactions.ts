@@ -176,9 +176,11 @@ export class CreatePaymentTransactions1730000014000 implements MigrationInterfac
       `CREATE INDEX "IDX_payment_transactions_status" ON "payment_transactions" ("tenant_id", "status")`,
     );
 
-    await queryRunner.query(
-      `CREATE INDEX "IDX_payment_transactions_bot" ON "payment_transactions" ("bot_configuration_id", "status")`,
-    );
+    // Index on bot_configuration_id is commented out because this column will be replaced by project_id
+    // in migration 1730000024000-UpdatePaymentTransactionsForProjects
+    // await queryRunner.query(
+    //   `CREATE INDEX "IDX_payment_transactions_bot" ON "payment_transactions" ("bot_configuration_id", "status")`,
+    // );
 
     await queryRunner.query(
       `CREATE UNIQUE INDEX "IDX_payment_transactions_qpay_invoice" ON "payment_transactions" ("qpay_invoice_id") WHERE qpay_invoice_id IS NOT NULL`,

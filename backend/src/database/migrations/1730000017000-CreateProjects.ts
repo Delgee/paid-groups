@@ -47,17 +47,6 @@ export class CreateProjects1730000017000 implements MigrationInterface {
             type: 'text',
             isNullable: false,
           },
-          {
-            name: 'channel_id',
-            type: 'bigint',
-            isNullable: true,
-          },
-          {
-            name: 'channel_username',
-            type: 'varchar',
-            length: '255',
-            isNullable: true,
-          },
           // Bot infrastructure fields
           {
             name: 'webhook_url',
@@ -132,10 +121,6 @@ export class CreateProjects1730000017000 implements MigrationInterface {
 
     await queryRunner.query(
       `CREATE UNIQUE INDEX "IDX_projects_bot_token" ON "projects" ("bot_token")`,
-    );
-
-    await queryRunner.query(
-      `CREATE INDEX "IDX_projects_channel" ON "projects" ("channel_id") WHERE channel_id IS NOT NULL`,
     );
 
     await queryRunner.query(

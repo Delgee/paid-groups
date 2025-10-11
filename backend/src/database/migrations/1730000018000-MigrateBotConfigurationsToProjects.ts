@@ -26,8 +26,6 @@ export class MigrateBotConfigurationsToProjects1730000018000 implements Migratio
         display_name,
         description,
         welcome_message,
-        channel_id,
-        channel_username,
         is_active,
         last_sync_at,
         created_at,
@@ -43,8 +41,6 @@ export class MigrateBotConfigurationsToProjects1730000018000 implements Migratio
         display_name,
         description,
         welcome_message,
-        channel_id,
-        channel_username,
         is_active,
         last_sync_at,
         created_at,
@@ -80,6 +76,7 @@ export class MigrateBotConfigurationsToProjects1730000018000 implements Migratio
 
     // Restore data back to bot_configurations if needed
     // Note: This only restores records that don't already exist in bot_configurations
+    // Note: channel_id and channel_username fields were removed from projects entity
     await queryRunner.query(`
       INSERT INTO bot_configurations (
         id,
@@ -89,8 +86,6 @@ export class MigrateBotConfigurationsToProjects1730000018000 implements Migratio
         display_name,
         description,
         welcome_message,
-        channel_id,
-        channel_username,
         is_active,
         last_sync_at,
         created_at,
@@ -104,8 +99,6 @@ export class MigrateBotConfigurationsToProjects1730000018000 implements Migratio
         display_name,
         description,
         welcome_message,
-        channel_id,
-        channel_username,
         is_active,
         last_sync_at,
         created_at,
