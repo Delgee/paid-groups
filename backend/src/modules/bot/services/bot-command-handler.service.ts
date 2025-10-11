@@ -234,7 +234,7 @@ export class BotCommandHandlerService {
       const group = await this.telegramGroupRepository.findOne({
         where: {
           telegram_chat_id: chatId,
-          bot_id: bot.id,
+          project_id: bot.id, // Using bot.id as project_id for legacy compatibility
           tenant_id: bot.tenant_id,
         },
         relations: ['membership_plans'],
@@ -323,7 +323,7 @@ export class BotCommandHandlerService {
       const group = await this.telegramGroupRepository.findOne({
         where: {
           telegram_chat_id: chatId,
-          bot_id: bot.id,
+          project_id: bot.id, // Using bot.id as project_id for legacy compatibility
           tenant_id: bot.tenant_id,
         },
       });
@@ -403,7 +403,7 @@ export class BotCommandHandlerService {
       const group = await this.telegramGroupRepository.findOne({
         where: {
           telegram_chat_id: chatId,
-          bot_id: bot.id,
+          project_id: bot.id, // Using bot.id as project_id for legacy compatibility
           tenant_id: bot.tenant_id,
         },
       });

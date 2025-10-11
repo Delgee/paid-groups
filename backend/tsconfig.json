@@ -25,5 +25,5 @@
     }
   },
   "include": ["src/**/*", "test/**/*"],
-  "exclude": ["node_modules", "dist", "src/workers/**/*"]
+  "exclude": ["node_modules", "dist", "src/workers/**/*", "src/modules/bot/**/*"]
 }

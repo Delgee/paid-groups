@@ -151,9 +151,9 @@ export class WebhookService {
 
     // Find the group
     const group = await this.telegramGroupRepository.findOne({
-      where: { 
+      where: {
         telegram_chat_id: chatId,
-        bot_id: bot.id,
+        project_id: bot.id, // Using bot.id as project_id for legacy compatibility
         tenant_id: bot.tenant_id,
       },
     });

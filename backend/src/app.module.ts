@@ -10,7 +10,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantModule } from './modules/tenant/tenant.module';
-import { BotModule } from './modules/bot/bot.module';
+// import { BotModule } from './modules/bot/bot.module'; // DEPRECATED: Replaced by ProjectModule
 import { MembershipModule } from './modules/membership/membership.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { HealthModule } from './modules/health/health.module';
@@ -71,7 +71,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     MetricsModule,
     AuthModule,
     TenantModule,
-    BotModule,
+    // BotModule, // DEPRECATED: Replaced by ProjectModule
     BotConfigurationModule,
     ProjectModule, // New: Replaces bot-configuration functionality with multi-group support
     MembershipModule,

@@ -145,7 +145,7 @@ export class TelegramBotService {
       group_name: chatInfo.title || groupData.group_name,
       group_type: chatInfo.type as any,
       member_count: chatInfo.member_count || 0,
-      bot_id: bot.id,
+      project_id: bot.id, // Using bot.id as project_id for legacy compatibility
       tenant_id: tenantId,
       is_active: true,
       settings: groupData.settings || {},
@@ -160,7 +160,7 @@ export class TelegramBotService {
     const group = await this.groupRepository.findOne({
       where: { 
         id: groupId, 
-        bot_id: bot.id,
+        project_id: bot.id, // Using bot.id as project_id for legacy compatibility
         tenant_id: tenantId 
       },
     });
@@ -177,7 +177,7 @@ export class TelegramBotService {
     
     return this.groupRepository.find({
       where: { 
-        bot_id: bot.id,
+        project_id: bot.id, // Using bot.id as project_id for legacy compatibility
         tenant_id: tenantId 
       },
       order: { created_at: 'DESC' },
@@ -196,7 +196,7 @@ export class TelegramBotService {
     const group = await this.groupRepository.findOne({
       where: { 
         id: groupId, 
-        bot_id: bot.id,
+        project_id: bot.id, // Using bot.id as project_id for legacy compatibility
         tenant_id: tenantId 
       },
     });
@@ -224,7 +224,7 @@ export class TelegramBotService {
     const group = await this.groupRepository.findOne({
       where: { 
         id: groupId, 
-        bot_id: bot.id,
+        project_id: bot.id, // Using bot.id as project_id for legacy compatibility
         tenant_id: tenantId 
       },
     });
@@ -252,7 +252,7 @@ export class TelegramBotService {
     const group = await this.groupRepository.findOne({
       where: { 
         id: groupId, 
-        bot_id: bot.id,
+        project_id: bot.id, // Using bot.id as project_id for legacy compatibility
         tenant_id: tenantId 
       },
     });

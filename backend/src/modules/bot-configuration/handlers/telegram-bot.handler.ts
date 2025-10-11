@@ -217,7 +217,7 @@ export class TelegramBotHandler implements OnModuleInit {
         botConfig.tenant_id,
         {
           membership_plan_id: plan.id,
-          bot_configuration_id: botConfig.id,
+          project_id: botConfig.id, // Using bot_configuration_id as project_id for legacy compatibility
           telegram_user_id: telegramUserId,
           telegram_username: ctx.from.username,
           telegram_first_name: ctx.from.first_name,
