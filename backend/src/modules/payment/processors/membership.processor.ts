@@ -3,13 +3,14 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { ChannelMemberService } from '../services/channel-member.service';
 import { PaymentTransactionService } from '../services/payment-transaction.service';
+import { MembershipPlanService } from '../../membership-plan/services/membership-plan.service';
 
 interface CreateMembershipJobData {
   tenantId: string;
   paymentTransactionId: string;
-  botConfigurationId: string;
+  projectId: string;
+  membershipPlanId: string;
   telegramUserId: string;
-  channelId: string;
   expiresAt: Date;
 }
 
@@ -35,22 +36,23 @@ export class MembershipProcessor {
   constructor(
     private readonly channelMemberService: ChannelMemberService,
     private readonly paymentTransactionService: PaymentTransactionService,
+    private readonly membershipPlanService: MembershipPlanService,
   ) {}
 
   @Process('create-membership')
   async handleCreateMembership(job: Job<CreateMembershipJobData>): Promise<void> {
-    const { tenantId, paymentTransactionId, botConfigurationId, telegramUserId, channelId, expiresAt } = job.data;
+    const { tenantId, paymentTransactionId, projectId, membershipPlanId, telegramUserId, expiresAt } = job.data;
 
     this.logger.log(`Processing create-membership job for payment ${paymentTransactionId}`);
 
     try {
       // Check if membership already exists
-      const existingMember = await this.channelMemberService.findByPaymentTransaction(
+      const existingMembers = await this.channelMemberService.findByPaymentTransaction(
         tenantId,
         paymentTransactionId,
       );
 
-      if (existingMember) {
+      if (existingMembers && existingMembers.length > 0) {
         this.logger.warn(`Membership already exists for payment ${paymentTransactionId}`);
         return;
       }
@@ -58,25 +60,48 @@ export class MembershipProcessor {
       // Get payment transaction to retrieve snapshot data
       const payment = await this.paymentTransactionService.findOne(tenantId, paymentTransactionId);
 
-      // Create channel member
-      const channelMember = await this.channelMemberService.create(tenantId, {
-        payment_transaction_id: paymentTransactionId,
-        bot_configuration_id: botConfigurationId,
-        telegram_user_id: telegramUserId,
-        channel_id: channelId,
-        expires_at: expiresAt.toISOString(),
-      });
+      // Get all telegram groups associated with the membership plan
+      const telegramGroups = await this.membershipPlanService.findGroupsForPlan(membershipPlanId);
 
-      this.logger.log(`Channel member created: ${channelMember.id}`);
+      if (!telegramGroups || telegramGroups.length === 0) {
+        this.logger.warn(`No telegram groups found for membership plan ${membershipPlanId}`);
+        return;
+      }
 
-      // TODO: Generate Telegram invite link
-      // const inviteLink = await this.telegramService.createChatInviteLink(botToken, channelId);
-      // await this.channelMemberService.update(tenantId, channelMember.id, { invite_link: inviteLink });
+      this.logger.log(`Granting access to ${telegramGroups.length} groups for user ${telegramUserId}`);
 
-      // TODO: Send Telegram notification with invite link
+      // Create channel member records for ALL groups in the plan
+      const channelMembers = [];
+      for (const group of telegramGroups) {
+        if (!group.telegram_chat_id) {
+          this.logger.warn(`Telegram group ${group.id} has no telegram_chat_id, skipping`);
+          continue;
+        }
+
+        const channelMember = await this.channelMemberService.create(tenantId, {
+          payment_transaction_id: paymentTransactionId,
+          project_id: projectId,
+          telegram_user_id: telegramUserId,
+          channel_id: group.telegram_chat_id.toString(),
+          expires_at: expiresAt.toISOString(),
+        });
+
+        channelMembers.push(channelMember);
+        this.logger.log(`Channel member created for group ${group.group_name}: ${channelMember.id}`);
+      }
+
+      this.logger.log(`Successfully created ${channelMembers.length} channel memberships for payment ${paymentTransactionId}`);
+
+      // TODO: Generate Telegram invite links for each group
+      // for (const member of channelMembers) {
+      //   const inviteLink = await this.telegramService.createChatInviteLink(botToken, member.channel_id);
+      //   await this.channelMemberService.update(tenantId, member.id, { invite_link: inviteLink });
+      // }
+
+      // TODO: Send Telegram notification with all invite links
+      // const groupLinks = channelMembers.map((m, i) => `• ${telegramGroups[i].group_name}: ${m.invite_link}`).join('\n');
       // await this.telegramService.sendMessage(botToken, telegramUserId, {
-      //   text: `Payment successful! Your membership is active until ${expiresAt.toLocaleDateString()}`,
-      //   reply_markup: { inline_keyboard: [[{ text: 'Join Channel', url: inviteLink }]] }
+      //   text: `Payment successful! Your membership is active until ${expiresAt.toLocaleDateString()}\n\nJoin your groups:\n${groupLinks}`,
       // });
 
     } catch (error) {

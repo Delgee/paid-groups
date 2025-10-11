@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentTransaction } from './payment-transaction.entity';
-import { BotConfiguration } from '../../bot-configuration/entities/bot-configuration.entity';
+import { Project } from '../../project/entities/project.entity';
 
 export enum MembershipStatus {
   ACTIVE = 'active',
@@ -32,12 +32,12 @@ export class ChannelMember {
   tenant_id: string;
 
   @ApiProperty({ description: 'Associated payment transaction ID', format: 'uuid' })
-  @Column('uuid', { unique: true })
+  @Column('uuid')
   payment_transaction_id: string;
 
-  @ApiProperty({ description: 'Bot that manages membership', format: 'uuid' })
+  @ApiProperty({ description: 'Project that manages membership', format: 'uuid' })
   @Column('uuid')
-  bot_configuration_id: string;
+  project_id: string;
 
   @ApiProperty({ description: "Member's Telegram user ID" })
   @Column({ type: 'bigint' })
@@ -80,11 +80,11 @@ export class ChannelMember {
   updated_at: Date;
 
   // Relationships
-  @OneToOne(() => PaymentTransaction, { onDelete: 'CASCADE' })
+  @ManyToOne(() => PaymentTransaction, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'payment_transaction_id' })
   payment_transaction: PaymentTransaction;
 
-  @ManyToOne(() => BotConfiguration, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'bot_configuration_id' })
-  bot_configuration: BotConfiguration;
+  @ManyToOne(() => Project, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'project_id' })
+  project: Project;
 }

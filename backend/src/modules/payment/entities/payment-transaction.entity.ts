@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MembershipPlan } from '../../membership-plan/entities/membership-plan.entity';
-import { BotConfiguration } from '../../bot-configuration/entities/bot-configuration.entity';
+import { Project } from '../../project/entities/project.entity';
 
 export enum PaymentStatus {
   PENDING = 'pending',
@@ -35,9 +35,9 @@ export class PaymentTransaction {
   @Column('uuid')
   membership_plan_id: string;
 
-  @ApiProperty({ description: 'Bot that processed payment', format: 'uuid' })
+  @ApiProperty({ description: 'Project that processed payment', format: 'uuid' })
   @Column('uuid')
-  bot_configuration_id: string;
+  project_id: string;
 
   @ApiProperty({ description: "Payer's Telegram user ID" })
   @Column({ type: 'bigint' })
@@ -116,9 +116,9 @@ export class PaymentTransaction {
   @JoinColumn({ name: 'membership_plan_id' })
   membership_plan: MembershipPlan;
 
-  @ManyToOne(() => BotConfiguration, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'bot_configuration_id' })
-  bot_configuration: BotConfiguration;
+  @ManyToOne(() => Project, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'project_id' })
+  project: Project;
 
   // @OneToOne(() => ChannelMember, member => member.payment_transaction)
   // channel_member: ChannelMember;
