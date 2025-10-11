@@ -59,8 +59,8 @@ export class ChannelMemberService {
   async findByPaymentTransaction(
     tenantId: string,
     paymentTransactionId: string,
-  ): Promise<ChannelMember | null> {
-    return this.channelMemberRepository.findOne({
+  ): Promise<ChannelMember[]> {
+    return this.channelMemberRepository.find({
       where: {
         payment_transaction_id: paymentTransactionId,
         tenant_id: tenantId,

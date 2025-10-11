@@ -64,9 +64,9 @@ export class PaymentController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all payment transactions for tenant' })
   @ApiQuery({
-    name: 'bot_configuration_id',
+    name: 'project_id',
     required: false,
-    description: 'Filter by bot configuration',
+    description: 'Filter by project',
   })
   @ApiQuery({
     name: 'membership_plan_id',
@@ -91,14 +91,14 @@ export class PaymentController {
   })
   async findAll(
     @TenantId() tenantId: string,
-    @Query('bot_configuration_id') botConfigurationId?: string,
+    @Query('project_id') projectId?: string,
     @Query('membership_plan_id') membershipPlanId?: string,
     @Query('telegram_user_id') telegramUserId?: string,
     @Query('status', new ParseEnumPipe(PaymentStatus, { optional: true }))
     status?: PaymentStatus,
   ): Promise<PaymentTransaction[]> {
     return this.paymentTransactionService.findAll(tenantId, {
-      bot_configuration_id: botConfigurationId,
+      project_id: projectId,
       membership_plan_id: membershipPlanId,
       telegram_user_id: telegramUserId,
       status,
@@ -198,13 +198,13 @@ export class PaymentController {
 
       this.logger.log(`Payment ${transaction.id} marked as completed`);
 
-      // Queue membership creation job
+      // Queue membership creation job (multi-group support)
       await this.membershipQueue.add('create-membership', {
         tenantId: transaction.tenant_id,
         paymentTransactionId: transaction.id,
-        botConfigurationId: transaction.bot_configuration_id,
+        projectId: transaction.project_id,
+        membershipPlanId: transaction.membership_plan_id,
         telegramUserId: transaction.telegram_user_id,
-        channelId: transaction.bot_configuration?.channel_id, // TODO: Get from bot config
         expiresAt: transaction.membership_expires_at,
       }, {
         attempts: 3,

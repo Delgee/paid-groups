@@ -120,7 +120,7 @@ export class PaymentTransactionService {
   async findAll(
     tenantId: string,
     filters?: {
-      bot_configuration_id?: string;
+      project_id?: string;
       membership_plan_id?: string;
       telegram_user_id?: string;
       status?: PaymentStatus;
@@ -130,8 +130,8 @@ export class PaymentTransactionService {
 
     const where: any = { tenant_id: tenantId };
 
-    if (filters?.bot_configuration_id) {
-      where.bot_configuration_id = filters.bot_configuration_id;
+    if (filters?.project_id) {
+      where.project_id = filters.project_id;
     }
 
     if (filters?.membership_plan_id) {
