@@ -29,7 +29,7 @@ import {
   CreateTelegramGroupData,
   UpdateTelegramGroupData,
 } from '@/lib/api/telegram-groups';
-import { apiClient } from '@/lib/api/client';
+import { projectApi } from '@/lib/api/projects';
 
 /**
  * Validation schema for telegram group form
@@ -45,7 +45,7 @@ const telegramGroupFormSchema = z.object({
     .max(1000, 'Description must not exceed 1000 characters')
     .optional()
     .transform((val) => (val?.trim() === '' ? undefined : val?.trim())),
-  bot_id: z.string().uuid('Please select a valid bot'),
+  project_id: z.string().uuid('Please select a valid project'),
   settings: z
     .string()
     .optional()
@@ -70,6 +70,7 @@ interface TelegramGroupFormProps {
   onSubmit: (data: CreateTelegramGroupData | UpdateTelegramGroupData) => Promise<void>;
   onCancel?: () => void;
   isLoading?: boolean;
+  preselectedProjectId?: string;
 }
 
 /**
@@ -78,7 +79,7 @@ interface TelegramGroupFormProps {
  * Features:
  * - Support for both create and edit modes
  * - Form validation with Zod schema
- * - Bot selection dropdown
+ * - Project selection dropdown
  * - JSON settings validation
  * - Proper error handling and loading states
  * - Accessible with proper test IDs
@@ -89,17 +90,30 @@ export function TelegramGroupForm({
   onSubmit,
   onCancel,
   isLoading = false,
+  preselectedProjectId,
 }: TelegramGroupFormProps) {
   const { toast } = useToast();
 
-  // Fetch available bots for the dropdown
+  // Fetch available projects for the dropdown
   const {
-    data: botsResponse,
-    isLoading: isLoadingBots,
-    error: botsError,
+    data: projectsResponse,
+    isLoading: isLoadingProjects,
+    error: projectsError,
   } = useQuery({
-    queryKey: ['bots'],
-    queryFn: () => apiClient.getBots(),
+    queryKey: ['projects'],
+    queryFn: () => projectApi.getAll(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch specific project details if preselected (create mode) or from initialData (edit mode)
+  const projectIdToFetch = mode === 'create' ? preselectedProjectId : initialData?.project_id;
+  const {
+    data: projectDetails,
+    isLoading: isLoadingProjectDetails,
+  } = useQuery({
+    queryKey: ['project', projectIdToFetch],
+    queryFn: () => projectApi.getById(projectIdToFetch!),
+    enabled: !!projectIdToFetch,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -108,7 +122,7 @@ export function TelegramGroupForm({
     defaultValues: {
       group_name: initialData?.group_name || '',
       description: initialData?.description || '',
-      bot_id: initialData?.bot_id || '',
+      project_id: preselectedProjectId || initialData?.project_id || '',
       settings: initialData?.settings ? JSON.stringify(initialData.settings, null, 2) : '',
     },
   });
@@ -121,9 +135,9 @@ export function TelegramGroupForm({
         settings: data.settings,
       };
 
-      // Add bot_id only for create mode (required for creation)
+      // Add project_id only for create mode (required for creation)
       if (mode === 'create') {
-        (submitData as CreateTelegramGroupData).bot_id = data.bot_id;
+        (submitData as CreateTelegramGroupData).project_id = data.project_id;
       }
 
       await onSubmit(submitData);
@@ -144,10 +158,10 @@ export function TelegramGroupForm({
             type: 'server',
             message: 'Group name is invalid or already exists'
           });
-        } else if (error.message.includes('bot_id')) {
-          form.setError('bot_id', {
+        } else if (error.message.includes('project_id')) {
+          form.setError('project_id', {
             type: 'server',
-            message: 'Selected bot is invalid or unavailable'
+            message: 'Selected project is invalid or unavailable'
           });
         } else if (error.message.includes('settings')) {
           form.setError('settings', {
@@ -161,8 +175,8 @@ export function TelegramGroupForm({
     }
   };
 
-  // Show loading state while fetching bots
-  if (isLoadingBots) {
+  // Show loading state while fetching projects or project details
+  if (isLoadingProjects || (projectIdToFetch && isLoadingProjectDetails)) {
     return (
       <div className="space-y-6">
         <div>
@@ -178,14 +192,14 @@ export function TelegramGroupForm({
         </div>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2 text-muted-foreground">Loading bots...</span>
+          <span className="ml-2 text-muted-foreground">Loading projects...</span>
         </div>
       </div>
     );
   }
 
-  // Show error state if bots failed to load
-  if (botsError) {
+  // Show error state if projects failed to load
+  if (projectsError) {
     return (
       <div className="space-y-6">
         <div>
@@ -200,13 +214,13 @@ export function TelegramGroupForm({
           </p>
         </div>
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-          Failed to load bots. Please refresh the page and try again.
+          Failed to load projects. Please refresh the page and try again.
         </div>
       </div>
     );
   }
 
-  const availableBots = botsResponse?.bots?.filter(bot => bot.is_active) || [];
+  const availableProjects = projectsResponse?.data?.filter(project => project.is_active) || [];
 
   return (
     <div className="space-y-6">
@@ -269,37 +283,37 @@ export function TelegramGroupForm({
             )}
           />
 
-          {mode === 'create' && (
+          {mode === 'create' && !preselectedProjectId && (
             <FormField
               control={form.control}
-              name="bot_id"
+              name="project_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bot *</FormLabel>
+                  <FormLabel>Project *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    data-testid="bot-select"
-                    disabled={isLoading || availableBots.length === 0}
+                    data-testid="project-select"
+                    disabled={isLoading || availableProjects.length === 0}
                   >
                     <FormControl>
-                      <SelectTrigger data-testid="bot-select-trigger">
-                        <SelectValue placeholder="Select a bot for this group" />
+                      <SelectTrigger data-testid="project-select-trigger">
+                        <SelectValue placeholder="Select a project for this group" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {availableBots.length === 0 ? (
+                      {availableProjects.length === 0 ? (
                         <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                          No active bots available
+                          No active projects available
                         </div>
                       ) : (
-                        availableBots.map((bot) => (
-                          <SelectItem key={bot.id} value={bot.id}>
+                        availableProjects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
                             <div className="flex flex-col">
-                              <span className="font-medium">{bot.bot_name}</span>
-                              {bot.bot_username && (
+                              <span className="font-medium">{project.display_name}</span>
+                              {project.bot_username && (
                                 <span className="text-xs text-muted-foreground">
-                                  @{bot.bot_username}
+                                  @{project.bot_username}
                                 </span>
                               )}
                             </div>
@@ -308,13 +322,62 @@ export function TelegramGroupForm({
                       )}
                     </SelectContent>
                   </Select>
-                  <FormMessage data-testid="bot-error" />
+                  <FormMessage data-testid="project-error" />
                   <p className="text-sm text-muted-foreground">
-                    Choose which bot will manage this telegram group
+                    Choose which project/bot will manage this telegram group
                   </p>
                 </FormItem>
               )}
             />
+          )}
+
+          {mode === 'create' && preselectedProjectId && projectDetails && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Project</label>
+              <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/50">
+                <div className="flex-1">
+                  <p className="font-medium">{projectDetails.display_name}</p>
+                  {projectDetails.bot_username && (
+                    <p className="text-sm text-muted-foreground">
+                      @{projectDetails.bot_username}
+                    </p>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">
+                  Pre-selected
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This telegram group will be created for the selected project
+              </p>
+            </div>
+          )}
+
+          {mode === 'edit' && projectDetails && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Project</label>
+              <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/50">
+                <div className="flex-1">
+                  <p className="font-medium">{projectDetails.display_name}</p>
+                  {projectDetails.bot_username && (
+                    <p className="text-sm text-muted-foreground">
+                      @{projectDetails.bot_username}
+                    </p>
+                  )}
+                  {projectDetails.description && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {projectDetails.description}
+                    </p>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">
+                  Read-only
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Project cannot be changed after group creation
+              </p>
+            </div>
           )}
 
           <FormField
@@ -343,7 +406,7 @@ export function TelegramGroupForm({
           <div className="flex gap-3 pt-4">
             <Button
               type="submit"
-              disabled={isLoading || availableBots.length === 0}
+              disabled={isLoading || (mode === 'create' && !preselectedProjectId && availableProjects.length === 0)}
               data-testid="submit-button"
               className="flex-1"
             >
@@ -370,10 +433,10 @@ export function TelegramGroupForm({
         </form>
       </Form>
 
-      {availableBots.length === 0 && mode === 'create' && (
+      {availableProjects.length === 0 && mode === 'create' && !preselectedProjectId && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md text-sm">
-          <p className="font-medium">No Active Bots Available</p>
-          <p>You need to create and activate at least one bot before creating a telegram group.</p>
+          <p className="font-medium">No Active Projects Available</p>
+          <p>You need to create and activate at least one project before creating a telegram group.</p>
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { TelegramGroupForm } from 'components/telegram-groups/TelegramGroupForm';
 import { ChannelConnectionForm } from 'components/telegram-groups/ChannelConnectionForm';
@@ -21,9 +21,13 @@ type WizardStep = 'create' | 'connect' | 'complete';
 
 export default function CreateTelegramGroupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<WizardStep>('create');
   const [createdGroup, setCreatedGroup] = useState<TelegramGroup | null>(null);
+
+  // Get project_id from URL params if provided
+  const projectIdFromUrl = searchParams.get('project_id');
 
   // Create mutation
   const createMutation = useMutation({
@@ -148,6 +152,7 @@ export default function CreateTelegramGroupPage() {
           onSubmit={handleCreateSubmit}
           onCancel={() => router.back()}
           isLoading={createMutation.isPending}
+          preselectedProjectId={projectIdFromUrl || undefined}
         />
       )}
 

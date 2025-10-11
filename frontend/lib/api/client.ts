@@ -137,7 +137,7 @@ export interface TelegramGroup {
   group_type: 'channel' | 'group' | 'supergroup';
   is_active: boolean;
   member_count: number;
-  bot_id: string;
+  project_id: string;
   tenant_id: string;
   synced_at?: string;
   settings?: Record<string, unknown>;

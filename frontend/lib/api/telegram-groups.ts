@@ -20,7 +20,7 @@ export enum ConnectionStatus {
 export interface TelegramGroup {
   id: string;
   tenant_id: string;
-  bot_id: string;
+  project_id: string;
   telegram_chat_id: number | null;
   group_name: string;
   group_type: GroupType;
@@ -37,10 +37,10 @@ export interface TelegramGroup {
   sync_errors: string | null;
   created_at: string;
   updated_at: string;
-  bot?: {
+  project?: {
     id: string;
-    bot_name: string;
-    bot_username: string | null;
+    display_name: string;
+    bot_username: string;
     is_active: boolean;
   };
 }
@@ -51,7 +51,7 @@ export interface TelegramGroup {
 export interface CreateTelegramGroupData {
   group_name: string;
   description?: string;
-  bot_id: string;
+  project_id: string;
   settings?: Record<string, any>;
 }
 
