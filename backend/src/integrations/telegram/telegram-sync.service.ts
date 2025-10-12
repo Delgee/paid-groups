@@ -67,7 +67,7 @@ export class TelegramSyncService {
       // Fetch the group with tenant isolation
       const group = await this.telegramGroupRepository.findOne({
         where: { id: groupId, tenant_id: tenantId },
-        relations: ['bot'],
+        relations: ['project'],
       });
 
       if (!group) {
@@ -94,7 +94,7 @@ export class TelegramSyncService {
       // Update channel title to match group name
       if (group.group_name) {
         const titleUpdated = await this.telegramChannelService.updateChannelInfo(
-          group.bot.bot_token,
+          group.project.bot_token,
           group.telegram_chat_id!.toString(),
           group.group_name,
         );
@@ -112,7 +112,7 @@ export class TelegramSyncService {
       // Update channel description if provided
       if (group.description) {
         const descriptionUpdated = await this.telegramChannelService.updateChannelInfo(
-          group.bot.bot_token,
+          group.project.bot_token,
           group.telegram_chat_id!.toString(),
           undefined,
           group.description,
@@ -133,7 +133,7 @@ export class TelegramSyncService {
                          `✅ Description: ${syncedData.descriptionUpdated ? 'Updated' : 'Unchanged'}`;
 
       const messagePosted = await this.telegramApiService.sendMessage(
-        group.bot.bot_token,
+        group.project.bot_token,
         group.telegram_chat_id!,
         syncMessage,
         { parse_mode: 'HTML' },
@@ -181,7 +181,7 @@ export class TelegramSyncService {
           tenant_id: tenantId,
           is_active: true,
         },
-        relations: ['bot'],
+        relations: ['project'],
         order: { updated_at: 'ASC' }, // Process oldest updated first
       });
 
@@ -264,7 +264,7 @@ export class TelegramSyncService {
       // Fetch the group with tenant isolation
       const group = await this.telegramGroupRepository.findOne({
         where: { id: groupId, tenant_id: tenantId },
-        relations: ['bot'],
+        relations: ['project'],
       });
 
       if (!group) {
@@ -282,17 +282,17 @@ export class TelegramSyncService {
         issues.push('Telegram chat ID is not set');
       }
 
-      // Check if bot exists and has token
-      if (!group.bot || !group.bot.bot_token) {
-        issues.push('Bot configuration is missing or invalid');
+      // Check if project exists and has bot token
+      if (!group.project || !group.project.bot_token) {
+        issues.push('Project configuration is missing or invalid');
       }
 
       // If basic checks pass, validate Telegram channel access
-      if (issues.length === 0 && group.bot && group.telegram_chat_id) {
+      if (issues.length === 0 && group.project && group.telegram_chat_id) {
         try {
           // Verify channel accessibility
           const channelValidation = await this.telegramChannelService.validateChannelConnection(
-            group.bot.bot_token,
+            group.project.bot_token,
             group.telegram_chat_id.toString(),
           );
 
@@ -349,7 +349,7 @@ export class TelegramSyncService {
       // Fetch the group with tenant isolation
       const group = await this.telegramGroupRepository.findOne({
         where: { id: groupId, tenant_id: tenantId },
-        relations: ['bot'],
+        relations: ['project'],
       });
 
       if (!group) {
@@ -369,7 +369,7 @@ export class TelegramSyncService {
       this.logger.log(`Sync validation passed for group ${groupId}`);
 
       // Post announcement message to channel
-      if (group.telegram_chat_id && group.bot?.bot_token) {
+      if (group.telegram_chat_id && group.project?.bot_token) {
         const announcement = `🔄 Auto-sync has been enabled for this group!\n\n` +
                            `Your channel will now automatically stay synchronized with group updates:\n` +
                            `✅ Group name changes\n` +
@@ -378,7 +378,7 @@ export class TelegramSyncService {
                            `🤖 Powered by your Telegram bot integration`;
 
         const messagePosted = await this.telegramApiService.sendMessage(
-          group.bot.bot_token,
+          group.project.bot_token,
           group.telegram_chat_id,
           announcement,
           { parse_mode: 'HTML' },
@@ -412,7 +412,7 @@ export class TelegramSyncService {
       // Fetch the group with tenant isolation
       const group = await this.telegramGroupRepository.findOne({
         where: { id: groupId, tenant_id: tenantId },
-        relations: ['bot'],
+        relations: ['project'],
       });
 
       if (!group) {
@@ -421,14 +421,14 @@ export class TelegramSyncService {
       }
 
       // Post announcement message before disabling (if possible)
-      if (group.telegram_chat_id && group.bot?.bot_token) {
+      if (group.telegram_chat_id && group.project?.bot_token) {
         const announcement = `⏸️ Auto-sync has been disabled for this group.\n\n` +
                            `The channel will no longer automatically receive updates when group details change.\n` +
                            `You can re-enable sync anytime from your dashboard.\n\n` +
                            `Thank you for using our service! 🙏`;
 
         const messagePosted = await this.telegramApiService.sendMessage(
-          group.bot.bot_token,
+          group.project.bot_token,
           group.telegram_chat_id,
           announcement,
           { parse_mode: 'HTML' },

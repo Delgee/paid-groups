@@ -300,10 +300,10 @@ export class PaymentService {
     membership: Membership,
     expiresAt: Date
   ): Promise<void> {
-    // Get the telegram group with bot details
+    // Get the telegram group with project details
     const telegramGroup = await this.telegramGroupRepository.findOne({
       where: { id: plan.group_id },
-      relations: ['bot'],
+      relations: ['project'],
     });
 
     if (!telegramGroup) {
@@ -316,12 +316,12 @@ export class PaymentService {
       return;
     }
 
-    if (!telegramGroup.bot || !telegramGroup.bot.bot_token) {
-      this.logger.warn(`No bot configured for telegram group ${plan.group_id}`);
+    if (!telegramGroup.project || !telegramGroup.project.bot_token) {
+      this.logger.warn(`No project configured for telegram group ${plan.group_id}`);
       return;
     }
 
-    const botToken = telegramGroup.bot.bot_token;
+    const botToken = telegramGroup.project.bot_token;
     const chatId = telegramGroup.telegram_chat_id;
 
     // Generate a personalized invite link (expires in 7 days, single use)
@@ -347,7 +347,7 @@ export class PaymentService {
       plan.name,
       inviteLink,
       expiresAt,
-      telegramGroup.bot.message_templates || {}
+      telegramGroup.project.message_templates || {}
     );
 
     const sent = await this.telegramApiService.sendMessage(
@@ -466,12 +466,12 @@ export class PaymentService {
       if (payment.membership_id) {
         membership = await this.membershipRepository.findOne({
           where: { id: payment.membership_id },
-          relations: ['plan', 'plan.group', 'plan.group.bot'],
+          relations: ['plan', 'plan.group', 'plan.group.project'],
         });
 
-        if (membership?.plan?.group?.bot) {
+        if (membership?.plan?.group?.project) {
           telegramGroup = membership.plan.group;
-          botToken = telegramGroup.bot.bot_token;
+          botToken = telegramGroup.project.bot_token;
         }
       }
 
@@ -487,7 +487,7 @@ export class PaymentService {
         membership,
         telegramGroup,
         type,
-        telegramGroup?.bot?.message_templates || {}
+        telegramGroup?.project?.message_templates || {}
       );
 
       const sent = await this.telegramApiService.sendMessage(
