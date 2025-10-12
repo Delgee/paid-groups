@@ -3,7 +3,6 @@ import {
   IsString,
   IsOptional,
   IsObject,
-  IsBoolean,
   MinLength,
   MaxLength,
   IsNotEmpty,
@@ -32,14 +31,6 @@ export class UpdateTelegramGroupDto {
   @IsString()
   @MaxLength(1000)
   description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Enable or disable automatic synchronization to Telegram channel',
-    example: true,
-  })
-  @IsOptional()
-  @IsBoolean()
-  sync_enabled?: boolean;
 
   @ApiPropertyOptional({
     description: 'Additional settings for the telegram group',

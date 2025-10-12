@@ -1,7 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsNumber, IsBoolean, IsEnum, Min, Max } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { ConnectionStatus } from '../telegram-groups.entity';
+import { IsOptional, IsNumber, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class GetTelegramGroupsDto {
   @ApiPropertyOptional({
@@ -29,39 +28,4 @@ export class GetTelegramGroupsDto {
   @Min(1)
   @Max(100)
   limit?: number = 10;
-
-  @ApiPropertyOptional({
-    description: 'Filter by sync enabled status',
-    example: true,
-  })
-  @IsOptional()
-  @Transform(({ value }) => {
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    return value;
-  })
-  @IsBoolean()
-  sync_enabled?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Filter by bot assigned status',
-    example: true,
-  })
-  @IsOptional()
-  @Transform(({ value }) => {
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    return value;
-  })
-  @IsBoolean()
-  bot_assigned?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Filter by connection status',
-    enum: ConnectionStatus,
-    example: ConnectionStatus.CONNECTED,
-  })
-  @IsOptional()
-  @IsEnum(ConnectionStatus)
-  connection_status?: ConnectionStatus;
 }

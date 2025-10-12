@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
-import { TelegramGroup, GroupType, ConnectionStatus } from './telegram-groups.entity';
+import { TelegramGroup, GroupType } from './telegram-groups.entity';
 import { TelegramBot } from '../bot/entities/telegram-bot.entity';
 import { Project } from '../project/entities/project.entity';
 import { TelegramApiService } from '../bot/services/telegram-api.service';
@@ -28,7 +28,6 @@ export interface ConnectChannelResponse {
     username?: string | null;
     member_count?: number | null;
   };
-  connection_status: ConnectionStatus;
 }
 
 export interface SyncResponse {
@@ -110,9 +109,6 @@ export class TelegramGroupsService {
         tenant_id: tenantId,
         settings: createDto.settings || {},
         is_active: true,
-        bot_assigned: false, // Will be set to true when channel is connected
-        sync_enabled: false, // Disabled by default until channel connection
-        connection_status: ConnectionStatus.PENDING,
         member_count: 0,
         group_type: GroupType.GROUP, // Default, will be updated on channel connection
       });
@@ -136,7 +132,6 @@ export class TelegramGroupsService {
 
   /**
    * Retrieves all telegram groups for a tenant with optional filtering and pagination.
-   * Supports filtering by sync status, connection status, and bot assignment.
    *
    * @param tenantId - The tenant UUID for isolation
    * @param query - Optional query parameters for filtering and pagination
@@ -155,18 +150,6 @@ export class TelegramGroupsService {
         tenant_id: tenantId,
         is_active: true,
       };
-
-      if (query?.sync_enabled !== undefined) {
-        whereConditions.sync_enabled = query.sync_enabled;
-      }
-
-      if (query?.connection_status) {
-        whereConditions.connection_status = query.connection_status;
-      }
-
-      if (query?.bot_assigned !== undefined) {
-        whereConditions.bot_assigned = query.bot_assigned;
-      }
 
       // Execute query with pagination
       const [groups, total] = await this.telegramGroupRepository.findAndCount({
@@ -228,14 +211,12 @@ export class TelegramGroupsService {
 
   /**
    * Updates an existing telegram group with validation and tenant isolation.
-   * Handles sync status changes and validates sync prerequisites when enabling sync.
    *
    * @param id - The UUID of the telegram group to update
    * @param updateDto - The data for updating the telegram group
    * @param tenantId - The tenant UUID for isolation
    * @returns Promise<TelegramGroup> - The updated telegram group
    * @throws NotFoundException - When group is not found
-   * @throws BadRequestException - When sync cannot be enabled due to prerequisites
    */
   async update(id: string, updateDto: UpdateTelegramGroupDto, tenantId: string): Promise<TelegramGroup> {
     try {
@@ -244,19 +225,6 @@ export class TelegramGroupsService {
       const group = await this.findOne(id, tenantId);
       if (!group) {
         throw new NotFoundException(`Telegram group with ID ${id} not found`);
-      }
-
-      // If sync_enabled is being changed, validate prerequisites
-      if (updateDto.sync_enabled !== undefined && updateDto.sync_enabled !== group.sync_enabled) {
-        if (updateDto.sync_enabled) {
-          // Enabling sync - validate prerequisites
-          const validation = await this.telegramSyncService.validateSyncConfiguration(id, tenantId);
-          if (!validation.canSync) {
-            throw new BadRequestException(
-              `Cannot enable sync: ${validation.issues.join(', ')}`
-            );
-          }
-        }
       }
 
       // Apply updates
@@ -288,35 +256,9 @@ export class TelegramGroupsService {
         group.settings = { ...group.settings, ...updateDto.settings };
       }
 
-      if (updateDto.sync_enabled !== undefined) {
-        group.sync_enabled = updateDto.sync_enabled;
-      }
-
       group.updated_at = new Date();
 
       const updatedGroup = await this.telegramGroupRepository.save(group);
-
-      // If sync was enabled, trigger sync service enable
-      if (updateDto.sync_enabled === true && !group.sync_enabled) {
-        try {
-          await this.telegramSyncService.enableAutoSync(id, tenantId);
-          this.logger.log(`Auto-sync enabled for group ${id}`);
-        } catch (syncError) {
-          this.logger.error(`Failed to enable auto-sync for group ${id}: ${syncError.message}`);
-          // Continue with update but log the error
-        }
-      }
-
-      // If sync was disabled, trigger sync service disable
-      if (updateDto.sync_enabled === false && group.sync_enabled) {
-        try {
-          await this.telegramSyncService.disableAutoSync(id, tenantId);
-          this.logger.log(`Auto-sync disabled for group ${id}`);
-        } catch (syncError) {
-          this.logger.error(`Failed to disable auto-sync for group ${id}: ${syncError.message}`);
-          // Continue with update but log the error
-        }
-      }
 
       this.logger.log(`Telegram group updated successfully: ${id} - ${updatedGroup.group_name}`);
       return updatedGroup;
@@ -328,7 +270,7 @@ export class TelegramGroupsService {
 
   /**
    * Soft deletes a telegram group by setting is_active to false.
-   * Also disconnects from channel and disables sync operations.
+   * Also disconnects from channel.
    *
    * @param id - The UUID of the telegram group to remove
    * @param tenantId - The tenant UUID for isolation
@@ -344,18 +286,10 @@ export class TelegramGroupsService {
         throw new NotFoundException(`Telegram group with ID ${id} not found`);
       }
 
-      // Disable sync first if enabled
-      if (group.sync_enabled) {
-        try {
-          await this.telegramSyncService.disableAutoSync(id, tenantId);
-          this.logger.log(`Sync disabled for group ${id} before removal`);
-        } catch (syncError) {
-          this.logger.warn(`Failed to disable sync before removal for group ${id}: ${syncError.message}`);
-        }
-      }
-
       // Disconnect from channel
-      group.disconnectFromChannel();
+      group.telegram_chat_id = null;
+      group.username = null;
+      group.invite_link = null;
 
       // Soft delete
       group.is_active = false;
@@ -376,7 +310,7 @@ export class TelegramGroupsService {
 
   /**
    * Connects a telegram group to a Telegram channel with bot permission verification.
-   * Updates connection status, channel information, and bot assignment flags.
+   * Updates channel information in the group record.
    *
    * @param id - The UUID of the telegram group to connect
    * @param connectDto - The channel connection data
@@ -398,7 +332,6 @@ export class TelegramGroupsService {
         return {
           success: false,
           message: 'Project configuration is missing or invalid bot token',
-          connection_status: ConnectionStatus.FAILED,
         };
       }
 
@@ -416,7 +349,6 @@ export class TelegramGroupsService {
         return {
           success: false,
           message: `Channel is already connected to group "${existingConnection.group_name}"`,
-          connection_status: ConnectionStatus.FAILED,
         };
       }
 
@@ -428,28 +360,19 @@ export class TelegramGroupsService {
       );
 
       if (!connectionResult.success) {
-        // Update group connection status to failed
-        group.setConnectionFailed(connectionResult.error);
-        await this.telegramGroupRepository.save(group);
-
         return {
           success: false,
           message: connectionResult.error || 'Failed to connect to channel',
-          connection_status: ConnectionStatus.FAILED,
         };
       }
 
       // Update group with channel information
       const channelInfo = connectionResult.channelInfo!;
 
-      group.connectToChannel(
-        channelInfo.id,
-        this.mapTelegramTypeToGroupType(channelInfo.type),
-        channelInfo.username,
-        connectDto.invite_link,
-      );
-
-      group.setBotAssigned(true);
+      group.telegram_chat_id = channelInfo.id;
+      group.group_type = this.mapTelegramTypeToGroupType(channelInfo.type);
+      group.username = channelInfo.username || null;
+      group.invite_link = connectDto.invite_link || null;
       group.member_count = channelInfo.member_count || 0;
 
       const updatedGroup = await this.telegramGroupRepository.save(group);
@@ -481,7 +404,6 @@ export class TelegramGroupsService {
           username: channelInfo.username || null,
           member_count: channelInfo.member_count || null,
         },
-        connection_status: ConnectionStatus.CONNECTED,
       };
     } catch (error) {
       this.logger.error(`Failed to connect channel for group ${id}: ${error.message}`, error.stack);
@@ -493,7 +415,6 @@ export class TelegramGroupsService {
       return {
         success: false,
         message: `Connection failed: ${error.message}`,
-        connection_status: ConnectionStatus.FAILED,
       };
     }
   }
@@ -517,10 +438,10 @@ export class TelegramGroupsService {
       }
 
       // Validate sync prerequisites
-      if (!group.canSync()) {
+      if (!group.telegram_chat_id || !group.project?.bot_token) {
         return {
           success: false,
-          error: 'Group cannot be synced: not connected or bot not assigned',
+          error: 'Group cannot be synced: not connected to a channel or bot token missing',
         };
       }
 

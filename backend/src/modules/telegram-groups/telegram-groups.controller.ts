@@ -57,27 +57,6 @@ export class TelegramGroupsController {
     description: 'Number of items per page (max 100)',
     example: 20,
   })
-  @ApiQuery({
-    name: 'sync_enabled',
-    required: false,
-    type: Boolean,
-    description: 'Filter by sync enabled status',
-    example: true,
-  })
-  @ApiQuery({
-    name: 'connection_status',
-    required: false,
-    enum: ['connected', 'disconnected', 'pending', 'error'],
-    description: 'Filter by connection status',
-    example: 'connected',
-  })
-  @ApiQuery({
-    name: 'bot_assigned',
-    required: false,
-    type: Boolean,
-    description: 'Filter by bot assignment status',
-    example: true,
-  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Telegram groups retrieved successfully',
@@ -94,13 +73,6 @@ export class TelegramGroupsController {
               description: { type: 'string' },
               channel_id: { type: 'string', nullable: true },
               channel_username: { type: 'string', nullable: true },
-              connection_status: {
-                type: 'string',
-                enum: ['connected', 'disconnected', 'pending', 'error']
-              },
-              sync_enabled: { type: 'boolean' },
-              last_sync_at: { type: 'string', format: 'date-time', nullable: true },
-              bot_assigned: { type: 'boolean' },
               created_at: { type: 'string', format: 'date-time' },
               updated_at: { type: 'string', format: 'date-time' },
             },
@@ -154,7 +126,6 @@ export class TelegramGroupsController {
         value: {
           name: 'Premium Trading Signals',
           description: 'Exclusive trading signals for premium members',
-          sync_enabled: true,
         },
       },
     },
@@ -170,13 +141,6 @@ export class TelegramGroupsController {
         description: { type: 'string' },
         channel_id: { type: 'string', nullable: true },
         channel_username: { type: 'string', nullable: true },
-        connection_status: {
-          type: 'string',
-          enum: ['connected', 'disconnected', 'pending', 'error']
-        },
-        sync_enabled: { type: 'boolean' },
-        last_sync_at: { type: 'string', format: 'date-time', nullable: true },
-        bot_assigned: { type: 'boolean' },
         tenant_id: { type: 'string', format: 'uuid' },
         created_at: { type: 'string', format: 'date-time' },
         updated_at: { type: 'string', format: 'date-time' },
@@ -230,13 +194,6 @@ export class TelegramGroupsController {
         description: { type: 'string' },
         channel_id: { type: 'string', nullable: true },
         channel_username: { type: 'string', nullable: true },
-        connection_status: {
-          type: 'string',
-          enum: ['connected', 'disconnected', 'pending', 'error']
-        },
-        sync_enabled: { type: 'boolean' },
-        last_sync_at: { type: 'string', format: 'date-time', nullable: true },
-        bot_assigned: { type: 'boolean' },
         tenant_id: { type: 'string', format: 'uuid' },
         created_at: { type: 'string', format: 'date-time' },
         updated_at: { type: 'string', format: 'date-time' },
@@ -288,7 +245,6 @@ export class TelegramGroupsController {
         value: {
           name: 'Premium Trading Signals - VIP',
           description: 'Updated description for VIP members',
-          sync_enabled: false,
         },
       },
     },
@@ -304,13 +260,6 @@ export class TelegramGroupsController {
         description: { type: 'string' },
         channel_id: { type: 'string', nullable: true },
         channel_username: { type: 'string', nullable: true },
-        connection_status: {
-          type: 'string',
-          enum: ['connected', 'disconnected', 'pending', 'error']
-        },
-        sync_enabled: { type: 'boolean' },
-        last_sync_at: { type: 'string', format: 'date-time', nullable: true },
-        bot_assigned: { type: 'boolean' },
         tenant_id: { type: 'string', format: 'uuid' },
         created_at: { type: 'string', format: 'date-time' },
         updated_at: { type: 'string', format: 'date-time' },
@@ -437,10 +386,6 @@ export class TelegramGroupsController {
             type: { type: 'string' },
             member_count: { type: 'number', nullable: true },
           },
-        },
-        connection_status: {
-          type: 'string',
-          enum: ['connected', 'disconnected', 'pending', 'error']
         },
       },
     },
