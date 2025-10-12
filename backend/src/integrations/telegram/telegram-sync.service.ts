@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TelegramApiService } from '../../modules/bot/services/telegram-api.service';
 import { TelegramChannelService } from './telegram-channel.service';
-import { TelegramGroup, ConnectionStatus } from '../../modules/telegram-groups/telegram-groups.entity';
+import { TelegramGroup } from '../../modules/telegram-groups/telegram-groups.entity';
 
 export interface SyncResult {
   success: boolean;
@@ -81,7 +81,6 @@ export class TelegramSyncService {
       if (!validation.canSync) {
         const error = `Sync validation failed: ${validation.issues.join(', ')}`;
         this.logger.error(`${error} for group ${groupId}`);
-        await this.updateSyncError(group, error);
         return { success: false, error };
       }
 
@@ -103,7 +102,6 @@ export class TelegramSyncService {
         if (!titleUpdated) {
           const error = 'Failed to update channel title';
           this.logger.error(`${error} for group ${groupId}`);
-          await this.updateSyncError(group, error);
           return { success: false, error };
         }
 
@@ -148,10 +146,7 @@ export class TelegramSyncService {
         this.logger.warn(`Failed to post sync notification for group ${groupId}, but sync succeeded`);
       }
 
-      // Update group sync status in database
-      group.updateSyncStatus(true);
-      await this.telegramGroupRepository.save(group);
-
+      // Sync completed successfully
       this.logger.log(`Sync completed successfully for group ${groupId}`);
 
       return {
@@ -160,18 +155,6 @@ export class TelegramSyncService {
       };
     } catch (error) {
       this.logger.error(`Sync failed for group ${groupId}: ${error.message}`, error.stack);
-
-      // Try to update error status in database
-      try {
-        const group = await this.telegramGroupRepository.findOne({
-          where: { id: groupId, tenant_id: tenantId },
-        });
-        if (group) {
-          await this.updateSyncError(group, error.message);
-        }
-      } catch (dbError) {
-        this.logger.error(`Failed to update sync error status: ${dbError.message}`);
-      }
 
       return {
         success: false,
@@ -191,14 +174,12 @@ export class TelegramSyncService {
     try {
       this.logger.log(`Starting bulk sync for all active groups in tenant ${tenantId}`);
 
-      // Fetch all sync-enabled groups for the tenant
+      // Fetch all active groups for the tenant
+      // NOTE: Sync-specific fields have been removed. This now syncs all active groups.
       const groups = await this.telegramGroupRepository.find({
         where: {
           tenant_id: tenantId,
           is_active: true,
-          sync_enabled: true,
-          connection_status: ConnectionStatus.CONNECTED,
-          bot_assigned: true,
         },
         relations: ['bot'],
         order: { updated_at: 'ASC' }, // Process oldest updated first
@@ -296,16 +277,6 @@ export class TelegramSyncService {
         issues.push('Group is not active');
       }
 
-      // Check connection status
-      if (group.connection_status !== ConnectionStatus.CONNECTED) {
-        issues.push(`Group is not connected (status: ${group.connection_status})`);
-      }
-
-      // Check if bot is assigned
-      if (!group.bot_assigned) {
-        issues.push('Bot is not assigned to this group');
-      }
-
       // Check if telegram_chat_id is set
       if (!group.telegram_chat_id) {
         issues.push('Telegram chat ID is not set');
@@ -390,16 +361,12 @@ export class TelegramSyncService {
       const validation = await this.validateSyncConfiguration(groupId, tenantId);
       if (!validation.canSync) {
         this.logger.error(`Cannot enable sync for group ${groupId}: ${validation.issues.join(', ')}`);
-        await this.updateSyncError(group, `Sync enable failed: ${validation.issues.join(', ')}`);
         return false;
       }
 
-      // Enable sync in database
-      group.sync_enabled = true;
-      group.sync_errors = null; // Clear any previous errors
-      group.updated_at = new Date();
-
-      await this.telegramGroupRepository.save(group);
+      // NOTE: sync_enabled field has been removed from entity
+      // This method now just validates and posts announcement
+      this.logger.log(`Sync validation passed for group ${groupId}`);
 
       // Post announcement message to channel
       if (group.telegram_chat_id && group.bot?.bot_token) {
@@ -454,7 +421,7 @@ export class TelegramSyncService {
       }
 
       // Post announcement message before disabling (if possible)
-      if (group.telegram_chat_id && group.bot?.bot_token && group.sync_enabled) {
+      if (group.telegram_chat_id && group.bot?.bot_token) {
         const announcement = `⏸️ Auto-sync has been disabled for this group.\n\n` +
                            `The channel will no longer automatically receive updates when group details change.\n` +
                            `You can re-enable sync anytime from your dashboard.\n\n` +
@@ -472,11 +439,9 @@ export class TelegramSyncService {
         }
       }
 
-      // Disable sync in database
-      group.sync_enabled = false;
-      group.updated_at = new Date();
-
-      await this.telegramGroupRepository.save(group);
+      // NOTE: sync_enabled field has been removed from entity
+      // This method now just posts announcement
+      this.logger.log(`Sync disable announcement posted for group ${groupId}`);
 
       this.logger.log(`Auto sync disabled successfully for group ${groupId}`);
       return true;
@@ -488,7 +453,7 @@ export class TelegramSyncService {
 
   /**
    * Retrieves the last synchronization status for a group.
-   * Returns sync timestamp, success status, and any error messages.
+   * NOTE: Sync status fields have been removed. This method now always returns no status.
    *
    * @param groupId - The UUID of the group to check
    * @param tenantId - The tenant UUID for isolation
@@ -501,7 +466,7 @@ export class TelegramSyncService {
       // Fetch the group with tenant isolation
       const group = await this.telegramGroupRepository.findOne({
         where: { id: groupId, tenant_id: tenantId },
-        select: ['id', 'last_sync_at', 'sync_errors', 'sync_enabled'],
+        select: ['id'],
       });
 
       if (!group) {
@@ -513,17 +478,14 @@ export class TelegramSyncService {
         };
       }
 
-      // Determine success status based on last sync and errors
-      const hasErrors = Boolean(group.sync_errors);
-      const hasLastSync = Boolean(group.last_sync_at);
-
+      // NOTE: Sync status fields removed - always return no status
       const result: SyncStatus = {
-        lastSyncAt: group.last_sync_at,
-        success: hasLastSync && !hasErrors,
-        error: group.sync_errors || undefined,
+        lastSyncAt: null,
+        success: true,
+        error: undefined,
       };
 
-      this.logger.log(`Last sync status for group ${groupId}: lastSync=${result.lastSyncAt?.toISOString()}, success=${result.success}`);
+      this.logger.log(`Last sync status for group ${groupId}: Status tracking disabled`);
 
       return result;
     } catch (error) {
@@ -533,24 +495,6 @@ export class TelegramSyncService {
         success: false,
         error: `Status retrieval failed: ${error.message}`,
       };
-    }
-  }
-
-  /**
-   * Updates the sync error status for a group in the database.
-   * Helper method to consistently handle sync error recording.
-   *
-   * @private
-   * @param group - The TelegramGroup entity to update
-   * @param error - The error message to record
-   */
-  private async updateSyncError(group: TelegramGroup, error: string): Promise<void> {
-    try {
-      group.updateSyncStatus(false, error);
-      await this.telegramGroupRepository.save(group);
-      this.logger.log(`Sync error recorded for group ${group.id}: ${error}`);
-    } catch (dbError) {
-      this.logger.error(`Failed to update sync error status for group ${group.id}: ${dbError.message}`);
     }
   }
 
