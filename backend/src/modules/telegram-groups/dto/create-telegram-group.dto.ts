@@ -7,6 +7,7 @@ import {
   MinLength,
   MaxLength,
   IsNotEmpty,
+  Matches,
 } from 'class-validator';
 
 export class CreateTelegramGroupDto {
@@ -39,6 +40,29 @@ export class CreateTelegramGroupDto {
   })
   @IsUUID()
   project_id: string;
+
+  @ApiProperty({
+    description: 'Telegram chat ID (negative number for groups/channels)',
+    example: '-1001234567890',
+    pattern: '^-?\\d+$',
+  })
+  @IsString()
+  @Matches(/^-?\d+$/, {
+    message: 'telegram_chat_id must be a valid numeric string',
+  })
+  telegram_chat_id: string;
+
+  @ApiPropertyOptional({
+    description: 'Optional Telegram invite link',
+    example: 'https://t.me/+AbCdEfGhIjKlMnOp',
+    pattern: '^https:\\/\\/t\\.me\\/',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^https:\/\/t\.me\//, {
+    message: 'invite_link must be a valid Telegram invite link starting with https://t.me/',
+  })
+  invite_link?: string;
 
   @ApiPropertyOptional({
     description: 'Additional settings for the telegram group',

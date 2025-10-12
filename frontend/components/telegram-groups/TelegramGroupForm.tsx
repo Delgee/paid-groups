@@ -46,6 +46,17 @@ const telegramGroupFormSchema = z.object({
     .optional()
     .transform((val) => (val?.trim() === '' ? undefined : val?.trim())),
   project_id: z.string().uuid('Please select a valid project'),
+  telegram_chat_id: z
+    .string()
+    .regex(/^-?\d+$/, 'Chat ID must be a valid number (e.g., -1001234567890)')
+    .refine((val) => val.startsWith('-'), {
+      message: 'Chat ID for groups/channels must be negative (start with -)',
+    }),
+  invite_link: z
+    .string()
+    .regex(/^https:\/\/t\.me\//, 'Invite link must start with https://t.me/')
+    .optional()
+    .or(z.literal('')),
   settings: z
     .string()
     .optional()
@@ -123,6 +134,8 @@ export function TelegramGroupForm({
       group_name: initialData?.group_name || '',
       description: initialData?.description || '',
       project_id: preselectedProjectId || initialData?.project_id || '',
+      telegram_chat_id: initialData?.telegram_chat_id?.toString() || '',
+      invite_link: initialData?.invite_link || '',
       settings: initialData?.settings ? JSON.stringify(initialData.settings, null, 2) : '',
     },
   });
@@ -135,9 +148,11 @@ export function TelegramGroupForm({
         settings: data.settings,
       };
 
-      // Add project_id only for create mode (required for creation)
+      // Add create-only fields
       if (mode === 'create') {
         (submitData as CreateTelegramGroupData).project_id = data.project_id;
+        (submitData as CreateTelegramGroupData).telegram_chat_id = data.telegram_chat_id;
+        (submitData as CreateTelegramGroupData).invite_link = data.invite_link || undefined;
       }
 
       await onSubmit(submitData);
@@ -230,7 +245,7 @@ export function TelegramGroupForm({
         </h2>
         <p className="text-muted-foreground">
           {mode === 'create'
-            ? 'Set up a new telegram group for member management.'
+            ? 'Connect your Telegram channel and set up member management. Make sure the bot has admin rights in the channel.'
             : 'Update the telegram group details and settings.'
           }
         </p>
@@ -376,6 +391,81 @@ export function TelegramGroupForm({
               </div>
               <p className="text-sm text-muted-foreground">
                 Project cannot be changed after group creation
+              </p>
+            </div>
+          )}
+
+          {mode === 'create' && (
+            <>
+              <FormField
+                control={form.control}
+                name="telegram_chat_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telegram Chat ID *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="-1001234567890"
+                        data-testid="telegram-chat-id-input"
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage data-testid="telegram-chat-id-error" />
+                    <p className="text-sm text-muted-foreground">
+                      The numeric ID of your Telegram group/channel (must start with -)
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="invite_link"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Invite Link</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="https://t.me/+AbCdEfGhIjKlMnOp"
+                        data-testid="invite-link-input"
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage data-testid="invite-link-error" />
+                    <p className="text-sm text-muted-foreground">
+                      Optional: Your Telegram invite link for this group/channel
+                    </p>
+                  </FormItem>
+                )}
+              />
+            </>
+          )}
+
+          {mode === 'edit' && initialData?.telegram_chat_id && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Telegram Channel</label>
+              <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/50">
+                <div className="flex-1">
+                  <p className="font-medium">Chat ID: {initialData.telegram_chat_id}</p>
+                  {initialData.username && (
+                    <p className="text-sm text-muted-foreground">
+                      @{initialData.username}
+                    </p>
+                  )}
+                  {initialData.invite_link && (
+                    <p className="text-xs text-muted-foreground mt-1 break-all">
+                      {initialData.invite_link}
+                    </p>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">
+                  Connected
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Channel connection cannot be changed after group creation
               </p>
             </div>
           )}

@@ -7,13 +7,6 @@ export enum GroupType {
   CHANNEL = 'channel',
 }
 
-export enum ConnectionStatus {
-  PENDING = 'pending',
-  CONNECTED = 'connected',
-  FAILED = 'failed',
-  DISCONNECTED = 'disconnected',
-}
-
 /**
  * Telegram Group entity interface
  */
@@ -30,11 +23,6 @@ export interface TelegramGroup {
   member_count: number;
   settings: Record<string, any>;
   description: string | null;
-  bot_assigned: boolean;
-  last_sync_at: string | null;
-  sync_enabled: boolean;
-  connection_status: ConnectionStatus;
-  sync_errors: string | null;
   created_at: string;
   updated_at: string;
   project?: {
@@ -52,6 +40,8 @@ export interface CreateTelegramGroupData {
   group_name: string;
   description?: string;
   project_id: string;
+  telegram_chat_id: string;
+  invite_link?: string;
   settings?: Record<string, any>;
 }
 
@@ -61,7 +51,6 @@ export interface CreateTelegramGroupData {
 export interface UpdateTelegramGroupData {
   group_name?: string;
   description?: string;
-  sync_enabled?: boolean;
   settings?: Record<string, any>;
 }
 
@@ -80,9 +69,6 @@ export interface ConnectChannelData {
 export interface ListTelegramGroupsParams {
   page?: number;
   limit?: number;
-  sync_enabled?: boolean;
-  bot_assigned?: boolean;
-  connection_status?: ConnectionStatus;
 }
 
 /**
@@ -111,14 +97,13 @@ export interface TelegramGroupsListResponse {
 export interface ConnectChannelResponse {
   success: boolean;
   message: string;
-  channel_info: {
+  channel_info?: {
     id: string;
     username: string | null;
     title: string;
     type: string;
     member_count: number | null;
   };
-  connection_status: ConnectionStatus;
 }
 
 /**
@@ -147,9 +132,7 @@ export class TelegramGroupsApi {
    * ```typescript
    * const { data, pagination } = await telegramGroupsApi.listTelegramGroups({
    *   page: 1,
-   *   limit: 20,
-   *   sync_enabled: true,
-   *   connection_status: ConnectionStatus.CONNECTED
+   *   limit: 20
    * });
    * ```
    */
@@ -184,7 +167,9 @@ export class TelegramGroupsApi {
    * const group = await telegramGroupsApi.createTelegramGroup({
    *   group_name: 'VIP Premium Group',
    *   description: 'Exclusive content for premium members',
-   *   bot_id: 'bot-uuid-here',
+   *   project_id: 'project-uuid-here',
+   *   telegram_chat_id: '-1001234567890',
+   *   invite_link: 'https://t.me/+AbCdEfGhIjKlMnOp',
    *   settings: { welcome_message: 'Welcome to our VIP group!' }
    * });
    * ```
@@ -247,7 +232,6 @@ export class TelegramGroupsApi {
    * ```typescript
    * const updatedGroup = await telegramGroupsApi.updateTelegramGroup('group-uuid-here', {
    *   group_name: 'Updated VIP Group',
-   *   sync_enabled: true,
    *   settings: { auto_approve: false }
    * });
    * ```

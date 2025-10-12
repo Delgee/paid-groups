@@ -19,21 +19,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Bot,
   Users,
-  Wifi,
-  WifiOff,
-  AlertCircle,
   MoreVertical,
-  RefreshCw,
   Settings,
   Trash2,
   ExternalLink,
-  Clock,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import {
   TelegramGroup,
-  ConnectionStatus,
 } from '@/lib/api/telegram-groups';
 import { cn } from '@/lib/utils';
 
@@ -41,8 +36,6 @@ interface TelegramGroupCardProps {
   group: TelegramGroup;
   onEdit?: (group: TelegramGroup) => void;
   onDelete?: (group: TelegramGroup) => void;
-  onConnectChannel?: (group: TelegramGroup) => void;
-  onSyncGroup?: (group: TelegramGroup) => void;
   variant?: 'default' | 'compact';
   showActions?: boolean;
   className?: string;
@@ -52,56 +45,29 @@ export function TelegramGroupCard({
   group,
   onEdit,
   onDelete,
-  onConnectChannel,
-  onSyncGroup,
   variant = 'default',
   showActions = true,
   className,
 }: TelegramGroupCardProps) {
-  // Helper function to get connection status badge configuration
-  const getConnectionStatusBadge = (status: ConnectionStatus) => {
-    const variants = {
-      [ConnectionStatus.PENDING]: {
-        variant: 'secondary' as const,
-        label: 'Pending',
-        icon: AlertCircle,
-        className: 'bg-amber-100 text-amber-800 border-amber-200'
-      },
-      [ConnectionStatus.CONNECTED]: {
-        variant: 'default' as const,
-        label: 'Connected',
-        icon: Wifi,
-        className: 'bg-green-100 text-green-800 border-green-200'
-      },
-      [ConnectionStatus.FAILED]: {
-        variant: 'destructive' as const,
-        label: 'Failed',
-        icon: WifiOff,
-        className: 'bg-red-100 text-red-800 border-red-200'
-      },
-      [ConnectionStatus.DISCONNECTED]: {
-        variant: 'outline' as const,
-        label: 'Disconnected',
-        icon: WifiOff,
-        className: 'bg-gray-100 text-gray-600 border-gray-200'
-      },
-    };
+  // Helper function to get connection status badge
+  const getConnectionStatusBadge = () => {
+    const isConnected = !!group.telegram_chat_id;
 
-    const config = variants[status];
-    const Icon = config.icon;
+    if (isConnected) {
+      return (
+        <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 flex items-center gap-1">
+          <CheckCircle2 className="h-3 w-3" />
+          Connected
+        </Badge>
+      );
+    }
 
     return (
-      <Badge variant={config.variant} className={cn("flex items-center gap-1", config.className)}>
-        <Icon className="h-3 w-3" />
-        {config.label}
+      <Badge variant="secondary" className="bg-gray-100 text-gray-600 border-gray-200 flex items-center gap-1">
+        <XCircle className="h-3 w-3" />
+        Not Connected
       </Badge>
     );
-  };
-
-  // Helper function to format last sync time
-  const formatLastSync = (lastSyncAt: string | null) => {
-    if (!lastSyncAt) return 'Never';
-    return formatDistanceToNow(new Date(lastSyncAt), { addSuffix: true });
   };
 
   // Helper function to truncate text
@@ -121,7 +87,7 @@ export function TelegramGroupCard({
     return null;
   };
 
-  // Available actions based on group state
+  // Available actions
   const availableActions = useMemo(() => {
     const actions = [];
 
@@ -136,31 +102,9 @@ export function TelegramGroupCard({
       });
     }
 
-    // Connect channel if not connected
-    if (onConnectChannel && group.connection_status !== ConnectionStatus.CONNECTED) {
-      actions.push({
-        key: 'connect',
-        label: 'Connect Channel',
-        icon: Wifi,
-        onClick: () => onConnectChannel(group),
-        variant: 'default' as const,
-      });
-    }
-
-    // Sync if connected and sync enabled
-    if (onSyncGroup && group.sync_enabled && group.connection_status === ConnectionStatus.CONNECTED) {
-      actions.push({
-        key: 'sync',
-        label: 'Sync Now',
-        icon: RefreshCw,
-        onClick: () => onSyncGroup(group),
-        variant: 'default' as const,
-      });
-    }
-
     // View in Telegram if connected
     const telegramUrl = getTelegramUrl();
-    if (telegramUrl && group.connection_status === ConnectionStatus.CONNECTED) {
+    if (telegramUrl && group.telegram_chat_id) {
       actions.push({
         key: 'view',
         label: 'View in Telegram',
@@ -182,7 +126,7 @@ export function TelegramGroupCard({
     }
 
     return actions;
-  }, [group, onEdit, onDelete, onConnectChannel, onSyncGroup]);
+  }, [group, onEdit, onDelete]);
 
   const isCompact = variant === 'compact';
 
@@ -264,46 +208,12 @@ export function TelegramGroupCard({
 
         {/* Status Badges Row */}
         <div className="flex flex-wrap gap-2">
-          {getConnectionStatusBadge(group.connection_status)}
-
-          {group.sync_enabled && (
-            <Badge
-              variant="default"
-              className="bg-blue-100 text-blue-800 border-blue-200 flex items-center gap-1"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Sync Enabled
-            </Badge>
-          )}
-
-          {group.bot_assigned && (
-            <Badge
-              variant="default"
-              className="bg-green-100 text-green-800 border-green-200 flex items-center gap-1"
-            >
-              <Bot className="h-3 w-3" />
-              Bot Assigned
-            </Badge>
-          )}
+          {getConnectionStatusBadge()}
         </div>
       </CardHeader>
 
       {/* Content Section */}
       <CardContent className="space-y-3">
-        {/* Bot Information */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground flex items-center gap-1">
-            <Bot className="h-4 w-4" />
-            Bot
-          </span>
-          <span className="text-sm font-medium" data-testid="group-card-bot">
-            {group.bot_assigned ?
-              (group.bot?.bot_name || group.bot?.bot_username || 'Assigned') :
-              'Not Assigned'
-            }
-          </span>
-        </div>
-
         {/* Member Count */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground flex items-center gap-1">
@@ -325,31 +235,13 @@ export function TelegramGroupCard({
           </div>
         )}
 
-        {/* Last Sync Time */}
-        {group.sync_enabled && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              Last Sync
-            </span>
-            <span className="text-sm" data-testid="group-card-last-sync">
-              {formatLastSync(group.last_sync_at)}
-            </span>
-          </div>
-        )}
-
-        {/* Sync Errors */}
-        {group.sync_errors && (
-          <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
-            <div className="flex items-start gap-1">
-              <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
-              <div>
-                <strong>Sync Error:</strong>
-                <p className="mt-1">{group.sync_errors}</p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Created Date */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Created</span>
+          <span className="text-sm" data-testid="group-card-created">
+            {formatDistanceToNow(new Date(group.created_at), { addSuffix: true })}
+          </span>
+        </div>
 
         {/* Group Type and Username (if available) */}
         {!isCompact && (
@@ -394,30 +286,6 @@ export function TelegramGroupCard({
                 title="Edit Group"
               >
                 <Settings className="h-3 w-3" />
-              </Button>
-            )}
-
-            {onConnectChannel && group.connection_status !== ConnectionStatus.CONNECTED && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => onConnectChannel(group)}
-                title="Connect Channel"
-              >
-                <Wifi className="h-3 w-3" />
-              </Button>
-            )}
-
-            {onSyncGroup && group.sync_enabled && group.connection_status === ConnectionStatus.CONNECTED && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => onSyncGroup(group)}
-                title="Sync Now"
-              >
-                <RefreshCw className="h-3 w-3" />
               </Button>
             )}
           </div>

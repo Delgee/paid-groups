@@ -17,23 +17,11 @@ export default function TelegramGroupsPage() {
     toast.info(`Delete functionality for "${group.group_name}" will be implemented soon`);
   };
 
-  const handleConnectChannel = (group: TelegramGroup) => {
-    // TODO: Implement channel connection functionality
-    toast.info(`Channel connection for "${group.group_name}" will be implemented soon`);
-  };
-
-  const handleSyncGroup = (group: TelegramGroup) => {
-    // TODO: Implement sync functionality
-    toast.info(`Sync functionality for "${group.group_name}" will be implemented soon`);
-  };
-
   return (
     <div className="container mx-auto py-6">
       <TelegramGroupList
         onEditGroup={handleEditGroup}
         onDeleteGroup={handleDeleteGroup}
-        onConnectChannel={handleConnectChannel}
-        onSyncGroup={handleSyncGroup}
       />
     </div>
   );

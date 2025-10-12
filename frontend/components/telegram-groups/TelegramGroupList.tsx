@@ -32,9 +32,6 @@ import {
   Plus,
   Search,
   Users,
-  Bot,
-  Wifi,
-  WifiOff,
   MoreVertical,
   RefreshCw,
   Settings,
@@ -42,10 +39,11 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import {
   TelegramGroup,
-  ConnectionStatus,
   telegramGroupsApi,
   telegramGroupsQueryKeys,
   ListTelegramGroupsParams,
@@ -55,8 +53,6 @@ import { formatDistanceToNow } from 'date-fns';
 interface TelegramGroupListProps {
   onEditGroup?: (group: TelegramGroup) => void;
   onDeleteGroup?: (group: TelegramGroup) => void;
-  onConnectChannel?: (group: TelegramGroup) => void;
-  onSyncGroup?: (group: TelegramGroup) => void;
   className?: string;
 }
 
@@ -80,8 +76,6 @@ function useDebounce<T>(value: T, delay: number): T {
 export function TelegramGroupList({
   onEditGroup,
   onDeleteGroup,
-  onConnectChannel,
-  onSyncGroup,
   className,
 }: TelegramGroupListProps) {
   const router = useRouter();
@@ -91,23 +85,11 @@ export function TelegramGroupList({
   const initialPage = parseInt(searchParams.get('page') || '1', 10);
   const initialLimit = parseInt(searchParams.get('limit') || '20', 10);
   const initialSearch = searchParams.get('search') || '';
-  const initialSyncEnabled = searchParams.get('sync_enabled');
-  const initialBotAssigned = searchParams.get('bot_assigned');
-  const initialConnectionStatus = searchParams.get('connection_status') as ConnectionStatus | null;
 
   // Local state
   const [page, setPage] = useState(initialPage);
   const [limit, setLimit] = useState(initialLimit);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
-  const [syncEnabledFilter, setSyncEnabledFilter] = useState<boolean | undefined>(
-    initialSyncEnabled === 'true' ? true : initialSyncEnabled === 'false' ? false : undefined
-  );
-  const [botAssignedFilter, setBotAssignedFilter] = useState<boolean | undefined>(
-    initialBotAssigned === 'true' ? true : initialBotAssigned === 'false' ? false : undefined
-  );
-  const [connectionStatusFilter, setConnectionStatusFilter] = useState<ConnectionStatus | undefined>(
-    initialConnectionStatus || undefined
-  );
 
   // Debounce search term to avoid excessive API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -119,18 +101,8 @@ export function TelegramGroupList({
       limit,
     };
 
-    if (syncEnabledFilter !== undefined) {
-      params.sync_enabled = syncEnabledFilter;
-    }
-    if (botAssignedFilter !== undefined) {
-      params.bot_assigned = botAssignedFilter;
-    }
-    if (connectionStatusFilter) {
-      params.connection_status = connectionStatusFilter;
-    }
-
     return params;
-  }, [page, limit, syncEnabledFilter, botAssignedFilter, connectionStatusFilter]);
+  }, [page, limit]);
 
   // Fetch telegram groups
   const {
@@ -162,9 +134,6 @@ export function TelegramGroupList({
     if (page > 1) params.set('page', page.toString());
     if (limit !== 20) params.set('limit', limit.toString());
     if (searchTerm) params.set('search', searchTerm);
-    if (syncEnabledFilter !== undefined) params.set('sync_enabled', syncEnabledFilter.toString());
-    if (botAssignedFilter !== undefined) params.set('bot_assigned', botAssignedFilter.toString());
-    if (connectionStatusFilter) params.set('connection_status', connectionStatusFilter);
 
     const newUrl = params.toString() ? `?${params.toString()}` : '';
     const currentUrl = window.location.search;
@@ -172,31 +141,27 @@ export function TelegramGroupList({
     if (newUrl !== currentUrl) {
       router.replace(`${window.location.pathname}${newUrl}`, { scroll: false });
     }
-  }, [page, limit, searchTerm, syncEnabledFilter, botAssignedFilter, connectionStatusFilter, router]);
+  }, [page, limit, searchTerm, router]);
 
-  // Helper functions
-  const getConnectionStatusBadge = (status: ConnectionStatus) => {
-    const variants = {
-      [ConnectionStatus.PENDING]: { variant: 'secondary' as const, label: 'Pending', icon: AlertCircle },
-      [ConnectionStatus.CONNECTED]: { variant: 'default' as const, label: 'Connected', icon: Wifi },
-      [ConnectionStatus.FAILED]: { variant: 'destructive' as const, label: 'Failed', icon: WifiOff },
-      [ConnectionStatus.DISCONNECTED]: { variant: 'outline' as const, label: 'Disconnected', icon: WifiOff },
-    };
+  // Helper function to get connection status badge
+  const getConnectionStatusBadge = (group: TelegramGroup) => {
+    const isConnected = !!group.telegram_chat_id;
 
-    const config = variants[status];
-    const Icon = config.icon;
+    if (isConnected) {
+      return (
+        <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 flex items-center gap-1">
+          <CheckCircle2 className="h-3 w-3" />
+          Connected
+        </Badge>
+      );
+    }
 
     return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
-        <Icon className="h-3 w-3" />
-        {config.label}
+      <Badge variant="secondary" className="bg-gray-100 text-gray-600 border-gray-200 flex items-center gap-1">
+        <XCircle className="h-3 w-3" />
+        Not Connected
       </Badge>
     );
-  };
-
-  const formatLastSync = (lastSyncAt: string | null) => {
-    if (!lastSyncAt) return 'Never';
-    return formatDistanceToNow(new Date(lastSyncAt), { addSuffix: true });
   };
 
   const handleCreateGroup = () => {
@@ -206,13 +171,9 @@ export function TelegramGroupList({
   const resetFilters = () => {
     setPage(1);
     setSearchTerm('');
-    setSyncEnabledFilter(undefined);
-    setBotAssignedFilter(undefined);
-    setConnectionStatusFilter(undefined);
   };
 
-  const hasActiveFilters = searchTerm || syncEnabledFilter !== undefined ||
-    botAssignedFilter !== undefined || connectionStatusFilter;
+  const hasActiveFilters = searchTerm;
 
   // Loading skeleton
   const LoadingSkeleton = () => (
@@ -302,77 +263,6 @@ export function TelegramGroupList({
 
           {/* Filter Controls */}
           <div className="flex flex-wrap gap-4">
-            {/* Sync Enabled Filter */}
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="sync-enabled-filter" className="text-sm font-medium">
-                Sync Enabled
-              </Label>
-              <Select
-                value={syncEnabledFilter === undefined ? 'all' : syncEnabledFilter.toString()}
-                onValueChange={(value) => {
-                  setSyncEnabledFilter(value === 'all' ? undefined : value === 'true');
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[120px]" data-testid="sync-enabled-filter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="true">Enabled</SelectItem>
-                  <SelectItem value="false">Disabled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Bot Assigned Filter */}
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="bot-assigned-filter" className="text-sm font-medium">
-                Bot Assigned
-              </Label>
-              <Select
-                value={botAssignedFilter === undefined ? 'all' : botAssignedFilter.toString()}
-                onValueChange={(value) => {
-                  setBotAssignedFilter(value === 'all' ? undefined : value === 'true');
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[120px]" data-testid="bot-assigned-filter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="true">Assigned</SelectItem>
-                  <SelectItem value="false">Unassigned</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Connection Status Filter */}
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="connection-status-filter" className="text-sm font-medium">
-                Connection Status
-              </Label>
-              <Select
-                value={connectionStatusFilter || 'all'}
-                onValueChange={(value) => {
-                  setConnectionStatusFilter(value === 'all' ? undefined : value as ConnectionStatus);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[140px]" data-testid="connection-status-filter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value={ConnectionStatus.PENDING}>Pending</SelectItem>
-                  <SelectItem value={ConnectionStatus.CONNECTED}>Connected</SelectItem>
-                  <SelectItem value={ConnectionStatus.FAILED}>Failed</SelectItem>
-                  <SelectItem value={ConnectionStatus.DISCONNECTED}>Disconnected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Items per page */}
             <div className="flex items-center space-x-2">
               <Label htmlFor="limit-select" className="text-sm font-medium">
@@ -481,18 +371,6 @@ export function TelegramGroupList({
                           Edit Group
                         </DropdownMenuItem>
                       )}
-                      {onConnectChannel && group.connection_status !== ConnectionStatus.CONNECTED && (
-                        <DropdownMenuItem onClick={() => onConnectChannel(group)}>
-                          <Wifi className="mr-2 h-4 w-4" />
-                          Connect Channel
-                        </DropdownMenuItem>
-                      )}
-                      {onSyncGroup && group.sync_enabled && group.connection_status === ConnectionStatus.CONNECTED && (
-                        <DropdownMenuItem onClick={() => onSyncGroup(group)}>
-                          <RefreshCw className="mr-2 h-4 w-4" />
-                          Sync Now
-                        </DropdownMenuItem>
-                      )}
                       {onDeleteGroup && (
                         <DropdownMenuItem
                           onClick={() => onDeleteGroup(group)}
@@ -519,21 +397,7 @@ export function TelegramGroupList({
                   {/* Connection Status */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Status</span>
-                    {getConnectionStatusBadge(group.connection_status)}
-                  </div>
-
-                  {/* Bot Assignment */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Bot</span>
-                    <div className="flex items-center gap-2">
-                      <Bot className="h-4 w-4" />
-                      <span className="text-sm">
-                        {group.bot_assigned ?
-                          (group.bot?.bot_name || 'Assigned') :
-                          'Not Assigned'
-                        }
-                      </span>
-                    </div>
+                    {getConnectionStatusBadge(group)}
                   </div>
 
                   {/* Member Count */}
@@ -545,30 +409,11 @@ export function TelegramGroupList({
                     </div>
                   </div>
 
-                  {/* Sync Status */}
+                  {/* Created Date */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Sync</span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={group.sync_enabled ? 'default' : 'secondary'}>
-                        {group.sync_enabled ? 'Enabled' : 'Disabled'}
-                      </Badge>
-                    </div>
+                    <span className="text-sm text-muted-foreground">Created</span>
+                    <span className="text-sm">{formatDistanceToNow(new Date(group.created_at), { addSuffix: true })}</span>
                   </div>
-
-                  {/* Last Sync */}
-                  {group.sync_enabled && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Last Sync</span>
-                      <span className="text-sm">{formatLastSync(group.last_sync_at)}</span>
-                    </div>
-                  )}
-
-                  {/* Sync Errors */}
-                  {group.sync_errors && (
-                    <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
-                      <strong>Sync Error:</strong> {group.sync_errors}
-                    </div>
-                  )}
                 </CardContent>
 
                 <CardFooter>

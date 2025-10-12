@@ -63,12 +63,16 @@ export class TelegramGroupsService {
 
   /**
    * Creates a new Telegram group with validation and tenant isolation.
-   * Validates project existence and ownership before creating the group.
+   * Validates project existence, ownership, and bot permissions before creating the group.
+   *
+   * If telegram_chat_id is provided, the bot's admin permissions in the specified channel
+   * will be validated before creating the group. This ensures the bot can manage the channel
+   * from the start.
    *
    * @param createDto - The data for creating the telegram group
    * @param tenantId - The tenant UUID for isolation
-   * @returns Promise<TelegramGroup> - The created telegram group with project relation
-   * @throws BadRequestException - When project_id is invalid or doesn't belong to tenant
+   * @returns Promise<TelegramGroup> - The created telegram group with project relation and channel info
+   * @throws BadRequestException - When project_id is invalid, doesn't belong to tenant, or bot lacks permissions
    * @throws ConflictException - When group name already exists for the tenant
    */
   async create(createDto: CreateTelegramGroupDto, tenantId: string): Promise<TelegramGroup> {
@@ -88,6 +92,11 @@ export class TelegramGroupsService {
         throw new BadRequestException('Project not found or not accessible for this tenant');
       }
 
+      // Validate bot token exists
+      if (!project.bot_token) {
+        throw new BadRequestException('Project does not have a valid bot token configured');
+      }
+
       // Check for duplicate group name within tenant
       const existingGroup = await this.telegramGroupRepository.findOne({
         where: {
@@ -101,7 +110,45 @@ export class TelegramGroupsService {
         throw new ConflictException(`Group with name "${createDto.group_name}" already exists`);
       }
 
-      // Create the telegram group
+      // Parse telegram_chat_id to number for channel validation
+      const chatId = parseInt(createDto.telegram_chat_id, 10);
+      if (isNaN(chatId)) {
+        throw new BadRequestException('Invalid telegram_chat_id format. Must be a numeric string.');
+      }
+
+      // Check if another group is already connected to this channel
+      const existingConnection = await this.telegramGroupRepository.findOne({
+        where: {
+          telegram_chat_id: chatId,
+          tenant_id: tenantId,
+          is_active: true
+        },
+      });
+
+      if (existingConnection) {
+        throw new ConflictException(
+          `Channel ${createDto.telegram_chat_id} is already connected to group "${existingConnection.group_name}"`,
+        );
+      }
+
+      // Validate bot permissions in the Telegram channel
+      this.logger.log(`Validating bot permissions for channel ${createDto.telegram_chat_id}`);
+      const connectionResult = await this.telegramChannelService.connectToChannel(
+        project.bot_token,
+        createDto.telegram_chat_id,
+        true, // verify_permissions = true
+      );
+
+      if (!connectionResult.success) {
+        throw new BadRequestException(
+          connectionResult.error || 'Failed to validate bot permissions in the Telegram channel',
+        );
+      }
+
+      // Extract channel info from connection result
+      const channelInfo = connectionResult.channelInfo!;
+
+      // Create the telegram group with channel information populated
       const telegramGroup = this.telegramGroupRepository.create({
         group_name: createDto.group_name,
         description: createDto.description || null,
@@ -109,11 +156,29 @@ export class TelegramGroupsService {
         tenant_id: tenantId,
         settings: createDto.settings || {},
         is_active: true,
-        member_count: 0,
-        group_type: GroupType.GROUP, // Default, will be updated on channel connection
+        telegram_chat_id: channelInfo.id,
+        username: channelInfo.username || null,
+        invite_link: createDto.invite_link || null,
+        group_type: this.mapTelegramTypeToGroupType(channelInfo.type),
+        member_count: channelInfo.member_count || 0,
       });
 
       const savedGroup = await this.telegramGroupRepository.save(telegramGroup);
+
+      // Post welcome message to channel
+      try {
+        const welcomePosted = await this.telegramChannelService.postWelcomeMessage(
+          project.bot_token,
+          createDto.telegram_chat_id,
+          createDto.group_name,
+        );
+
+        if (!welcomePosted) {
+          this.logger.warn(`Failed to post welcome message to channel ${createDto.telegram_chat_id}`);
+        }
+      } catch (welcomeError) {
+        this.logger.warn(`Error posting welcome message: ${welcomeError.message}`);
+      }
 
       // Fetch with project relation for response
       const groupWithProject = await this.telegramGroupRepository.findOne({
@@ -121,7 +186,9 @@ export class TelegramGroupsService {
         relations: ['project'],
       });
 
-      this.logger.log(`Telegram group created successfully: ${savedGroup.id} - ${createDto.group_name}`);
+      this.logger.log(
+        `Telegram group created successfully with channel connection: ${savedGroup.id} - ${createDto.group_name} (channel: ${channelInfo.title})`,
+      );
 
       return groupWithProject!;
     } catch (error) {
