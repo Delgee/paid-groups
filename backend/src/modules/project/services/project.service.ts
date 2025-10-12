@@ -182,8 +182,70 @@ export class ProjectService {
     Object.assign(project, updateDto);
     const updated = await this.projectRepository.save(project);
 
+    // Automatically sync bot info from Telegram after update
+    try {
+      await this.syncBotInfoAfterUpdate(updated);
+    } catch (syncError) {
+      // Log but don't fail the update if sync fails
+      this.logger.warn(`Failed to auto-sync bot info after update: ${syncError.message}`);
+    }
+
     this.logger.log(`Project updated: ${id}`);
     return ProjectResponseDto.fromEntity(updated);
+  }
+
+  /**
+   * Sync bot information from Telegram API after project update
+   * This ensures the bot's settings are reflected in Telegram
+   */
+  private async syncBotInfoAfterUpdate(project: Project): Promise<void> {
+    try {
+      // Verify bot token is still valid
+      const botInfo = await this.telegramApiService.verifyBotToken(project.bot_token);
+
+      if (!botInfo) {
+        this.logger.warn(`Bot token invalid for project ${project.id}, skipping sync`);
+        return;
+      }
+
+      // Update bot commands based on current configuration
+      // This ensures users see up-to-date commands in Telegram
+      await this.updateBotCommands(project);
+
+      this.logger.log(`Bot info synced successfully for project ${project.id}`);
+    } catch (error) {
+      this.logger.error(`Error syncing bot info: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Update bot commands in Telegram
+   */
+  private async updateBotCommands(project: Project): Promise<void> {
+    // Define standard commands for the bot
+    const commands = [
+      { command: 'start', description: 'Start the bot and see welcome message' },
+      { command: 'help', description: 'Get help and support information' },
+      { command: 'plans', description: 'View available membership plans' },
+      { command: 'status', description: 'Check your membership status' },
+    ];
+
+    try {
+      const success = await this.telegramApiService.setMyCommands(
+        project.bot_token,
+        commands
+      );
+
+      if (success) {
+        this.logger.log(`Bot commands updated for project ${project.id}`);
+      } else {
+        this.logger.warn(`Failed to update bot commands for project ${project.id}`);
+      }
+    } catch (error) {
+      this.logger.error(`Failed to update bot commands: ${error.message}`);
+      // Don't throw - this is not critical
+    }
   }
 
   /**

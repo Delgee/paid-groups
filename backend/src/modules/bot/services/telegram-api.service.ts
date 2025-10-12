@@ -629,4 +629,56 @@ export class TelegramApiService {
       };
     }
   }
+
+  /**
+   * Sets bot commands that users see in the Telegram UI
+   * @param botToken - The bot token
+   * @param commands - Array of command objects with command and description
+   * @returns Promise<boolean> - True if successful, false otherwise
+   */
+  async setMyCommands(
+    botToken: string,
+    commands: Array<{ command: string; description: string }>
+  ): Promise<boolean> {
+    const startTime = Date.now();
+    try {
+      await this.executeWithRateLimit(botToken, async () => {
+        const bot = this.getBotInstance(botToken);
+        await bot.telegram.setMyCommands(commands);
+      });
+
+      const duration = Date.now() - startTime;
+      this.logger.telegram('SetMyCommands', {
+        commandCount: commands.length,
+        duration,
+        success: true,
+      });
+
+      return true;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.telegram('SetMyCommands', {
+        error: error.message,
+        duration,
+        success: false,
+      }, 'error');
+
+      return false;
+    }
+  }
+
+  /**
+   * Gets current bot commands
+   * @param botToken - The bot token
+   * @returns Promise<Array> - Array of command objects
+   */
+  async getMyCommands(botToken: string): Promise<Array<{ command: string; description: string }>> {
+    try {
+      const bot = this.getBotInstance(botToken);
+      return await bot.telegram.getMyCommands();
+    } catch (error) {
+      this.logger.error(`Failed to get bot commands: ${error.message}`);
+      return [];
+    }
+  }
 }
