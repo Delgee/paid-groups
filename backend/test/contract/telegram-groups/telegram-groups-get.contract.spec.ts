@@ -6,7 +6,7 @@ describe('GET /v1/telegram-groups/{id} - Contract Test', () => {
   let app: INestApplication;
   let ownerToken: string;
   let adminToken: string;
-  let botId: string;
+  let projectId: string;
   let groupId: string;
 
   beforeEach(async () => {
@@ -64,7 +64,7 @@ describe('GET /v1/telegram-groups/{id} - Contract Test', () => {
         bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
       });
 
-    botId = botResponse.body.id;
+    projectId = botResponse.body.id;
 
     // Create a test telegram group
     const groupResponse = await request(app.getHttpServer())
@@ -73,7 +73,7 @@ describe('GET /v1/telegram-groups/{id} - Contract Test', () => {
       .send({
         group_name: 'Test VIP Group',
         description: 'Premium content group for testing',
-        bot_id: botId,
+        project_id: projectId,
         settings: { welcome_message: 'Welcome to VIP!' },
       });
 
@@ -120,7 +120,7 @@ describe('GET /v1/telegram-groups/{id} - Contract Test', () => {
           /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
         ),
         bot: expect.objectContaining({
-          id: botId,
+          id: projectId,
           bot_name: expect.any(String),
           bot_username: expect.anything(), // Can be null or string
         }),
@@ -231,14 +231,14 @@ describe('GET /v1/telegram-groups/{id} - Contract Test', () => {
           bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
         });
 
-      const otherBotId = otherBotResponse.body.id;
+      const otherProjectId = otherBotResponse.body.id;
 
       const otherGroupResponse = await request(app.getHttpServer())
         .post('/v1/telegram-groups')
         .set('Authorization', `Bearer ${otherOwnerToken}`)
         .send({
           group_name: 'Other Tenant Group',
-          bot_id: otherBotId,
+          project_id: otherProjectId,
         });
 
       const otherGroupId = otherGroupResponse.body.id;

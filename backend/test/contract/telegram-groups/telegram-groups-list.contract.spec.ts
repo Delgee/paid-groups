@@ -6,7 +6,7 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
   let app: INestApplication;
   let ownerToken: string;
   let adminToken: string;
-  let botId: string;
+  let projectId: string;
 
   beforeEach(async () => {
     jest.setTimeout(30000);
@@ -63,7 +63,7 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
         bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
       });
 
-    botId = botResponse.body.id;
+    projectId = botResponse.body.id;
 
     // Create some test telegram groups
     await request(app.getHttpServer())
@@ -72,7 +72,7 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
       .send({
         group_name: 'VIP Group 1',
         description: 'Premium content group',
-        bot_id: botId,
+        project_id: projectId,
         settings: { welcome_message: 'Welcome to VIP!' },
       });
 
@@ -82,7 +82,7 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
       .send({
         group_name: 'VIP Group 2',
         description: 'Another premium group',
-        bot_id: botId,
+        project_id: projectId,
       });
   });
 
@@ -154,7 +154,7 @@ describe('GET /v1/telegram-groups - Contract Test', () => {
       expect(response.body.data.length).toBe(1);
     });
 
-    // Note: bot_id filter is not supported by the API
+    // Note: project_id filter is not supported by the API
     // The API supports: sync_enabled, connection_status, bot_assigned filters
 
     it('should handle connection_status filter query parameter', async () => {

@@ -9,7 +9,6 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-import { TelegramBot } from '../bot/entities/telegram-bot.entity';
 import { Project } from '../project/entities/project.entity';
 
 export enum GroupType {
@@ -73,11 +72,6 @@ export class TelegramGroup {
   @ManyToOne(() => Project, { eager: true })
   @JoinColumn({ name: 'project_id' })
   project: Project;
-
-  // Keep bot relation for backward compatibility during migration (will be deprecated)
-  @ManyToOne(() => TelegramBot, { eager: false })
-  @JoinColumn({ name: 'bot_id' })
-  bot?: TelegramBot;
 
   @OneToMany('Membership', 'group')
   memberships: any[];

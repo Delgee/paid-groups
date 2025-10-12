@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Project, projectApi } from '@/lib/api/projects';
+import { TelegramGroup, telegramGroupsApi } from '@/lib/api/telegram-groups';
 import { ArrowLeftIcon, SettingsIcon, RefreshCwIcon, PlusIcon, UsersIcon, LayersIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -17,11 +18,14 @@ export default function ProjectDetailPage() {
   const projectId = params.id as string;
 
   const [project, setProject] = useState<Project | null>(null);
+  const [telegramGroups, setTelegramGroups] = useState<TelegramGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingGroups, setLoadingGroups] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     loadProject();
+    loadTelegramGroups();
   }, [projectId]);
 
   const loadProject = async () => {
@@ -38,6 +42,22 @@ export default function ProjectDetailPage() {
       router.push('/dashboard/projects');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTelegramGroups = async () => {
+    try {
+      setLoadingGroups(true);
+      const response = await telegramGroupsApi.listTelegramGroups({
+        project_id: projectId,
+        limit: 50,
+      });
+      setTelegramGroups(response.data);
+    } catch (error) {
+      console.error('Failed to load telegram groups:', error);
+      // Don't show error toast, just log it
+    } finally {
+      setLoadingGroups(false);
     }
   };
 
@@ -178,9 +198,54 @@ export default function ProjectDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No groups yet. Create a telegram group to get started.
-              </p>
+              {loadingGroups ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCwIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : telegramGroups.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No groups yet. Create a telegram group to get started.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {telegramGroups.map((group) => (
+                    <div
+                      key={group.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{group.group_name}</h4>
+                          <Badge variant={group.telegram_chat_id ? 'default' : 'secondary'}>
+                            {group.telegram_chat_id ? 'Connected' : 'Not Connected'}
+                          </Badge>
+                          <Badge variant="outline">{group.group_type}</Badge>
+                        </div>
+                        {group.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{group.description}</p>
+                        )}
+                        {group.username && (
+                          <p className="text-xs text-muted-foreground mt-1">@{group.username}</p>
+                        )}
+                        {group.telegram_chat_id && (
+                          <p className="text-xs text-muted-foreground">
+                            Members: {group.member_count || 0}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/dashboard/telegram-groups/${group.id}`)}
+                        >
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -6,7 +6,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
   let app: INestApplication;
   let ownerToken: string;
   let adminToken: string;
-  let botId: string;
+  let projectId: string;
 
   beforeEach(async () => {
     jest.setTimeout(30000);
@@ -63,7 +63,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
         bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
       });
 
-    botId = botResponse.body.id;
+    projectId = botResponse.body.id;
   });
 
   afterEach(async () => {
@@ -76,7 +76,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
       const validRequest = {
         group_name: 'VIP Premium Group',
         description: 'Premium content for VIP members',
-        bot_id: botId,
+        project_id: projectId,
         settings: {
           welcome_message: 'Welcome to our VIP group!',
           auto_approve: false,
@@ -115,7 +115,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
           /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
         ),
         bot: expect.objectContaining({
-          id: botId,
+          id: projectId,
           bot_name: expect.any(String),
           bot_username: expect.anything(), // Can be string or null
         }),
@@ -125,7 +125,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
     it('should accept valid CreateTelegramGroupRequest with minimum required fields', async () => {
       const validRequest = {
         group_name: 'Basic Group',
-        bot_id: botId,
+        project_id: projectId,
       };
 
       const response = await request(app.getHttpServer())
@@ -147,7 +147,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
     it('should return 400 for missing required group_name field', async () => {
       const invalidRequest = {
         // missing group_name
-        bot_id: botId,
+        project_id: projectId,
         description: 'Test description',
       };
 
@@ -168,10 +168,10 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
       expect(hasGroupNameError).toBe(true);
     });
 
-    it('should return 400 for missing required bot_id field', async () => {
+    it('should return 400 for missing required project_id field', async () => {
       const invalidRequest = {
         group_name: 'Test Group',
-        // missing bot_id
+        // missing project_id
       };
 
       const response = await request(app.getHttpServer())
@@ -185,16 +185,16 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
         error: 'Bad Request',
       });
 
-      const hasBotIdError = response.body.message.some((msg: string) =>
-        msg.toLowerCase().includes('bot_id') || msg.toLowerCase().includes('bot'),
+      const hasProjectIdError = response.body.message.some((msg: string) =>
+        msg.toLowerCase().includes('project_id') || msg.toLowerCase().includes('project'),
       );
-      expect(hasBotIdError).toBe(true);
+      expect(hasProjectIdError).toBe(true);
     });
 
     it('should return 400 for invalid group_name length (too short)', async () => {
       const invalidRequest = {
         group_name: '', // Too short
-        bot_id: botId,
+        project_id: projectId,
       };
 
       const response = await request(app.getHttpServer())
@@ -213,7 +213,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
     it('should return 400 for invalid group_name length (too long)', async () => {
       const invalidRequest = {
         group_name: 'A'.repeat(256), // Exceeds 255 character limit
-        bot_id: botId,
+        project_id: projectId,
       };
 
       const response = await request(app.getHttpServer())
@@ -233,7 +233,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
       const invalidRequest = {
         group_name: 'Valid Group Name',
         description: 'A'.repeat(1001), // Exceeds 1000 character limit
-        bot_id: botId,
+        project_id: projectId,
       };
 
       const response = await request(app.getHttpServer())
@@ -249,10 +249,10 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
       expect(hasDescriptionError).toBe(true);
     });
 
-    it('should return 400 for invalid bot_id format', async () => {
+    it('should return 400 for invalid project_id format', async () => {
       const invalidRequest = {
         group_name: 'Valid Group Name',
-        bot_id: 'invalid-uuid-format',
+        project_id: 'invalid-uuid-format',
       };
 
       const response = await request(app.getHttpServer())
@@ -263,7 +263,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
 
       expect(response.body.statusCode).toBe(400);
       const hasUuidError = response.body.message.some((msg: string) =>
-        msg.toLowerCase().includes('uuid') || msg.toLowerCase().includes('bot_id'),
+        msg.toLowerCase().includes('uuid') || msg.toLowerCase().includes('project_id'),
       );
       expect(hasUuidError).toBe(true);
     });
@@ -273,7 +273,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
     it('should return 401 for missing JWT token', async () => {
       const validRequest = {
         group_name: 'Test Group',
-        bot_id: botId,
+        project_id: projectId,
       };
 
       const response = await request(app.getHttpServer())
@@ -290,7 +290,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
     it('should return 401 for invalid JWT token', async () => {
       const validRequest = {
         group_name: 'Test Group',
-        bot_id: botId,
+        project_id: projectId,
       };
 
       const response = await request(app.getHttpServer())
@@ -308,7 +308,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
     it('should allow owner users to create telegram groups', async () => {
       const validRequest = {
         group_name: 'Owner Created Group',
-        bot_id: botId,
+        project_id: projectId,
       };
 
       await request(app.getHttpServer())
@@ -321,7 +321,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
     it('should allow admin users to create telegram groups', async () => {
       const validRequest = {
         group_name: 'Admin Created Group',
-        bot_id: botId,
+        project_id: projectId,
       };
 
       const response = await request(app.getHttpServer())
@@ -332,16 +332,16 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
 
       expect(response.body).toMatchObject({
         group_name: validRequest.group_name,
-        bot_id: botId,
+        project_id: projectId,
       });
     });
   });
 
   describe('Business Logic Errors', () => {
-    it('should return 400 for non-existent bot_id', async () => {
+    it('should return 400 for non-existent project_id', async () => {
       const invalidRequest = {
         group_name: 'Test Group',
-        bot_id: '123e4567-e89b-12d3-a456-426614174000', // Valid UUID format but non-existent
+        project_id: '123e4567-e89b-12d3-a456-426614174000', // Valid UUID format but non-existent
       };
 
       const response = await request(app.getHttpServer())
@@ -361,7 +361,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
       // First create a group
       const firstRequest = {
         group_name: 'Duplicate Group Name',
-        bot_id: botId,
+        project_id: projectId,
       };
 
       await request(app.getHttpServer())
@@ -373,7 +373,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
       // Try to create another group with same name
       const duplicateRequest = {
         group_name: 'Duplicate Group Name',
-        bot_id: botId,
+        project_id: projectId,
       };
 
       const response = await request(app.getHttpServer())
@@ -389,13 +389,13 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
       expect(response.body.message).toContain('already exists');
     });
 
-    it('should return 400 for bot_id not accessible to tenant', async () => {
+    it('should return 400 for project_id not accessible to tenant', async () => {
       // Use a valid UUID format that doesn't exist in this tenant
-      const nonExistentBotId = '123e4567-e89b-12d3-a456-426614174999';
+      const nonExistentProjectId = '123e4567-e89b-12d3-a456-426614174999';
 
       const invalidRequest = {
         group_name: 'Cross Tenant Group',
-        bot_id: nonExistentBotId,
+        project_id: nonExistentProjectId,
       };
 
       const response = await request(app.getHttpServer())
@@ -416,7 +416,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
     it('should handle maximum length group_name field', async () => {
       const maxLengthRequest = {
         group_name: 'A'.repeat(255), // Max length according to schema
-        bot_id: botId,
+        project_id: projectId,
       };
 
       await request(app.getHttpServer())
@@ -430,7 +430,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
       const maxDescriptionRequest = {
         group_name: 'Group with Max Description',
         description: 'A'.repeat(1000), // Max length according to schema
-        bot_id: botId,
+        project_id: projectId,
       };
 
       await request(app.getHttpServer())
@@ -443,7 +443,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
     it('should handle complex settings object', async () => {
       const complexSettingsRequest = {
         group_name: 'Complex Settings Group',
-        bot_id: botId,
+        project_id: projectId,
         settings: {
           welcome_message: 'Welcome to our premium group!',
           auto_approve: true,
@@ -471,7 +471,7 @@ describe('POST /v1/telegram-groups - Contract Test', () => {
     it('should handle empty settings object', async () => {
       const emptySettingsRequest = {
         group_name: 'Empty Settings Group',
-        bot_id: botId,
+        project_id: projectId,
         settings: {},
       };
 

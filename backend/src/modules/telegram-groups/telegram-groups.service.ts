@@ -132,7 +132,7 @@ export class TelegramGroupsService {
       }
 
       // Validate bot permissions in the Telegram channel
-      this.logger.log(`Validating bot permissions for channel ${createDto.telegram_chat_id}`);
+      this.logger.log(`Validating bot permissions for channel ${createDto.telegram_chat_id} ${project.bot_token}`);
       const connectionResult = await this.telegramChannelService.connectToChannel(
         project.bot_token,
         createDto.telegram_chat_id,
@@ -217,6 +217,11 @@ export class TelegramGroupsService {
         tenant_id: tenantId,
         is_active: true,
       };
+
+      // Filter by project_id if provided
+      if (query?.project_id) {
+        whereConditions.project_id = query.project_id;
+      }
 
       // Execute query with pagination
       const [groups, total] = await this.telegramGroupRepository.findAndCount({

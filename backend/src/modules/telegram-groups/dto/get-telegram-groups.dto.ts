@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsNumber, Min, Max } from 'class-validator';
+import { IsOptional, IsNumber, Min, Max, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class GetTelegramGroupsDto {
@@ -28,4 +28,12 @@ export class GetTelegramGroupsDto {
   @Min(1)
   @Max(100)
   limit?: number = 10;
+
+  @ApiPropertyOptional({
+    description: 'Filter by project ID',
+    example: '9b8026d1-6e85-45e5-8d82-292dde377e8e',
+  })
+  @IsOptional()
+  @IsUUID('4')
+  project_id?: string;
 }

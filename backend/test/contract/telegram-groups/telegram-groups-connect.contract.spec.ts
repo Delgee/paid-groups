@@ -6,7 +6,7 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
   let app: INestApplication;
   let ownerToken: string;
   let adminToken: string;
-  let botId: string;
+  let projectId: string;
   let groupId: string;
 
   beforeEach(async () => {
@@ -64,7 +64,7 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
         bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
       });
 
-    botId = botResponse.body.id;
+    projectId = botResponse.body.id;
 
     // Create a test telegram group
     const groupResponse = await request(app.getHttpServer())
@@ -73,7 +73,7 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
       .send({
         group_name: 'Test Group for Connection',
         description: 'Group for channel connection testing',
-        bot_id: botId,
+        project_id: projectId,
       });
 
     groupId = groupResponse.body.id;
@@ -317,14 +317,14 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
   });
 
   describe('Business Logic Errors', () => {
-    it.skip('should return 409 for bot without admin permissions', async () => {
-      // SKIPPED: Requires real Telegram channel that bot has access to
+    it.skip('should return 409 for project without admin permissions', async () => {
+      // SKIPPED: Requires real Telegram channel that project has access to
       const invalidRequest = {
         telegram_chat_id: '-1001234567890',
         verify_permissions: true, // This will trigger permission check
       };
 
-      // Assume the test bot doesn't have admin permissions
+      // Assume the test project doesn't have admin permissions
       const response = await request(app.getHttpServer())
         .post(`/v1/telegram-groups/${groupId}/connect-channel`)
         .set('Authorization', `Bearer ${ownerToken}`)
@@ -339,7 +339,7 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
     });
 
     it.skip('should return 409 for already connected channel', async () => {
-      // SKIPPED: Requires real Telegram channel that bot has access to
+      // SKIPPED: Requires real Telegram channel that project has access to
       const connectRequest = {
         telegram_chat_id: '-1001234567890',
       };
@@ -357,7 +357,7 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
         .set('Authorization', `Bearer ${ownerToken}`)
         .send({
           group_name: 'Another Group',
-          bot_id: botId,
+          project_id: projectId,
         });
 
       const anotherGroupId = anotherGroupResponse.body.id;
@@ -380,7 +380,7 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
     });
 
     it.skip('should return 409 for group already connected to different channel', async () => {
-      // SKIPPED: Requires real Telegram channel that bot has access to
+      // SKIPPED: Requires real Telegram channel that project has access to
       // Connect to first channel
       const firstRequest = {
         telegram_chat_id: '-1001234567890',
@@ -442,14 +442,14 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
           bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
         });
 
-      const otherBotId = otherBotResponse.body.id;
+      const otherProjectId = otherBotResponse.body.id;
 
       const otherGroupResponse = await request(app.getHttpServer())
         .post('/v1/telegram-groups')
         .set('Authorization', `Bearer ${otherOwnerToken}`)
         .send({
           group_name: 'Other Tenant Group',
-          bot_id: otherBotId,
+          project_id: otherProjectId,
         });
 
       const otherGroupId = otherGroupResponse.body.id;

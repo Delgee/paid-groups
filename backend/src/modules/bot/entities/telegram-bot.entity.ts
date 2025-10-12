@@ -7,10 +7,8 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
-  OneToMany,
 } from 'typeorm';
 import { Tenant } from '../../tenant/entities/tenant.entity';
-import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 
 @Entity('telegram_bots')
 @Index(['tenant_id'])
@@ -56,7 +54,4 @@ export class TelegramBot {
   @ManyToOne(() => Tenant, tenant => tenant.telegram_bots, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tenant_id' })
   tenant: Tenant;
-
-  @OneToMany(() => TelegramGroup, group => group.bot)
-  groups: TelegramGroup[];
 }

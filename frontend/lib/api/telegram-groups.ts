@@ -69,6 +69,7 @@ export interface ConnectChannelData {
 export interface ListTelegramGroupsParams {
   page?: number;
   limit?: number;
+  project_id?: string;
 }
 
 /**

@@ -6,7 +6,7 @@ describe('POST /v1/telegram-groups/{id}/sync - Contract Test', () => {
   let app: INestApplication;
   let ownerToken: string;
   let adminToken: string;
-  let botId: string;
+  let projectId: string;
   let groupId: string;
   let connectedGroupId: string;
 
@@ -65,7 +65,7 @@ describe('POST /v1/telegram-groups/{id}/sync - Contract Test', () => {
         bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
       });
 
-    botId = botResponse.body.id;
+    projectId = botResponse.body.id;
 
     // Create a test telegram group (not connected)
     const groupResponse = await request(app.getHttpServer())
@@ -74,7 +74,7 @@ describe('POST /v1/telegram-groups/{id}/sync - Contract Test', () => {
       .send({
         group_name: 'Test Group for Sync',
         description: 'Group for sync testing',
-        bot_id: botId,
+        project_id: projectId,
       });
 
     groupId = groupResponse.body.id;
@@ -86,7 +86,7 @@ describe('POST /v1/telegram-groups/{id}/sync - Contract Test', () => {
       .send({
         group_name: 'Connected Group for Sync',
         description: 'Connected group for sync testing',
-        bot_id: botId,
+        project_id: projectId,
       });
 
     connectedGroupId = connectedGroupResponse.body.id;
@@ -250,7 +250,7 @@ describe('POST /v1/telegram-groups/{id}/sync - Contract Test', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .send({
           group_name: 'Temp Group',
-          bot_id: botId,
+          project_id: projectId,
         });
 
       const tempGroupId = tempGroupResponse.body.id;
@@ -267,23 +267,23 @@ describe('POST /v1/telegram-groups/{id}/sync - Contract Test', () => {
         statusCode: 409,
         error: 'Conflict',
       });
-      expect(response.body.message).toContain('bot');
+      expect(response.body.message).toContain('project');
     });
 
-    it('should return 409 for Telegram API errors (bot permissions)', async () => {
-      // This test simulates a scenario where the bot has lost admin permissions
+    it('should return 409 for Telegram API errors (project permissions)', async () => {
+      // This test simulates a scenario where the project has lost admin permissions
       // The actual implementation would catch Telegram API errors and return 409
 
       const expectedError = {
         statusCode: 409,
-        message: 'Sync failed due to bot permissions or Telegram API error',
+        message: 'Sync failed due to project permissions or Telegram API error',
         error: 'Conflict',
       };
 
       // For now, we're just testing the expected error structure
       expect(expectedError).toMatchObject({
         statusCode: 409,
-        message: expect.stringContaining('bot permissions'),
+        message: expect.stringContaining('project permissions'),
         error: 'Conflict',
       });
     });
@@ -320,14 +320,14 @@ describe('POST /v1/telegram-groups/{id}/sync - Contract Test', () => {
           bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
         });
 
-      const otherBotId = otherBotResponse.body.id;
+      const otherProjectId = otherBotResponse.body.id;
 
       const otherGroupResponse = await request(app.getHttpServer())
         .post('/v1/telegram-groups')
         .set('Authorization', `Bearer ${otherOwnerToken}`)
         .send({
           group_name: 'Other Tenant Group',
-          bot_id: otherBotId,
+          project_id: otherProjectId,
         });
 
       const otherGroupId = otherGroupResponse.body.id;

@@ -6,7 +6,7 @@ describe('DELETE /v1/telegram-groups/{id} - Contract Test', () => {
   let app: INestApplication;
   let ownerToken: string;
   let adminToken: string;
-  let botId: string;
+  let projectId: string;
   let groupId: string;
 
   beforeEach(async () => {
@@ -64,7 +64,7 @@ describe('DELETE /v1/telegram-groups/{id} - Contract Test', () => {
         bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
       });
 
-    botId = botResponse.body.id;
+    projectId = botResponse.body.id;
 
     // Create a test telegram group
     const groupResponse = await request(app.getHttpServer())
@@ -73,7 +73,7 @@ describe('DELETE /v1/telegram-groups/{id} - Contract Test', () => {
       .send({
         group_name: 'Test Group to Delete',
         description: 'Group for deletion testing',
-        bot_id: botId,
+        project_id: projectId,
       });
 
     groupId = groupResponse.body.id;
@@ -264,14 +264,14 @@ describe('DELETE /v1/telegram-groups/{id} - Contract Test', () => {
           bot_token: process.env.TEST_TELEGRAM_BOT_TOKEN || '8134958196:AAFJbqtBguKzKOCuEdzQkLw3i7vkOUgUh3E',
         });
 
-      const otherBotId = otherBotResponse.body.id;
+      const otherProjectId = otherBotResponse.body.id;
 
       const otherGroupResponse = await request(app.getHttpServer())
         .post('/v1/telegram-groups')
         .set('Authorization', `Bearer ${otherOwnerToken}`)
         .send({
           group_name: 'Other Tenant Group',
-          bot_id: otherBotId,
+          project_id: otherProjectId,
         });
 
       const otherGroupId = otherGroupResponse.body.id;
