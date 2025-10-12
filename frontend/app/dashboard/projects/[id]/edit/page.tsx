@@ -30,10 +30,6 @@ import { ArrowLeftIcon, RefreshCwIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 const formSchema = z.object({
-  bot_token: z
-    .string()
-    .min(1, 'Bot token is required')
-    .regex(/^\d+:[A-Za-z0-9_-]+$/, 'Invalid bot token format'),
   bot_username: z
     .string()
     .min(1, 'Bot username is required')
@@ -62,12 +58,10 @@ export default function EditProjectPage() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [originalBotToken, setOriginalBotToken] = useState('');
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      bot_token: '',
       bot_username: '',
       display_name: '',
       description: '',
@@ -87,11 +81,7 @@ export default function EditProjectPage() {
       setLoading(true);
       const data = await projectApi.getById(projectId);
 
-      // Store original bot token for comparison
-      setOriginalBotToken(data.bot_token);
-
       form.reset({
-        bot_token: data.bot_token,
         bot_username: data.bot_username,
         display_name: data.display_name,
         description: data.description || '',
@@ -111,18 +101,12 @@ export default function EditProjectPage() {
       setSubmitting(true);
 
       // Clean up empty strings for optional fields
-      // Don't send bot_token if it hasn't changed
       const payload: any = {
         display_name: data.display_name,
         description: data.description || undefined,
         welcome_message: data.welcome_message,
         is_active: data.is_active,
       };
-
-      // Only include bot_token if it was actually changed
-      if (data.bot_token !== originalBotToken) {
-        payload.bot_token = data.bot_token;
-      }
 
       await projectApi.update(projectId, payload);
 
@@ -136,23 +120,6 @@ export default function EditProjectPage() {
       const errorData = error.response?.data?.error || error.response?.data;
 
       if (
-        errorData?.code === 'DUPLICATE_BOT_TOKEN' ||
-        error.response?.status === 409
-      ) {
-        // Set error on specific field
-        const errorMessage =
-          errorData?.message ||
-          'This bot token is already registered. Please use a different bot.';
-
-        form.setError('bot_token', {
-          type: 'manual',
-          message: errorMessage,
-        });
-
-        toast.error('Failed to Update Project', {
-          description: errorMessage,
-        });
-      } else if (
         errorData?.code === 'VALIDATION_ERROR' &&
         errorData?.details?.field
       ) {
@@ -226,31 +193,6 @@ export default function EditProjectPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-              <FormField
-                control={form.control}
-                name='bot_token'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bot Token *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='1234567890:ABCdefGHIjklMNOpqrsTUVwxyz'
-                        type='password'
-                        {...field}
-                        readOnly
-                        disabled
-                        className='bg-gray-50'
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Bot token cannot be changed (read-only). To use a
-                      different bot, create a new project.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name='bot_username'

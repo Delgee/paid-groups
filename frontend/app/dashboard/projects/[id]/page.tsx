@@ -6,9 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Project, projectApi } from '@/lib/api/projects';
 import { TelegramGroup, telegramGroupsApi } from '@/lib/api/telegram-groups';
-import { ArrowLeftIcon, SettingsIcon, RefreshCwIcon, PlusIcon, UsersIcon, LayersIcon } from 'lucide-react';
+import { ArrowLeftIcon, SettingsIcon, RefreshCwIcon, PlusIcon, UsersIcon, LayersIcon, TrashIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 export default function ProjectDetailPage() {
@@ -22,6 +30,9 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<TelegramGroup | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadProject();
@@ -34,11 +45,7 @@ export default function ProjectDetailPage() {
       const data = await projectApi.getById(projectId);
       setProject(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load project',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load project');
       router.push('/dashboard/projects');
     } finally {
       setLoading(false);
@@ -65,20 +72,41 @@ export default function ProjectDetailPage() {
     try {
       setSyncing(true);
       await projectApi.sync(projectId);
-      toast({
-        title: 'Success',
-        description: 'Project synced successfully',
-      });
+      toast.success('Project synced successfully');
       await loadProject();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to sync project',
-        variant: 'destructive',
-      });
+      toast.error('Failed to sync project');
     } finally {
       setSyncing(false);
     }
+  };
+
+  const handleDeleteClick = (group: TelegramGroup) => {
+    setGroupToDelete(group);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!groupToDelete) return;
+
+    try {
+      setDeleting(true);
+      await telegramGroupsApi.deleteTelegramGroup(groupToDelete.id);
+      toast.success('Telegram group deleted successfully');
+      setDeleteDialogOpen(false);
+      setGroupToDelete(null);
+      await loadTelegramGroups();
+    } catch (error) {
+      console.error('Failed to delete telegram group:', error);
+      toast.error('Failed to delete telegram group');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setGroupToDelete(null);
   };
 
   if (loading) {
@@ -241,6 +269,14 @@ export default function ProjectDetailPage() {
                         >
                           View
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteClick(group)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -277,6 +313,33 @@ export default function ProjectDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Telegram Group</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &ldquo;{groupToDelete?.group_name}&rdquo;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
