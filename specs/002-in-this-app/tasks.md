@@ -31,50 +31,50 @@ backend/
 
 ---
 
-## Phase 3.1: Database Setup (Foundation)
+## Phase 3.1: Database Setup (Foundation) ✅ COMPLETE
 
-### T001 Create migration for telegram_user_accounts table
-**File**: `backend/migrations/{timestamp}-create-telegram-user-accounts-table.ts`
+### [X] T001 Create migration for telegram_user_accounts table
+**File**: `backend/src/database/migrations/1730000027000-UpdateTelegramUserAccountsForOnboarding.ts`
 
-Create TypeORM migration with:
-- Table: `telegram_user_accounts`
-- Columns: id (UUID PK), user_id (FK to users), telegram_user_id (BIGINT UNIQUE), telegram_chat_id, telegram_username, telegram_first_name, telegram_last_name, linked_at, last_interaction_at, is_active, metadata (JSONB), created_at, updated_at
-- Indexes: PRIMARY KEY (id), UNIQUE (user_id), UNIQUE (telegram_user_id), INDEX (telegram_chat_id), INDEX (telegram_username)
-- Foreign key: user_id → users.id (CASCADE on delete)
-- RLS policies: tenant_isolation_select, tenant_isolation_insert (see data-model.md lines 47-65)
+Created TypeORM migration with:
+- Updated existing `telegram_user_accounts` table with new columns for onboarding
+- Added columns: telegram_chat_id, linked_at, last_interaction_at, is_active, metadata (JSONB)
+- Indexes: telegram_chat_id, telegram_username, user_id (unique)
+- Foreign key: user_id → users.id (CASCADE on delete) - already existed
+- RLS policies: tenant_isolation_select, tenant_isolation_insert, tenant_isolation_update, tenant_isolation_delete
 - Enable RLS: `ALTER TABLE telegram_user_accounts ENABLE ROW LEVEL SECURITY;`
 
-**Validation**: Run migration, verify table created with `\d telegram_user_accounts` in psql
+**Validation**: ✅ Migration executed successfully
 
 **Dependencies**: None (can start immediately)
 
 ---
 
-### T002 Create migration for bot_commands table
-**File**: `backend/migrations/{timestamp}-create-bot-commands-table.ts`
+### [X] T002 Create migration for bot_commands table
+**File**: `backend/src/database/migrations/1730000028000-CreateBotCommands.ts`
 
-Create TypeORM migration with:
+Created TypeORM migration with:
 - Table: `bot_commands`
 - Columns: id (UUID PK), telegram_user_account_id (FK nullable), telegram_user_id (BIGINT), telegram_chat_id (BIGINT), command (VARCHAR 100), parameters (JSONB), session_step (VARCHAR 50), response_status (VARCHAR 20), error_code (VARCHAR 50), response_time_ms (INTEGER), correlation_id (UUID), user_agent (TEXT), created_at (TIMESTAMP)
 - Indexes: PRIMARY KEY (id), INDEX (telegram_user_id), INDEX (command), INDEX (created_at DESC), INDEX (correlation_id), INDEX (response_status)
 - Foreign key: telegram_user_account_id → telegram_user_accounts.id (SET NULL on delete)
-- RLS policies: tenant_isolation_select, tenant_isolation_insert (see data-model.md lines 110-127)
+- RLS policies: tenant_isolation_select, tenant_isolation_insert
 - Enable RLS: `ALTER TABLE bot_commands ENABLE ROW LEVEL SECURITY;`
 
-**Validation**: Run migration, verify table created with `\d bot_commands` in psql
+**Validation**: ✅ Migration executed successfully, table verified with psql
 
 **Dependencies**: T001 (telegram_user_accounts table must exist first for FK)
 
 ---
 
-### T003 Run and verify migrations
+### [X] T003 Run and verify migrations
 **Command**: `npm run migration:run` in backend directory
 
-Verify both tables created with proper:
-- RLS policies enabled
-- Foreign key constraints
-- Indexes created
-- Correct column types
+Verified both tables created with proper:
+- ✅ RLS policies enabled (4 policies for telegram_user_accounts, 2 for bot_commands)
+- ✅ Foreign key constraints (bot_commands → telegram_user_accounts)
+- ✅ Indexes created (all required indexes present)
+- ✅ Correct column types
 
 **Validation**:
 ```sql
