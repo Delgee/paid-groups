@@ -1,0 +1,610 @@
+openapi: 3.0.3
+info:
+  title: Onboarding Bot Internal Service Contracts
+  description: |
+    Internal service contracts for onboarding bot business logic.
+    These are TypeScript interfaces, not HTTP endpoints.
+  version: 1.0.0
+
+components:
+  schemas:
+    # ==========================================
+    # OnboardingBotService Contracts
+    # ==========================================
+
+    RegisterUserRequest:
+      type: object
+      required:
+        - telegram_user_id
+        - telegram_chat_id
+        - email
+        - name
+        - company_name
+      properties:
+        telegram_user_id:
+          type: integer
+          format: int64
+          example: 987654321
+        telegram_chat_id:
+          type: integer
+          format: int64
+          example: 987654321
+        telegram_username:
+          type: string
+          nullable: true
+          example: 'johndoe'
+        telegram_first_name:
+          type: string
+          example: 'John'
+        telegram_last_name:
+          type: string
+          nullable: true
+          example: 'Doe'
+        email:
+          type: string
+          format: email
+          example: 'john@example.com'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: 'John Doe'
+        company_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: 'Acme Corp'
+
+    RegisterUserResponse:
+      type: object
+      required:
+        - user_id
+        - tenant_id
+        - telegram_user_account_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          example: '550e8400-e29b-41d4-a716-446655440000'
+        tenant_id:
+          type: string
+          format: uuid
+          example: '660e8400-e29b-41d4-a716-446655440001'
+        telegram_user_account_id:
+          type: string
+          format: uuid
+          example: '770e8400-e29b-41d4-a716-446655440002'
+
+    LinkAccountRequest:
+      type: object
+      required:
+        - telegram_user_id
+        - telegram_chat_id
+        - email
+        - verification_code
+      properties:
+        telegram_user_id:
+          type: integer
+          format: int64
+        telegram_chat_id:
+          type: integer
+          format: int64
+        telegram_username:
+          type: string
+          nullable: true
+        telegram_first_name:
+          type: string
+        telegram_last_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+        verification_code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          example: '123456'
+
+    CreateProjectRequest:
+      type: object
+      required:
+        - user_id
+        - bot_token
+        - project_name
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: Owner user ID
+        bot_token:
+          type: string
+          description: Telegram bot token from @BotFather
+          example: '1234567890:ABCdefGHIjklMNOpqrsTUVwxyz'
+        project_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: 'Premium Content Bot'
+        project_description:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: 'Bot for managing premium subscribers'
+
+    CreateProjectResponse:
+      type: object
+      required:
+        - project_id
+        - bot_username
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        bot_username:
+          type: string
+          example: 'MyPremiumBot'
+        bot_name:
+          type: string
+          example: 'My Premium Bot'
+
+    ConnectGroupRequest:
+      type: object
+      required:
+        - project_id
+        - chat_id
+        - chat_type
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        chat_id:
+          type: integer
+          format: int64
+          description: Telegram chat ID from forwarded message
+          example: -1001234567890
+        chat_type:
+          type: string
+          enum: [group, supergroup, channel]
+        chat_title:
+          type: string
+          nullable: true
+        chat_username:
+          type: string
+          nullable: true
+
+    ConnectGroupResponse:
+      type: object
+      required:
+        - telegram_group_id
+        - has_admin_permissions
+      properties:
+        telegram_group_id:
+          type: string
+          format: uuid
+        chat_title:
+          type: string
+        has_admin_permissions:
+          type: boolean
+
+    CreatePlanRequest:
+      type: object
+      required:
+        - project_id
+        - group_ids
+        - plan_name
+        - price
+        - duration
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        group_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+          description: TelegramGroup IDs to include in plan
+        plan_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: 'Premium Access'
+        price:
+          type: number
+          minimum: 0
+          example: 5000
+          description: Price in smallest currency unit (e.g., cents for USD, MNT for Mongolia)
+        duration:
+          type: string
+          enum: ['1_week', '1_month', '3_months', '1_year', 'lifetime']
+        plan_description:
+          type: string
+          maxLength: 500
+          nullable: true
+
+    CreatePlanResponse:
+      type: object
+      required:
+        - membership_plan_id
+      properties:
+        membership_plan_id:
+          type: string
+          format: uuid
+        plan_name:
+          type: string
+        included_groups:
+          type: array
+          items:
+            type: object
+            properties:
+              telegram_group_id:
+                type: string
+                format: uuid
+              group_name:
+                type: string
+
+    GetStatusResponse:
+      type: object
+      required:
+        - user_id
+        - projects_count
+        - groups_count
+        - plans_count
+        - members_count
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        tenant_name:
+          type: string
+        projects_count:
+          type: integer
+          example: 2
+        groups_count:
+          type: integer
+          example: 5
+        plans_count:
+          type: integer
+          example: 3
+        members_count:
+          type: integer
+          example: 127
+          description: Total active members across all groups
+        projects:
+          type: array
+          items:
+            type: object
+            properties:
+              project_id:
+                type: string
+                format: uuid
+              project_name:
+                type: string
+              bot_username:
+                type: string
+              groups_count:
+                type: integer
+        web_dashboard_url:
+          type: string
+          format: uri
+          example: 'https://dashboard.yourplatform.com'
+
+    # ==========================================
+    # OnboardingSessionService Contracts
+    # ==========================================
+
+    SessionData:
+      type: object
+      description: Session state stored in Redis
+      required:
+        - telegram_user_id
+        - telegram_chat_id
+        - current_step
+        - started_at
+        - last_activity_at
+        - correlation_id
+      properties:
+        telegram_user_id:
+          type: integer
+          format: int64
+        telegram_chat_id:
+          type: integer
+          format: int64
+        current_step:
+          type: string
+          enum:
+            - IDLE
+            - REGISTRATION_EMAIL
+            - REGISTRATION_NAME
+            - REGISTRATION_COMPANY
+            - PROJECT_NAME
+            - PROJECT_DESCRIPTION
+            - BOT_TOKEN
+            - GROUP_SELECTION
+            - GROUP_TYPE
+            - GROUP_CONNECTION
+            - PLAN_GROUP_SELECTION
+            - PLAN_NAME
+            - PLAN_PRICE
+            - PLAN_DURATION
+            - PLAN_DESCRIPTION
+            - LINK_EMAIL
+            - LINK_VERIFICATION
+        started_at:
+          type: string
+          format: date-time
+        last_activity_at:
+          type: string
+          format: date-time
+        correlation_id:
+          type: string
+          format: uuid
+        data:
+          type: object
+          additionalProperties: true
+          description: Step-specific collected data
+          properties:
+            email:
+              type: string
+              format: email
+            name:
+              type: string
+            company_name:
+              type: string
+            user_id:
+              type: string
+              format: uuid
+            tenant_id:
+              type: string
+              format: uuid
+            project_name:
+              type: string
+            project_description:
+              type: string
+            bot_token:
+              type: string
+            bot_username:
+              type: string
+            project_id:
+              type: string
+              format: uuid
+            selected_project_id:
+              type: string
+              format: uuid
+            group_type:
+              type: string
+              enum: [channel, group]
+            channel_id:
+              type: string
+            channel_title:
+              type: string
+            telegram_group_id:
+              type: string
+              format: uuid
+            selected_groups:
+              type: array
+              items:
+                type: string
+                format: uuid
+            plan_name:
+              type: string
+            plan_price:
+              type: number
+            plan_duration:
+              type: string
+            plan_description:
+              type: string
+            membership_plan_id:
+              type: string
+              format: uuid
+            link_email:
+              type: string
+              format: email
+            verification_code:
+              type: string
+            can_resume:
+              type: boolean
+            resume_offered:
+              type: boolean
+
+    # ==========================================
+    # TelegramUserAccountService Contracts
+    # ==========================================
+
+    CreateTelegramUserAccountRequest:
+      type: object
+      required:
+        - user_id
+        - telegram_user_id
+        - telegram_chat_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        telegram_user_id:
+          type: integer
+          format: int64
+        telegram_chat_id:
+          type: integer
+          format: int64
+        telegram_username:
+          type: string
+          nullable: true
+        telegram_first_name:
+          type: string
+        telegram_last_name:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+
+    TelegramUserAccount:
+      type: object
+      required:
+        - id
+        - user_id
+        - telegram_user_id
+        - telegram_chat_id
+        - linked_at
+        - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        telegram_user_id:
+          type: integer
+          format: int64
+        telegram_chat_id:
+          type: integer
+          format: int64
+        telegram_username:
+          type: string
+          nullable: true
+        telegram_first_name:
+          type: string
+        telegram_last_name:
+          type: string
+          nullable: true
+        linked_at:
+          type: string
+          format: date-time
+        last_interaction_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_active:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ==========================================
+    # BotCommandLogger Contracts
+    # ==========================================
+
+    LogCommandRequest:
+      type: object
+      required:
+        - telegram_user_id
+        - telegram_chat_id
+        - command
+        - response_status
+        - correlation_id
+      properties:
+        telegram_user_account_id:
+          type: string
+          format: uuid
+          nullable: true
+        telegram_user_id:
+          type: integer
+          format: int64
+        telegram_chat_id:
+          type: integer
+          format: int64
+        command:
+          type: string
+          enum: [start, newproject, addgroup, createplan, status, link, cancel, help]
+        parameters:
+          type: object
+          additionalProperties: true
+        session_step:
+          type: string
+          nullable: true
+        response_status:
+          type: string
+          enum: [success, error, rate_limited]
+        error_code:
+          type: string
+          nullable: true
+        response_time_ms:
+          type: integer
+          minimum: 0
+        correlation_id:
+          type: string
+          format: uuid
+
+    # ==========================================
+    # Error Contracts
+    # ==========================================
+
+    ServiceError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - DUPLICATE_EMAIL
+            - DUPLICATE_BOT_TOKEN
+            - INVALID_BOT_TOKEN
+            - BOT_NOT_ADMIN
+            - USER_NOT_FOUND
+            - PROJECT_NOT_FOUND
+            - GROUP_NOT_FOUND
+            - INVALID_VERIFICATION_CODE
+            - SESSION_EXPIRED
+            - VALIDATION_ERROR
+            - TELEGRAM_API_ERROR
+            - RATE_LIMIT_EXCEEDED
+            - INTERNAL_ERROR
+        message:
+          type: string
+          description: User-friendly error message
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional context for error
+
+# ==============================================
+# Service Interface Definitions (TypeScript)
+# ==============================================
+
+info:
+  x-typescript-interfaces: |
+    // OnboardingBotService
+    interface IOnboardingBotService {
+      registerUser(request: RegisterUserRequest): Promise<RegisterUserResponse>;
+      linkAccount(request: LinkAccountRequest): Promise<void>;
+      createProject(request: CreateProjectRequest): Promise<CreateProjectResponse>;
+      connectGroup(request: ConnectGroupRequest): Promise<ConnectGroupResponse>;
+      createPlan(request: CreatePlanRequest): Promise<CreatePlanResponse>;
+      getStatus(userId: string): Promise<GetStatusResponse>;
+    }
+
+    // OnboardingSessionService
+    interface IOnboardingSessionService {
+      getSession(telegramUserId: number): Promise<SessionData | null>;
+      createSession(telegramUserId: number, telegramChatId: number): Promise<SessionData>;
+      updateSession(telegramUserId: number, updates: Partial<SessionData>): Promise<void>;
+      advanceStep(telegramUserId: number, nextStep: SessionStep): Promise<void>;
+      clearSession(telegramUserId: number): Promise<void>;
+      checkTimeout(telegramUserId: number): Promise<boolean>;
+    }
+
+    // TelegramUserAccountService
+    interface ITelegramUserAccountService {
+      create(request: CreateTelegramUserAccountRequest): Promise<TelegramUserAccount>;
+      findByTelegramUserId(telegramUserId: number): Promise<TelegramUserAccount | null>;
+      findByUserId(userId: string): Promise<TelegramUserAccount | null>;
+      updateLastInteraction(telegramUserId: number): Promise<void>;
+    }
+
+    // BotCommandLogger
+    interface IBotCommandLogger {
+      log(request: LogCommandRequest): Promise<void>;
+      getCommandHistory(telegramUserId: number, limit?: number): Promise<BotCommand[]>;
+      getAnalytics(tenantId: string, dateRange?: DateRange): Promise<CommandAnalytics>;
+    }

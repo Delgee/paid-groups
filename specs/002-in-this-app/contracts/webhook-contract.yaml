@@ -1,0 +1,297 @@
+openapi: 3.0.3
+info:
+  title: Onboarding Bot Webhook API
+  description: |
+    Webhook endpoint for receiving Telegram updates from the onboarding bot.
+    This bot handles SaaS user registration and project setup via conversational interface.
+  version: 1.0.0
+  contact:
+    name: Platform Team
+
+servers:
+  - url: https://api.yourplatform.com/v1
+    description: Production
+  - url: http://localhost:3001/v1
+    description: Development
+
+paths:
+  /onboarding-bot/webhook/{botToken}:
+    post:
+      summary: Receive Telegram updates
+      description: |
+        Webhook endpoint called by Telegram when users interact with onboarding bot.
+        The bot token in the path is used for validation and bot identification.
+      operationId: handleOnboardingBotWebhook
+      tags:
+        - Onboarding Bot
+      parameters:
+        - name: botToken
+          in: path
+          required: true
+          description: Bot token for validation (hashed suffix only)
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{8}$'
+            example: '1a2b3c4d'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramUpdate'
+      responses:
+        '200':
+          description: Update processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid update format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid bot token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    TelegramUpdate:
+      type: object
+      description: Telegram Bot API Update object
+      required:
+        - update_id
+      properties:
+        update_id:
+          type: integer
+          description: Unique update identifier
+          example: 123456789
+        message:
+          $ref: '#/components/schemas/TelegramMessage'
+        callback_query:
+          $ref: '#/components/schemas/TelegramCallbackQuery'
+
+    TelegramMessage:
+      type: object
+      description: Telegram message object
+      required:
+        - message_id
+        - date
+        - chat
+        - from
+      properties:
+        message_id:
+          type: integer
+          example: 987654321
+        date:
+          type: integer
+          description: Unix timestamp
+          example: 1705747200
+        chat:
+          $ref: '#/components/schemas/TelegramChat'
+        from:
+          $ref: '#/components/schemas/TelegramUser'
+        text:
+          type: string
+          description: Message text (for commands)
+          example: '/start'
+        entities:
+          type: array
+          description: Message entities (e.g., bot_command)
+          items:
+            $ref: '#/components/schemas/TelegramMessageEntity'
+        forward_from_chat:
+          $ref: '#/components/schemas/TelegramChat'
+          description: Forwarded message chat info (for group connection)
+
+    TelegramChat:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: integer
+          description: Chat identifier
+          example: 1234567890
+        type:
+          type: string
+          enum: [private, group, supergroup, channel]
+          example: 'private'
+        title:
+          type: string
+          description: Chat title (for groups/channels)
+          example: 'My Premium Group'
+        username:
+          type: string
+          description: Chat username (if public)
+          example: 'mypremiumgroup'
+
+    TelegramUser:
+      type: object
+      required:
+        - id
+        - is_bot
+        - first_name
+      properties:
+        id:
+          type: integer
+          description: Telegram user ID
+          example: 987654321
+        is_bot:
+          type: boolean
+          example: false
+        first_name:
+          type: string
+          example: 'John'
+        last_name:
+          type: string
+          example: 'Doe'
+        username:
+          type: string
+          example: 'johndoe'
+        language_code:
+          type: string
+          example: 'en'
+
+    TelegramMessageEntity:
+      type: object
+      required:
+        - offset
+        - length
+        - type
+      properties:
+        offset:
+          type: integer
+          description: Character offset in text
+          example: 0
+        length:
+          type: integer
+          description: Entity length
+          example: 6
+        type:
+          type: string
+          enum: [bot_command, url, mention, email]
+          example: 'bot_command'
+
+    TelegramCallbackQuery:
+      type: object
+      description: Callback query from inline keyboard buttons
+      required:
+        - id
+        - from
+      properties:
+        id:
+          type: string
+          example: '12345678901234567890'
+        from:
+          $ref: '#/components/schemas/TelegramUser'
+        message:
+          $ref: '#/components/schemas/TelegramMessage'
+        data:
+          type: string
+          description: Callback data from button
+          example: 'resume_setup'
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - INVALID_UPDATE
+                - UNAUTHORIZED
+                - TELEGRAM_API_ERROR
+                - SESSION_EXPIRED
+                - VALIDATION_ERROR
+                - INTERNAL_ERROR
+              example: 'VALIDATION_ERROR'
+            message:
+              type: string
+              example: 'Invalid email format. Please provide a valid email address.'
+            details:
+              type: object
+              additionalProperties: true
+              example:
+                field: 'email'
+                provided_value: 'invalid-email'
+
+    RateLimitError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - details
+          properties:
+            code:
+              type: string
+              enum: [RATE_LIMIT_EXCEEDED]
+              example: 'RATE_LIMIT_EXCEEDED'
+            message:
+              type: string
+              example: 'Too many commands. Please wait 45 seconds and try again.'
+            details:
+              type: object
+              required:
+                - retryAfter
+              properties:
+                retryAfter:
+                  type: integer
+                  description: Seconds to wait before retry
+                  example: 45
+                limit:
+                  type: integer
+                  description: Rate limit threshold
+                  example: 20
+                window:
+                  type: string
+                  description: Rate limit window
+                  example: '1 minute'
+
+  securitySchemes:
+    BotTokenPath:
+      type: apiKey
+      in: path
+      name: botToken
+      description: Bot token validation via path parameter
+
+security:
+  - BotTokenPath: []
+
+tags:
+  - name: Onboarding Bot
+    description: Telegram bot webhook for SaaS user onboarding
