@@ -90,25 +90,25 @@ SELECT * FROM pg_policies WHERE tablename IN ('telegram_user_accounts', 'bot_com
 
 **CRITICAL**: These tests MUST be written and MUST FAIL before ANY implementation
 
-### T004 [P] Contract test: Webhook endpoint
+### [X] T004 [P] Contract test: Webhook endpoint
 **File**: `backend/test/contract/onboarding-bot/webhook.contract.spec.ts`
 
-Write failing contract test for POST /v1/onboarding-bot/webhook/:botToken:
-- Test request body matches Telegram Update schema (webhook-contract.yaml)
-- Test response for valid update: 200 OK with `{ ok: true }`
-- Test response for invalid update: 400 Bad Request
-- Test response for invalid bot token: 401 Unauthorized
-- Test response for rate limit: 429 Too Many Requests
-- Use supertest to call endpoint
-- No mocks - real controller once implemented
+✅ Written failing contract test for POST /v1/onboarding-bot/webhook/:botToken:
+- ✅ Test request body matches Telegram Update schema
+- ✅ Test response for valid update: 200 OK with `{ ok: true }`
+- ✅ Test response for invalid update: 400 Bad Request
+- ✅ Test response for invalid bot token: 401 Unauthorized
+- ✅ Test response for rate limit: 429 Too Many Requests
+- ✅ Uses supertest to call endpoint
+- ✅ No mocks - real controller once implemented
 
-**Expected**: Test MUST FAIL (endpoint doesn't exist yet)
+**Status**: ✅ Test written and FAILING (as expected - endpoint doesn't exist yet)
 
 **Dependencies**: None (parallel with other contract tests)
 
 ---
 
-### T005 [P] Contract test: Registration service
+### [X] T005 [P] Contract test: Registration service
 **File**: `backend/test/contract/onboarding-bot/registration.contract.spec.ts`
 
 Write failing contract test for registerUser service method:
@@ -125,7 +125,7 @@ Write failing contract test for registerUser service method:
 
 ---
 
-### T006 [P] Contract test: Project creation service
+### [X] T006 [P] Contract test: Project creation service
 **File**: `backend/test/contract/onboarding-bot/project-creation.contract.spec.ts`
 
 Write failing contract test for createProject service method:
@@ -142,7 +142,7 @@ Write failing contract test for createProject service method:
 
 ---
 
-### T007 [P] Contract test: Group connection service
+### [X] T007 [P] Contract test: Group connection service
 **File**: `backend/test/contract/onboarding-bot/group-connection.contract.spec.ts`
 
 Write failing contract test for connectGroup service method:
@@ -159,7 +159,7 @@ Write failing contract test for connectGroup service method:
 
 ---
 
-### T008 [P] Contract test: Plan creation service
+### [X] T008 [P] Contract test: Plan creation service
 **File**: `backend/test/contract/onboarding-bot/plan-creation.contract.spec.ts`
 
 Write failing contract test for createPlan service method:

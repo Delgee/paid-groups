@@ -20,6 +20,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BotConfigurationModule } from './modules/bot-configuration/bot-configuration.module';
 import { MembershipPlanModule } from './modules/membership-plan/membership-plan.module';
 import { ProjectModule } from './modules/project/project.module';
+import { OnboardingBotModule } from './modules/onboarding-bot/onboarding-bot.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { MetricsModule } from './common/metrics/metrics.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -81,6 +82,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     UserManagementModule,
     TelegramGroupsModule,
     AnalyticsModule,
+    OnboardingBotModule,
   ],
   controllers: [AppController],
   providers: [
