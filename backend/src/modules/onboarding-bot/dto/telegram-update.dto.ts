@@ -1,4 +1,4 @@
-import { IsNumber, IsObject, IsOptional, ValidateNested } from 'class-validator';
+import { IsNumber, IsObject, IsOptional, ValidateNested, IsBoolean, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -9,15 +9,31 @@ class TelegramUser {
 
   @ApiProperty()
   @IsOptional()
+  @IsBoolean()
+  is_bot?: boolean;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
   username?: string;
 
   @ApiProperty()
   @IsOptional()
+  @IsString()
   first_name?: string;
 
   @ApiProperty()
   @IsOptional()
+  @IsString()
   last_name?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  language_code?: string;
+
+  // Allow any other properties
+  [key: string]: any;
 }
 
 class TelegramChat {
@@ -27,11 +43,26 @@ class TelegramChat {
 
   @ApiProperty()
   @IsOptional()
+  @IsString()
   type?: string;
 
   @ApiProperty()
   @IsOptional()
+  @IsString()
   username?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  first_name?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  last_name?: string;
+
+  // Allow any other properties
+  [key: string]: any;
 }
 
 class TelegramMessage {
@@ -55,7 +86,11 @@ class TelegramMessage {
 
   @ApiProperty()
   @IsOptional()
+  @IsString()
   text?: string;
+
+  // Allow any other properties Telegram might send
+  [key: string]: any;
 }
 
 export class TelegramUpdateDto {

@@ -6,6 +6,7 @@ import { OnboardingBotService } from './onboarding-bot.service';
 import { OnboardingSessionService } from './onboarding-session.service';
 import { TelegramUserAccountService } from './telegram-user-account.service';
 import { BotCommandLogger } from './bot-command-logger.service';
+import { TelegramBotService } from './telegram-bot.service';
 import { TelegramUserAccount } from './entities/telegram-user-account.entity';
 import { BotCommand } from './entities/bot-command.entity';
 import { RegistrationHandler } from './handlers/registration.handler';
@@ -25,6 +26,7 @@ import { Tenant } from '../tenant/entities/tenant.entity';
     OnboardingSessionService,
     TelegramUserAccountService,
     BotCommandLogger,
+    TelegramBotService,
     RegistrationHandler,
     HelpHandler,
     CancelHandler,

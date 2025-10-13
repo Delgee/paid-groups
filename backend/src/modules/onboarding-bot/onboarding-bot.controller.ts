@@ -10,10 +10,11 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { TelegramUpdateDto } from './dto/telegram-update.dto';
-import { RegistrationHandler } from './handlers/registration.handler';
+import { RegistrationHandler, BotResponse } from './handlers/registration.handler';
 import { HelpHandler } from './handlers/help.handler';
 import { CancelHandler } from './handlers/cancel.handler';
 import { BotCommandLogger, LogCommandRequest } from './bot-command-logger.service';
+import { TelegramBotService } from './telegram-bot.service';
 import { ResponseStatus } from './entities/bot-command.entity';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -27,6 +28,7 @@ export class OnboardingBotController {
     private readonly helpHandler: HelpHandler,
     private readonly cancelHandler: CancelHandler,
     private readonly botCommandLogger: BotCommandLogger,
+    private readonly telegramBotService: TelegramBotService,
   ) {}
 
   @Post('webhook/:botToken')
@@ -38,7 +40,7 @@ export class OnboardingBotController {
   @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
   async handleWebhook(
     @Param('botToken') botToken: string,
-    @Body() update: TelegramUpdateDto,
+    @Body() update: any, // Use any to avoid strict validation
   ): Promise<{ ok: boolean }> {
     const startTime = Date.now();
     const correlationId = uuidv4();
@@ -53,12 +55,17 @@ export class OnboardingBotController {
       });
     }
 
-    // Validate update structure
-    if (!update.message) {
+    // Handle callback queries (button clicks)
+    if (update.callback_query) {
+      return this.handleCallbackQuery(update.callback_query, correlationId, startTime);
+    }
+
+    // Validate message update structure
+    if (!update || !update.message || !update.message.from || !update.message.chat) {
       throw new BadRequestException({
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Invalid update format - message is required.',
+          message: 'Invalid update format - message, from, and chat are required.',
         },
       });
     }
@@ -67,7 +74,7 @@ export class OnboardingBotController {
     const telegramChatId = update.message.chat.id;
     const messageText = update.message.text || '';
 
-    let response: string;
+    let botResponse: BotResponse;
     let command = 'unknown';
     let responseStatus = ResponseStatus.SUCCESS;
 
@@ -79,25 +86,25 @@ export class OnboardingBotController {
 
         switch (cmd) {
           case 'start':
-            response = await this.registrationHandler.handleStart(
+            botResponse = await this.registrationHandler.handleStart(
               telegramUserId,
               telegramChatId,
               correlationId,
             );
             break;
           case 'help':
-            response = this.helpHandler.getHelpMessage();
+            botResponse = { text: this.helpHandler.getHelpMessage() };
             break;
           case 'cancel':
-            response = await this.cancelHandler.handleCancel(telegramUserId);
+            botResponse = { text: await this.cancelHandler.handleCancel(telegramUserId) };
             break;
           default:
-            response = `Unknown command. Send /help to see available commands.`;
+            botResponse = { text: `Unknown command. Send /help to see available commands.` };
         }
       } else {
         // Handle text input based on session state
         command = 'text_input';
-        response = await this.registrationHandler.handleRegistrationFlow(
+        botResponse = await this.registrationHandler.handleRegistrationFlow(
           telegramUserId,
           telegramChatId,
           messageText,
@@ -118,8 +125,12 @@ export class OnboardingBotController {
 
       await this.botCommandLogger.log(logRequest);
 
-      // In real implementation, send response via Telegram Bot API
-      // await this.telegram.sendMessage(telegramChatId, response);
+      // Send response via Telegram Bot API
+      await this.telegramBotService.sendMessage(
+        telegramChatId,
+        botResponse.text,
+        botResponse.keyboard,
+      );
 
       return { ok: true };
     } catch (error) {
@@ -130,6 +141,63 @@ export class OnboardingBotController {
         telegram_user_id: telegramUserId,
         telegram_chat_id: telegramChatId,
         command,
+        response_status: ResponseStatus.ERROR,
+        error_code: error.response?.error?.code || 'INTERNAL_ERROR',
+        response_time_ms: Date.now() - startTime,
+        correlation_id: correlationId,
+      });
+
+      throw error;
+    }
+  }
+
+  private async handleCallbackQuery(
+    callbackQuery: any,
+    correlationId: string,
+    startTime: number,
+  ): Promise<{ ok: boolean }> {
+    const telegramUserId = callbackQuery.from.id;
+    const telegramChatId = callbackQuery.message.chat.id;
+    const callbackData = callbackQuery.data;
+    const callbackQueryId = callbackQuery.id;
+
+    try {
+      // Handle the callback
+      const botResponse = await this.registrationHandler.handleCallbackQuery(
+        telegramUserId,
+        telegramChatId,
+        callbackData,
+        correlationId,
+      );
+
+      // Answer the callback query (removes loading state)
+      await this.telegramBotService.answerCallbackQuery(callbackQueryId);
+
+      // Send response message
+      await this.telegramBotService.sendMessage(
+        telegramChatId,
+        botResponse.text,
+        botResponse.keyboard,
+      );
+
+      // Log command
+      await this.botCommandLogger.log({
+        telegram_user_id: telegramUserId,
+        telegram_chat_id: telegramChatId,
+        command: `callback:${callbackData}`,
+        parameters: { callback_data: callbackData },
+        response_status: ResponseStatus.SUCCESS,
+        response_time_ms: Date.now() - startTime,
+        correlation_id: correlationId,
+      });
+
+      return { ok: true };
+    } catch (error) {
+      // Log error
+      await this.botCommandLogger.log({
+        telegram_user_id: telegramUserId,
+        telegram_chat_id: telegramChatId,
+        command: `callback:${callbackData}`,
         response_status: ResponseStatus.ERROR,
         error_code: error.response?.error?.code || 'INTERNAL_ERROR',
         response_time_ms: Date.now() - startTime,
