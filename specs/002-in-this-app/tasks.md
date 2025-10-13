@@ -178,7 +178,7 @@ Write failing contract test for createPlan service method:
 
 ## Phase 3.3: Entity Layer (Foundation for Services)
 
-### T009 [P] Create TelegramUserAccount entity
+### [X] T009 [P] Create TelegramUserAccount entity
 **File**: `backend/src/modules/onboarding-bot/entities/telegram-user-account.entity.ts`
 
 Create TypeORM entity matching migration schema:
@@ -194,7 +194,7 @@ Create TypeORM entity matching migration schema:
 
 ---
 
-### T010 [P] Create BotCommand entity
+### [X] T010 [P] Create BotCommand entity
 **File**: `backend/src/modules/onboarding-bot/entities/bot-command.entity.ts`
 
 Create TypeORM entity matching migration schema:
@@ -210,7 +210,7 @@ Create TypeORM entity matching migration schema:
 
 ---
 
-### T011 [P] Define OnboardingSession interface
+### [X] T011 [P] Define OnboardingSession interface
 **File**: `backend/src/modules/onboarding-bot/interfaces/onboarding-session.interface.ts`
 
 Create TypeScript interfaces for Redis session:
@@ -244,7 +244,7 @@ export interface OnboardingSession {
 
 ---
 
-### T012 [P] Create DTOs
+### [X] T012 [P] Create DTOs
 **Files**:
 - `backend/src/modules/onboarding-bot/dto/register-user.dto.ts`
 - `backend/src/modules/onboarding-bot/dto/link-account.dto.ts`

@@ -4,7 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { TelegramUserAccountService } from './telegram-user-account.service';
 import { OnboardingSessionService } from './onboarding-session.service';
 import { RegisterUserDto } from './dto/register-user.dto';
-import { User } from '../auth/entities/user.entity';
+import { User, UserRole } from '../auth/entities/user.entity';
 import { Tenant, SubscriptionStatus } from '../tenant/entities/tenant.entity';
 import { TelegramUserAccount } from './entities/telegram-user-account.entity';
 import * as bcrypt from 'bcrypt';
@@ -75,12 +75,11 @@ export class OnboardingBotService {
       const hashedPassword = await bcrypt.hash(Math.random().toString(36), 10); // Random password
       const user = queryRunner.manager.create(User, {
         email: dto.email,
-        password: hashedPassword,
+        password_hash: hashedPassword,
         name: dto.name,
-        role: 'OWNER',
+        role: UserRole.OWNER,
         tenant_id: savedTenant.id,
         is_active: true,
-        email_verified: true, // Auto-verify for bot registrations
       });
       const savedUser = await queryRunner.manager.save(user);
 
