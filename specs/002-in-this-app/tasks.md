@@ -336,7 +336,7 @@ Implement business logic coordination:
 
 ## Phase 3.5: Bot Handlers (Command Processing)
 
-### T017 Implement RegistrationHandler
+### [X] T017 Implement RegistrationHandler
 **File**: `backend/src/modules/onboarding-bot/handlers/registration.handler.ts`
 
 Implement /start command and registration flow:
@@ -354,7 +354,7 @@ Implement /start command and registration flow:
 
 ---
 
-### T018 Implement ProjectCreationHandler
+### [X] T018 Implement ProjectCreationHandler
 **File**: `backend/src/modules/onboarding-bot/handlers/project-creation.handler.ts`
 
 Implement /newproject command:
@@ -372,7 +372,7 @@ Implement /newproject command:
 
 ---
 
-### T019 Implement GroupConnectionHandler
+### [X] T019 Implement GroupConnectionHandler
 **File**: `backend/src/modules/onboarding-bot/handlers/group-connection.handler.ts`
 
 Implement /addgroup command:
@@ -390,7 +390,7 @@ Implement /addgroup command:
 
 ---
 
-### T020 Implement PlanCreationHandler
+### [X] T020 Implement PlanCreationHandler
 **File**: `backend/src/modules/onboarding-bot/handlers/plan-creation.handler.ts`
 
 Implement /createplan command:
@@ -408,7 +408,7 @@ Implement /createplan command:
 
 ---
 
-### T021 Implement AccountLinkingHandler
+### [X] T021 Implement AccountLinkingHandler
 **File**: `backend/src/modules/onboarding-bot/handlers/account-linking.handler.ts`
 
 Implement /link command:
@@ -427,7 +427,7 @@ Implement /link command:
 
 ---
 
-### T022 Implement StatusHandler
+### [X] T022 Implement StatusHandler
 **File**: `backend/src/modules/onboarding-bot/handlers/status.handler.ts`
 
 Implement /status command:
@@ -444,7 +444,7 @@ Implement /status command:
 
 ---
 
-### T023 Implement HelpHandler
+### [X] T023 Implement HelpHandler
 **File**: `backend/src/modules/onboarding-bot/handlers/help.handler.ts`
 
 Implement /help command:
@@ -466,7 +466,7 @@ Implement /help command:
 
 ---
 
-### T024 Implement CancelHandler
+### [X] T024 Implement CancelHandler
 **File**: `backend/src/modules/onboarding-bot/handlers/cancel.handler.ts`
 
 Implement /cancel command:

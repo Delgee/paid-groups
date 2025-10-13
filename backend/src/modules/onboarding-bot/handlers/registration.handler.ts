@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { OnboardingBotService } from '../onboarding-bot.service';
 import { OnboardingSessionService } from '../onboarding-session.service';
+import { TelegramUserAccountService } from '../telegram-user-account.service';
 import { SessionStep } from '../interfaces/onboarding-session.interface';
 
 export interface BotResponse {
@@ -13,10 +14,34 @@ export class RegistrationHandler {
   constructor(
     private readonly onboardingBotService: OnboardingBotService,
     private readonly sessionService: OnboardingSessionService,
+    private readonly telegramUserAccountService: TelegramUserAccountService,
   ) {}
 
   async handleStart(telegramUserId: number, telegramChatId: number, correlationId: string): Promise<BotResponse> {
-    // Create or reset session
+    // Check if user is already registered
+    const existingAccount = await this.telegramUserAccountService.findByTelegramUserId(telegramUserId);
+
+    if (existingAccount && existingAccount.user) {
+      // User already registered - show main menu
+      await this.sessionService.createSession(telegramUserId, telegramChatId, correlationId);
+
+      return {
+        text: `Welcome back, ${existingAccount.user.name}! 👋
+
+Your account: ${existingAccount.user.email}
+
+What would you like to do?`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '🚀 Create Project', callback_data: 'create_project' }],
+            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
+            [{ text: '❓ Help', callback_data: 'help' }],
+          ],
+        },
+      };
+    }
+
+    // New user - show registration options
     await this.sessionService.createSession(telegramUserId, telegramChatId, correlationId);
 
     return {
@@ -61,12 +86,92 @@ What's your email address?
       return { text: 'Account linking feature is coming soon! 🚧' };
     }
 
+    if (callbackData === 'create_project') {
+      return {
+        text: `🚀 Let's create your first project!
+
+A project helps you organize your paid Telegram groups. You can have multiple projects for different audiences.
+
+<b>Project creation is coming soon!</b>
+
+In the meantime, explore these options:`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
+            [{ text: '⚙️ Configure Bot', callback_data: 'configure_bot' }],
+            [{ text: '❓ Get Help', callback_data: 'help' }],
+          ],
+        },
+      };
+    }
+
+    if (callbackData === 'view_dashboard') {
+      return {
+        text: `📊 <b>Dashboard Access</b>
+
+Your web dashboard is available at:
+🌐 https://your-domain.com/dashboard
+
+<b>Login with your registered email to access:</b>
+✓ Telegram group management
+✓ Real-time analytics
+✓ Payment settings
+✓ Subscription monitoring
+
+What would you like to do?`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '🚀 Create Project', callback_data: 'create_project' }],
+            [{ text: '❓ Get Help', callback_data: 'help' }],
+          ],
+        },
+      };
+    }
+
+    if (callbackData === 'configure_bot') {
+      return {
+        text: `⚙️ <b>Bot Configuration</b>
+
+Your bot is ready to use! You can configure it from the web dashboard.
+
+<b>Configuration options include:</b>
+✓ Welcome messages
+✓ Payment settings
+✓ Group permissions
+✓ Automated responses
+
+Choose an option:`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
+            [{ text: '❓ Get Help', callback_data: 'help' }],
+          ],
+        },
+      };
+    }
+
     if (callbackData === 'help') {
       return {
-        text: `Available commands:
-• /start - Begin registration
-• /help - Show this message
-• /cancel - Cancel current operation`,
+        text: `❓ <b>Help & Support</b>
+
+<b>Available Commands:</b>
+/start - Main menu
+/help - Show this help
+/cancel - Cancel operation
+
+<b>Platform Features:</b>
+✓ Create paid Telegram groups
+✓ Automated payment processing
+✓ Member management
+✓ Analytics & reporting
+
+Choose an option or contact support:`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '🚀 Create Project', callback_data: 'create_project' }],
+            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
+          ],
+        },
       };
     }
 
@@ -141,7 +246,8 @@ What's your email address?
             correlation_id: correlationId,
           });
 
-          await this.sessionService.clearSession(telegramUserId);
+          // Recreate session in IDLE state for post-registration actions
+          await this.sessionService.createSession(telegramUserId, telegramChatId, correlationId);
 
           return {
             text: `🎉 Account created successfully!

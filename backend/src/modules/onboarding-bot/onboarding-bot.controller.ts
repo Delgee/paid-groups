@@ -11,11 +11,18 @@ import {
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { TelegramUpdateDto } from './dto/telegram-update.dto';
 import { RegistrationHandler, BotResponse } from './handlers/registration.handler';
+import { ProjectCreationHandler } from './handlers/project-creation.handler';
+import { GroupConnectionHandler } from './handlers/group-connection.handler';
+import { PlanCreationHandler } from './handlers/plan-creation.handler';
+import { AccountLinkingHandler } from './handlers/account-linking.handler';
+import { StatusHandler } from './handlers/status.handler';
 import { HelpHandler } from './handlers/help.handler';
 import { CancelHandler } from './handlers/cancel.handler';
 import { BotCommandLogger, LogCommandRequest } from './bot-command-logger.service';
 import { TelegramBotService } from './telegram-bot.service';
 import { ResponseStatus } from './entities/bot-command.entity';
+import { SessionStep } from './interfaces/onboarding-session.interface';
+import { OnboardingSessionService } from './onboarding-session.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @ApiTags('Onboarding Bot')
@@ -25,8 +32,14 @@ export class OnboardingBotController {
 
   constructor(
     private readonly registrationHandler: RegistrationHandler,
+    private readonly projectCreationHandler: ProjectCreationHandler,
+    private readonly groupConnectionHandler: GroupConnectionHandler,
+    private readonly planCreationHandler: PlanCreationHandler,
+    private readonly accountLinkingHandler: AccountLinkingHandler,
+    private readonly statusHandler: StatusHandler,
     private readonly helpHandler: HelpHandler,
     private readonly cancelHandler: CancelHandler,
+    private readonly sessionService: OnboardingSessionService,
     private readonly botCommandLogger: BotCommandLogger,
     private readonly telegramBotService: TelegramBotService,
   ) {}
@@ -57,7 +70,7 @@ export class OnboardingBotController {
 
     // Handle callback queries (button clicks)
     if (update.callback_query) {
-      return this.handleCallbackQuery(update.callback_query, correlationId, startTime);
+      return this.handleCallbackQuery(botToken, update.callback_query, correlationId, startTime);
     }
 
     // Validate message update structure
@@ -92,6 +105,41 @@ export class OnboardingBotController {
               correlationId,
             );
             break;
+          case 'newproject':
+            botResponse = await this.projectCreationHandler.handleNewProjectCommand(
+              telegramUserId,
+              telegramChatId,
+              correlationId,
+            );
+            break;
+          case 'addgroup':
+            botResponse = await this.groupConnectionHandler.handleAddGroupCommand(
+              telegramUserId,
+              telegramChatId,
+              correlationId,
+            );
+            break;
+          case 'createplan':
+            botResponse = await this.planCreationHandler.handleCreatePlanCommand(
+              telegramUserId,
+              telegramChatId,
+              correlationId,
+            );
+            break;
+          case 'link':
+            botResponse = await this.accountLinkingHandler.handleLinkCommand(
+              telegramUserId,
+              telegramChatId,
+              correlationId,
+            );
+            break;
+          case 'status':
+            botResponse = await this.statusHandler.handleStatusCommand(
+              telegramUserId,
+              telegramChatId,
+              correlationId,
+            );
+            break;
           case 'help':
             botResponse = { text: this.helpHandler.getHelpMessage() };
             break;
@@ -104,12 +152,71 @@ export class OnboardingBotController {
       } else {
         // Handle text input based on session state
         command = 'text_input';
-        botResponse = await this.registrationHandler.handleRegistrationFlow(
-          telegramUserId,
-          telegramChatId,
-          messageText,
-          correlationId,
-        );
+
+        // Get current session to determine which handler to use
+        const session = await this.sessionService.getSession(telegramUserId);
+
+        if (!session) {
+          botResponse = { text: 'Please send /start to begin, or use a command like /newproject, /addgroup, /createplan.' };
+        } else {
+          // Route to appropriate handler based on current step
+          switch (session.current_step) {
+            case SessionStep.REGISTRATION_EMAIL:
+            case SessionStep.REGISTRATION_NAME:
+            case SessionStep.REGISTRATION_COMPANY:
+              botResponse = await this.registrationHandler.handleRegistrationFlow(
+                telegramUserId,
+                telegramChatId,
+                messageText,
+                correlationId,
+              );
+              break;
+
+            case SessionStep.PROJECT_NAME:
+            case SessionStep.PROJECT_DESCRIPTION:
+            case SessionStep.BOT_TOKEN:
+              botResponse = await this.projectCreationHandler.handleProjectCreationFlow(
+                telegramUserId,
+                telegramChatId,
+                messageText,
+                correlationId,
+              );
+              break;
+
+            case SessionStep.GROUP_CONNECTION:
+              botResponse = await this.groupConnectionHandler.handleGroupConnectionFlow(
+                telegramUserId,
+                telegramChatId,
+                messageText,
+                correlationId,
+              );
+              break;
+
+            case SessionStep.PLAN_NAME:
+            case SessionStep.PLAN_PRICE:
+            case SessionStep.PLAN_DESCRIPTION:
+              botResponse = await this.planCreationHandler.handlePlanCreationFlow(
+                telegramUserId,
+                telegramChatId,
+                messageText,
+                correlationId,
+              );
+              break;
+
+            case SessionStep.LINK_EMAIL:
+            case SessionStep.LINK_VERIFICATION:
+              botResponse = await this.accountLinkingHandler.handleAccountLinkingFlow(
+                telegramUserId,
+                telegramChatId,
+                messageText,
+                correlationId,
+              );
+              break;
+
+            default:
+              botResponse = { text: 'Please use a command like /start, /newproject, /addgroup, /createplan, or /help.' };
+          }
+        }
       }
 
       // Log command
@@ -127,6 +234,7 @@ export class OnboardingBotController {
 
       // Send response via Telegram Bot API
       await this.telegramBotService.sendMessage(
+        botToken,
         telegramChatId,
         botResponse.text,
         botResponse.keyboard,
@@ -152,6 +260,7 @@ export class OnboardingBotController {
   }
 
   private async handleCallbackQuery(
+    botToken: string,
     callbackQuery: any,
     correlationId: string,
     startTime: number,
@@ -162,19 +271,75 @@ export class OnboardingBotController {
     const callbackQueryId = callbackQuery.id;
 
     try {
-      // Handle the callback
-      const botResponse = await this.registrationHandler.handleCallbackQuery(
-        telegramUserId,
-        telegramChatId,
-        callbackData,
-        correlationId,
-      );
+      let botResponse: BotResponse;
+
+      // Route callback query based on callback_data prefix
+      if (callbackData.startsWith('group_type:')) {
+        const groupType = callbackData.split(':')[1] as 'channel' | 'group';
+        botResponse = await this.groupConnectionHandler.handleGroupTypeSelection(
+          telegramUserId,
+          telegramChatId,
+          groupType,
+          correlationId,
+        );
+      } else if (callbackData.startsWith('select_project:')) {
+        const projectId = callbackData.split(':')[1];
+        botResponse = await this.groupConnectionHandler.handleProjectSelection(
+          telegramUserId,
+          telegramChatId,
+          projectId,
+          correlationId,
+        );
+      } else if (callbackData.startsWith('select_plan_group:')) {
+        const groupId = callbackData.split(':')[1];
+        botResponse = await this.planCreationHandler.handleGroupSelection(
+          telegramUserId,
+          telegramChatId,
+          groupId,
+          correlationId,
+        );
+      } else if (callbackData === 'plan_groups_done') {
+        botResponse = await this.planCreationHandler.handleGroupSelectionDone(
+          telegramUserId,
+          telegramChatId,
+          correlationId,
+        );
+      } else if (callbackData.startsWith('plan_duration:')) {
+        const days = callbackData.split(':')[1];
+        botResponse = await this.planCreationHandler.handleDurationSelection(
+          telegramUserId,
+          telegramChatId,
+          days,
+          correlationId,
+        );
+      } else if (callbackData === 'add_group') {
+        botResponse = await this.groupConnectionHandler.handleAddGroupCommand(
+          telegramUserId,
+          telegramChatId,
+          correlationId,
+        );
+      } else if (callbackData === 'view_status') {
+        botResponse = await this.statusHandler.handleStatusCommand(
+          telegramUserId,
+          telegramChatId,
+          correlationId,
+        );
+      } else {
+        // Default routing to registration handler for basic callbacks
+        botResponse = await this.registrationHandler.handleCallbackQuery(
+          telegramUserId,
+          telegramChatId,
+          callbackData,
+          correlationId,
+        );
+      }
 
       // Answer the callback query (removes loading state)
-      await this.telegramBotService.answerCallbackQuery(callbackQueryId);
+      await this.telegramBotService.answerCallbackQuery(botToken, callbackQueryId);
 
       // Send response message
       await this.telegramBotService.sendMessage(
+        botToken,
         telegramChatId,
         botResponse.text,
         botResponse.keyboard,

@@ -3,15 +3,11 @@ import axios from 'axios';
 
 @Injectable()
 export class TelegramBotService {
-  private readonly botToken: string;
-  private readonly telegramApiUrl: string;
-
-  constructor() {
-    this.botToken = process.env.TELEGRAM_ONBOARDING_BOT_TOKEN || '';
-    this.telegramApiUrl = `https://api.telegram.org/bot${this.botToken}`;
+  private getTelegramApiUrl(botToken: string): string {
+    return `https://api.telegram.org/bot${botToken}`;
   }
 
-  async sendMessage(chatId: number, text: string, replyMarkup?: any): Promise<void> {
+  async sendMessage(botToken: string, chatId: number, text: string, replyMarkup?: any): Promise<void> {
     try {
       const payload: any = {
         chat_id: chatId,
@@ -23,16 +19,18 @@ export class TelegramBotService {
         payload.reply_markup = replyMarkup;
       }
 
-      await axios.post(`${this.telegramApiUrl}/sendMessage`, payload);
+      const apiUrl = this.getTelegramApiUrl(botToken);
+      await axios.post(`${apiUrl}/sendMessage`, payload);
     } catch (error) {
       console.error('Failed to send Telegram message:', error.message);
       throw error;
     }
   }
 
-  async answerCallbackQuery(callbackQueryId: string, text?: string): Promise<void> {
+  async answerCallbackQuery(botToken: string, callbackQueryId: string, text?: string): Promise<void> {
     try {
-      await axios.post(`${this.telegramApiUrl}/answerCallbackQuery`, {
+      const apiUrl = this.getTelegramApiUrl(botToken);
+      await axios.post(`${apiUrl}/answerCallbackQuery`, {
         callback_query_id: callbackQueryId,
         text,
       });
@@ -42,9 +40,10 @@ export class TelegramBotService {
     }
   }
 
-  async setWebhook(webhookUrl: string): Promise<void> {
+  async setWebhook(botToken: string, webhookUrl: string): Promise<void> {
     try {
-      await axios.post(`${this.telegramApiUrl}/setWebhook`, {
+      const apiUrl = this.getTelegramApiUrl(botToken);
+      await axios.post(`${apiUrl}/setWebhook`, {
         url: webhookUrl,
         allowed_updates: ['message', 'callback_query'],
       });
@@ -54,18 +53,20 @@ export class TelegramBotService {
     }
   }
 
-  async deleteWebhook(): Promise<void> {
+  async deleteWebhook(botToken: string): Promise<void> {
     try {
-      await axios.post(`${this.telegramApiUrl}/deleteWebhook`);
+      const apiUrl = this.getTelegramApiUrl(botToken);
+      await axios.post(`${apiUrl}/deleteWebhook`);
     } catch (error) {
       console.error('Failed to delete webhook:', error.message);
       throw error;
     }
   }
 
-  async getMe(): Promise<any> {
+  async getMe(botToken: string): Promise<any> {
     try {
-      const response = await axios.get(`${this.telegramApiUrl}/getMe`);
+      const apiUrl = this.getTelegramApiUrl(botToken);
+      const response = await axios.get(`${apiUrl}/getMe`);
       return response.data.result;
     } catch (error) {
       console.error('Failed to get bot info:', error.message);
