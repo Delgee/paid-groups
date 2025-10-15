@@ -22,7 +22,10 @@ export class GroupConnectionHandler {
     correlationId: string,
   ): Promise<BotResponse> {
     // Check if user is registered
-    const account = await this.telegramUserAccountService.findByTelegramUserId(telegramUserId);
+    const account =
+      await this.telegramUserAccountService.findByTelegramUserId(
+        telegramUserId,
+      );
 
     if (!account || !account.user) {
       return {
@@ -33,11 +36,14 @@ Please send /start to register your account.`,
     }
 
     // Get user's projects
-    const projectsResponse = await this.projectService.findAll(account.user.tenant_id, {
-      page: 1,
-      limit: 50,
-      is_active: true,
-    });
+    const projectsResponse = await this.projectService.findAll(
+      account.user.tenant_id,
+      {
+        page: 1,
+        limit: 50,
+        is_active: true,
+      },
+    );
 
     if (projectsResponse.data.length === 0) {
       return {
@@ -45,7 +51,9 @@ Please send /start to register your account.`,
 
 Please create a project using the button below:`,
         keyboard: {
-          inline_keyboard: [[{ text: '🚀 Create Project', callback_data: 'create_project' }]],
+          inline_keyboard: [
+            [{ text: '🚀 Create Project', callback_data: 'create_project' }],
+          ],
         },
       };
     }
@@ -53,14 +61,23 @@ Please create a project using the button below:`,
     // If only one project, skip selection
     if (projectsResponse.data.length === 1) {
       // Create or reset session
-      const existingSession = await this.sessionService.getSession(telegramUserId);
+      const existingSession =
+        await this.sessionService.getSession(telegramUserId);
       if (!existingSession) {
-        await this.sessionService.createSession(telegramUserId, telegramChatId, correlationId);
+        await this.sessionService.createSession(
+          telegramUserId,
+          telegramChatId,
+          correlationId,
+        );
       }
 
-      await this.sessionService.advanceStep(telegramUserId, SessionStep.GROUP_TYPE, {
-        selected_project_id: projectsResponse.data[0].id,
-      });
+      await this.sessionService.advanceStep(
+        telegramUserId,
+        SessionStep.GROUP_TYPE,
+        {
+          selected_project_id: projectsResponse.data[0].id,
+        },
+      );
 
       return {
         text: `➕ <b>Add Telegram Group</b>
@@ -79,15 +96,26 @@ Project: <b>${projectsResponse.data[0].display_name}</b>
 
     // Multiple projects - show selection
     // Create or reset session
-    const existingSession = await this.sessionService.getSession(telegramUserId);
+    const existingSession =
+      await this.sessionService.getSession(telegramUserId);
     if (!existingSession) {
-      await this.sessionService.createSession(telegramUserId, telegramChatId, correlationId);
+      await this.sessionService.createSession(
+        telegramUserId,
+        telegramChatId,
+        correlationId,
+      );
     }
 
-    await this.sessionService.advanceStep(telegramUserId, SessionStep.GROUP_SELECTION);
+    await this.sessionService.advanceStep(
+      telegramUserId,
+      SessionStep.GROUP_SELECTION,
+    );
 
     const projectButtons = projectsResponse.data.map((project) => [
-      { text: `📁 ${project.display_name}`, callback_data: `select_project:${project.id}` },
+      {
+        text: `📁 ${project.display_name}`,
+        callback_data: `select_project:${project.id}`,
+      },
     ]);
 
     return {
@@ -106,9 +134,13 @@ Project: <b>${projectsResponse.data[0].display_name}</b>
     groupType: 'channel' | 'group',
     correlationId: string,
   ): Promise<BotResponse> {
-    await this.sessionService.advanceStep(telegramUserId, SessionStep.GROUP_CONNECTION, {
-      group_type: groupType,
-    });
+    await this.sessionService.advanceStep(
+      telegramUserId,
+      SessionStep.GROUP_CONNECTION,
+      {
+        group_type: groupType,
+      },
+    );
 
     const typeLabel = groupType === 'channel' ? 'Channel' : 'Group';
 
@@ -121,10 +153,13 @@ To connect your ${groupType}:
    ${groupType === 'channel' ? '• Post messages' : '• Manage members\n   • Invite users via link'}
 3. Send me the ${groupType}'s username (with @) or ID
 
-<b>Example:</b>
+<b>Option 1:</b> Send username
 ${groupType === 'channel' ? '@my_premium_channel' : '@my_premium_group'}
 
-Send the ${groupType} username or ID:`,
+<b>Option 2:</b> Forward any message from your ${groupType}
+This is the easiest way! Just forward a message and I'll automatically detect the ${groupType} details.
+
+Choose one of the options above:`,
     };
   }
 
@@ -134,10 +169,16 @@ Send the ${groupType} username or ID:`,
     projectId: string,
     correlationId: string,
   ): Promise<BotResponse> {
-    const account = await this.telegramUserAccountService.findByTelegramUserId(telegramUserId);
+    const account =
+      await this.telegramUserAccountService.findByTelegramUserId(
+        telegramUserId,
+      );
 
     // Verify project belongs to user
-    const project = await this.projectService.findOne(account.user.tenant_id, projectId);
+    const project = await this.projectService.findOne(
+      account.user.tenant_id,
+      projectId,
+    );
 
     if (!project) {
       return {
@@ -145,9 +186,13 @@ Send the ${groupType} username or ID:`,
       };
     }
 
-    await this.sessionService.advanceStep(telegramUserId, SessionStep.GROUP_TYPE, {
-      selected_project_id: projectId,
-    });
+    await this.sessionService.advanceStep(
+      telegramUserId,
+      SessionStep.GROUP_TYPE,
+      {
+        selected_project_id: projectId,
+      },
+    );
 
     return {
       text: `Project selected: <b>${project.display_name}</b>
@@ -162,6 +207,122 @@ Send the ${groupType} username or ID:`,
     };
   }
 
+  async handleForwardedMessage(
+    telegramUserId: number,
+    telegramChatId: number,
+    forwardedFrom: any,
+    correlationId: string,
+  ): Promise<BotResponse> {
+    const session = await this.sessionService.getSession(telegramUserId);
+
+    if (!session || session.current_step !== SessionStep.GROUP_CONNECTION) {
+      return {
+        text: `ℹ️ To add a channel or group, please first use /addgroup command, then forward a message from your channel/group to me.`,
+      };
+    }
+
+    const account =
+      await this.telegramUserAccountService.findByTelegramUserId(
+        telegramUserId,
+      );
+
+    console.log('Forwarded from:', forwardedFrom);
+
+    // Extract channel/group info from forwarded message
+    const chatId = forwardedFrom.chat?.id || forwardedFrom.sender_chat?.id;
+    const chatTitle =
+      forwardedFrom.chat?.title || forwardedFrom.sender_chat?.title;
+    const chatUsername =
+      forwardedFrom.chat?.username || forwardedFrom.sender_chat?.username;
+
+    if (!chatId) {
+      return {
+        text: `❌ Could not extract channel/group information from the forwarded message.
+
+Please make sure you:
+1. Forward a message FROM the channel/group (not a message ABOUT it)
+2. The bot is added as admin in that channel/group
+
+Try forwarding again or enter the channel username manually:`,
+      };
+    }
+
+    try {
+      // Create the telegram group with chat ID
+      const telegramGroup = await this.telegramGroupsService.create(
+        {
+          project_id: session.data.selected_project_id!,
+          group_name: chatTitle || chatUsername || `Channel ${chatId}`,
+          description: `Connected via Telegram bot onboarding - forwarded message`,
+          telegram_chat_id: chatId.toString(),
+        },
+        account.user.tenant_id,
+      );
+
+      // Clear session
+      await this.sessionService.clearSession(telegramUserId);
+
+      return {
+        text: `🎉 <b>Channel/Group Connected Successfully!</b>
+
+<b>Details:</b>
+• Name: ${telegramGroup.group_name}
+• Chat ID: ${chatId}
+${chatUsername ? `• Username: @${chatUsername}` : ''}
+• Status: Active
+
+<b>What's next?</b>`,
+        keyboard: {
+          inline_keyboard: [
+            [
+              {
+                text: '💰 Create Membership Plan',
+                callback_data: 'create_plan',
+              },
+            ],
+            [{ text: '➕ Add Another Group', callback_data: 'add_group' }],
+            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
+          ],
+        },
+      };
+    } catch (error) {
+      if (error.response?.message?.includes('not found')) {
+        return {
+          text: `❌ Could not access the channel/group.
+
+Please check:
+• The bot is added as an administrator
+• The bot has required permissions
+• Try again after adding the bot
+
+Forward a message again after fixing:`,
+        };
+      }
+
+      if (error.response?.statusCode === 409) {
+        return {
+          text: `⚠️ This channel/group is already connected to your project.
+
+You can:`,
+          keyboard: {
+            inline_keyboard: [
+              [{ text: '➕ Add Different Group', callback_data: 'add_group' }],
+              [{ text: '📊 View All Groups', callback_data: 'view_dashboard' }],
+            ],
+          },
+        };
+      }
+
+      return {
+        text: `❌ Failed to connect channel/group.
+
+${error.response?.message || error.message || 'Unknown error'}
+
+Please try again or contact support if the issue persists.`,
+      };
+    }
+  }
+
   async handleGroupConnectionFlow(
     telegramUserId: number,
     telegramChatId: number,
@@ -174,7 +335,10 @@ Send the ${groupType} username or ID:`,
       return { text: 'Session expired. Please send /addgroup to start again.' };
     }
 
-    const account = await this.telegramUserAccountService.findByTelegramUserId(telegramUserId);
+    const account =
+      await this.telegramUserAccountService.findByTelegramUserId(
+        telegramUserId,
+      );
 
     if (session.current_step === SessionStep.GROUP_CONNECTION) {
       // Extract channel/group identifier
@@ -186,7 +350,10 @@ Send the ${groupType} username or ID:`,
       }
 
       // Validate format
-      if (channelUsername.length < 5 || !/^[a-zA-Z0-9_]+$/.test(channelUsername)) {
+      if (
+        channelUsername.length < 5 ||
+        !/^[a-zA-Z0-9_]+$/.test(channelUsername)
+      ) {
         return {
           text: `❌ Invalid ${session.data.group_type} username format.
 
@@ -216,7 +383,8 @@ Please try again:`,
         // Clear session
         await this.sessionService.clearSession(telegramUserId);
 
-        const typeLabel = session.data.group_type === 'channel' ? 'Channel' : 'Group';
+        const typeLabel =
+          session.data.group_type === 'channel' ? 'Channel' : 'Group';
 
         return {
           text: `🎉 <b>${typeLabel} Connected Successfully!</b>
@@ -229,14 +397,20 @@ Please try again:`,
 <b>What's next?</b>`,
           keyboard: {
             inline_keyboard: [
-              [{ text: '💰 Create Membership Plan', callback_data: 'create_plan' }],
+              [
+                {
+                  text: '💰 Create Membership Plan',
+                  callback_data: 'create_plan',
+                },
+              ],
               [{ text: '➕ Add Another Group', callback_data: 'add_group' }],
               [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
             ],
           },
         };
       } catch (error) {
-        const typeLabel = session.data.group_type === 'channel' ? 'channel' : 'group';
+        const typeLabel =
+          session.data.group_type === 'channel' ? 'channel' : 'group';
 
         if (error.response?.message?.includes('not found')) {
           return {
@@ -251,7 +425,10 @@ Try again with the correct username:`,
           };
         }
 
-        if (error.response?.message?.includes('permission') || error.response?.message?.includes('admin')) {
+        if (
+          error.response?.message?.includes('permission') ||
+          error.response?.message?.includes('admin')
+        ) {
           return {
             text: `❌ Bot lacks required permissions in <b>@${channelUsername}</b>
 
@@ -273,8 +450,18 @@ Try again after granting permissions:`,
 You can:`,
             keyboard: {
               inline_keyboard: [
-                [{ text: '➕ Add Different Group', callback_data: 'add_group' }],
-                [{ text: '📊 View All Groups', callback_data: 'view_dashboard' }],
+                [
+                  {
+                    text: '➕ Add Different Group',
+                    callback_data: 'add_group',
+                  },
+                ],
+                [
+                  {
+                    text: '📊 View All Groups',
+                    callback_data: 'view_dashboard',
+                  },
+                ],
               ],
             },
           };
@@ -290,6 +477,8 @@ Please try again or contact support if the issue persists.`,
       }
     }
 
-    return { text: 'Something went wrong. Please send /addgroup to begin again.' };
+    return {
+      text: 'Something went wrong. Please send /addgroup to begin again.',
+    };
   }
 }

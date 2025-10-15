@@ -325,6 +325,12 @@ Please try again or contact support if the issue persists.`,
     days: string,
     correlationId: string,
   ): Promise<BotResponse> {
+    const session = await this.sessionService.getSession(telegramUserId);
+
+    if (!session) {
+      return { text: 'Session expired. Please send /createplan to start again.' };
+    }
+
     await this.sessionService.advanceStep(telegramUserId, SessionStep.PLAN_DESCRIPTION, {
       plan_duration: days,
     });

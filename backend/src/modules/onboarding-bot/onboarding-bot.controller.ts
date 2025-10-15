@@ -92,8 +92,23 @@ export class OnboardingBotController {
     let responseStatus = ResponseStatus.SUCCESS;
 
     try {
-      // Route command
-      if (messageText.startsWith('/')) {
+      // Check for forwarded messages first
+      if (update.message.forward_from || update.message.forward_from_chat || update.message.sender_chat) {
+        command = 'forwarded_message';
+
+        // Extract forwarded message info
+        const forwardedFrom = {
+          chat: update.message.forward_from_chat,
+          sender_chat: update.message.sender_chat,
+        };
+
+        botResponse = await this.groupConnectionHandler.handleForwardedMessage(
+          telegramUserId,
+          telegramChatId,
+          forwardedFrom,
+          correlationId,
+        );
+      } else if (messageText.startsWith('/')) {
         const cmd = messageText.split(' ')[0].substring(1).toLowerCase();
         command = cmd;
 
@@ -320,6 +335,18 @@ export class OnboardingBotController {
         );
       } else if (callbackData === 'view_status') {
         botResponse = await this.statusHandler.handleStatusCommand(
+          telegramUserId,
+          telegramChatId,
+          correlationId,
+        );
+      } else if (callbackData === 'create_plan') {
+        botResponse = await this.planCreationHandler.handleCreatePlanCommand(
+          telegramUserId,
+          telegramChatId,
+          correlationId,
+        );
+      } else if (callbackData === 'create_project') {
+        botResponse = await this.projectCreationHandler.handleNewProjectCommand(
           telegramUserId,
           telegramChatId,
           correlationId,
