@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../entities/user.entity';
 import { Tenant, SubscriptionTier, SubscriptionStatus } from '../../tenant/entities/tenant.entity';
+import { JwtPayload, ExtendedJwtPayload } from '../types/jwt-payload.type';
 
 export interface RegisterDto {
   email: string;
@@ -216,7 +217,7 @@ export class AuthService {
   }
 
   private async generateTokens(user: User) {
-    const payload = {
+    const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       tenant_id: user.tenant_id,
@@ -226,16 +227,16 @@ export class AuthService {
     // Get JWT expiration times from environment variables
     const accessTokenExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
     const refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
-    const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') ||
-                         this.configService.get<string>('JWT_SECRET') ||
-                         'dev-secret-min-32-chars-for-testing';
+    const refreshSecret = this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
+
+    const extendedPayload: ExtendedJwtPayload = {
+      ...payload,
+      iat: Math.floor(Date.now() / 1000),
+      jti: Date.now().toString() + Math.random().toString(36).substring(2, 7)
+    };
 
     const access_token = this.jwtService.sign(
-      {
-        ...payload,
-        iat: Math.floor(Date.now() / 1000),
-        jti: Date.now().toString() + Math.random().toString(36).substr(2, 5)
-      },
+      extendedPayload,
       {
         expiresIn: accessTokenExpiresIn,
       }
@@ -245,7 +246,7 @@ export class AuthService {
       {
         sub: user.id,
         type: 'refresh',
-        jti: Date.now().toString() + Math.random().toString(36).substr(2, 9) // unique token ID
+        jti: Date.now().toString() + Math.random().toString(36).substring(2, 11) // unique token ID
       },
       {
         expiresIn: refreshTokenExpiresIn,

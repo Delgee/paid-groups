@@ -16,7 +16,6 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { IsString, IsOptional, IsBoolean, IsUrl } from 'class-validator';
 import { TelegramBotService, CreateBotDto, UpdateBotDto } from './services/telegram-bot.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { TenantGuard } from '../../common/guards/tenant.guard';
 import { BotValidationService } from './services/bot-validation.service';
 import { BotHealthMonitorService } from './services/bot-health-monitor.service';
 import { BotSecurityService } from './services/bot-security.service';
@@ -99,7 +98,7 @@ class SendMessageRequestDto {
 
 @ApiTags('Bots')
 @Controller('bots')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class BotController {
   constructor(

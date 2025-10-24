@@ -16,7 +16,6 @@ import { IsString, IsOptional, IsEnum, IsNumber } from 'class-validator';
 import { TenantService, CreateTenantDto, UpdateTenantDto } from './services/tenant.service';
 import { SubscriptionTier, SubscriptionStatus } from './entities/tenant.entity';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { TenantGuard } from '../../common/guards/tenant.guard';
 
 class CreateTenantRequestDto implements CreateTenantDto {
   @IsString()
@@ -84,7 +83,7 @@ class UpdateTenantRequestDto implements UpdateTenantDto {
 
 @ApiTags('Tenants')
 @Controller('tenants')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class TenantController {
   constructor(private readonly tenantService: TenantService) {}

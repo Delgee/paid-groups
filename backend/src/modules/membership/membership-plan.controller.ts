@@ -21,7 +21,6 @@ import {
   UpdateMembershipPlanDto 
 } from './services/membership-plan.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { TenantGuard } from '../../common/guards/tenant.guard';
 
 class CreateMembershipPlanRequestDto implements CreateMembershipPlanDto {
   @IsString()
@@ -76,7 +75,7 @@ class UpdateMembershipPlanRequestDto implements UpdateMembershipPlanDto {
 
 @ApiTags('Membership Plans')
 @Controller('membership-plans')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class MembershipPlanController {
   constructor(private readonly membershipPlanService: MembershipPlanService) {}

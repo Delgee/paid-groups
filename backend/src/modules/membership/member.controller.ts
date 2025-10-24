@@ -16,7 +16,6 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { IsNumber, IsString, IsOptional } from 'class-validator';
 import { MemberService, CreateMemberDto, UpdateMemberDto } from './services/member.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { TenantGuard } from '../../common/guards/tenant.guard';
 
 class CreateMemberRequestDto implements CreateMemberDto {
   @IsNumber()
@@ -58,7 +57,7 @@ class UpdateMemberRequestDto implements UpdateMemberDto {
 
 @ApiTags('Members')
 @Controller('members')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class MemberController {
   constructor(private readonly memberService: MemberService) {}

@@ -21,7 +21,6 @@ import {
 } from './services/membership.service';
 import { MembershipStatus } from './entities/membership.entity';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { TenantGuard } from '../../common/guards/tenant.guard';
 
 class CreateMembershipRequestDto implements CreateMembershipDto {
   @IsString()
@@ -67,7 +66,7 @@ class ExtendMembershipDto {
 
 @ApiTags('Memberships')
 @Controller('memberships')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class MembershipController {
   constructor(private readonly membershipService: MembershipService) {}
