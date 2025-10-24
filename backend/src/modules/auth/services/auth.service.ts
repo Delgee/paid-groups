@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -48,6 +49,7 @@ export class AuthService {
     @InjectRepository(Tenant)
     private tenantRepository: Repository<Tenant>,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
@@ -155,10 +157,17 @@ export class AuthService {
 
   async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<AuthResponse> {
     try {
-      const decoded = this.jwtService.verify(refreshTokenDto.refresh_token);
-      
+      // Verify refresh token with the refresh secret
+      const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') ||
+                           this.configService.get<string>('JWT_SECRET') ||
+                           'dev-secret-min-32-chars-for-testing';
+
+      const decoded = this.jwtService.verify(refreshTokenDto.refresh_token, {
+        secret: refreshSecret,
+      });
+
       const user = await this.userRepository.findOne({
-        where: { 
+        where: {
           id: decoded.sub,
           refresh_token: refreshTokenDto.refresh_token,
         },
@@ -170,7 +179,7 @@ export class AuthService {
 
       // Generate new tokens
       const tokens = await this.generateTokens(user);
-      
+
       // Save new refresh token (this invalidates the old one)
       await this.saveRefreshToken(user.id, tokens.refresh_token);
 
@@ -214,31 +223,67 @@ export class AuthService {
       role: user.role,
     };
 
+    // Get JWT expiration times from environment variables
+    const accessTokenExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
+    const refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
+    const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') ||
+                         this.configService.get<string>('JWT_SECRET') ||
+                         'dev-secret-min-32-chars-for-testing';
+
     const access_token = this.jwtService.sign(
-      { 
-        ...payload, 
+      {
+        ...payload,
         iat: Math.floor(Date.now() / 1000),
         jti: Date.now().toString() + Math.random().toString(36).substr(2, 5)
-      }, 
+      },
       {
-        expiresIn: '15m',
+        expiresIn: accessTokenExpiresIn,
       }
     );
 
     const refresh_token = this.jwtService.sign(
-      { 
-        sub: user.id, 
-        type: 'refresh', 
+      {
+        sub: user.id,
+        type: 'refresh',
         jti: Date.now().toString() + Math.random().toString(36).substr(2, 9) // unique token ID
       },
-      { expiresIn: '7d' }
+      {
+        expiresIn: refreshTokenExpiresIn,
+        secret: refreshSecret,
+      }
     );
 
-    return { 
-      access_token, 
-      refresh_token, 
-      expires_in: 900 // 15 minutes in seconds
+    return {
+      access_token,
+      refresh_token,
+      expires_in: this.parseExpirationToSeconds(accessTokenExpiresIn),
     };
+  }
+
+  /**
+   * Parse JWT expiration string (e.g., '15m', '7d', '1h') to seconds
+   */
+  private parseExpirationToSeconds(expiration: string): number {
+    const match = expiration.match(/^(\d+)([smhd])$/);
+    if (!match) {
+      return 900; // default 15 minutes
+    }
+
+    const value = parseInt(match[1]);
+    const unit = match[2];
+
+    switch (unit) {
+      case 's':
+        return value;
+      case 'm':
+        return value * 60;
+      case 'h':
+        return value * 60 * 60;
+      case 'd':
+        return value * 60 * 60 * 24;
+      default:
+        return 900;
+    }
   }
 
   getUserPermissions(role: UserRole): string[] {
@@ -257,8 +302,11 @@ export class AuthService {
   }
 
   private async saveRefreshToken(userId: string, refresh_token: string) {
+    const refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
+    const expiresInSeconds = this.parseExpirationToSeconds(refreshTokenExpiresIn);
+
     const expires_at = new Date();
-    expires_at.setDate(expires_at.getDate() + 7); // 7 days
+    expires_at.setSeconds(expires_at.getSeconds() + expiresInSeconds);
 
     await this.userRepository.update(userId, {
       refresh_token,
