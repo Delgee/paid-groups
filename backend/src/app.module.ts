@@ -1,5 +1,5 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -10,7 +10,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantModule } from './modules/tenant/tenant.module';
-// import { BotModule } from './modules/bot/bot.module'; // DEPRECATED: Replaced by ProjectModule
 import { MembershipModule } from './modules/membership/membership.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { HealthModule } from './modules/health/health.module';
@@ -35,46 +34,51 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
       envFilePath: '.env',
     }),
     TypeOrmModule.forRootAsync({
-      useFactory: () => ({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT) || 5432,
-        username: process.env.DB_USERNAME || 'postgres',
-        password: process.env.DB_PASSWORD || 'password',
-        database: process.env.DB_NAME || 'telegram_saas',
+        host: configService.getOrThrow('DB_HOST'),
+        port: configService.getOrThrow('DB_PORT'),
+        username: configService.getOrThrow('DB_USERNAME'),
+        password: configService.getOrThrow('DB_PASSWORD'),
+        database: configService.getOrThrow('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
-        synchronize: process.env.NODE_ENV === 'development',
-        logging: process.env.NODE_ENV === 'development',
+        synchronize: configService.get('NODE_ENV') === 'development',
+        logging: configService.get('NODE_ENV') === 'development',
       }),
+      inject: [ConfigService],
     }),
     BullModule.forRootAsync({
-      useFactory: () => ({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
         redis: {
-          host: process.env.REDIS_HOST || 'localhost',
-          port: parseInt(process.env.REDIS_PORT) || 6379,
-          password: process.env.REDIS_PASSWORD,
+          host: configService.getOrThrow('REDIS_HOST'),
+          port: configService.getOrThrow('REDIS_PORT'),
+          password: configService.getOrThrow('REDIS_PASSWORD'),
         },
       }),
+      inject: [ConfigService],
     }),
     CacheModule.registerAsync({
       isGlobal: true,
-      useFactory: () => ({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
         store: redisStore,
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT) || 6379,
-        password: process.env.REDIS_PASSWORD,
+        host: configService.getOrThrow('REDIS_HOST'),
+        port: configService.getOrThrow('REDIS_PORT'),
+        password: configService.getOrThrow('REDIS_PASSWORD'),
         ttl: 3600, // 1 hour default TTL
       }),
+      inject: [ConfigService],
     }),
     ScheduleModule.forRoot(),
     LoggerModule,
     MetricsModule,
     AuthModule,
     TenantModule,
-    // BotModule, // DEPRECATED: Replaced by ProjectModule
     BotConfigurationModule,
-    ProjectModule, // New: Replaces bot-configuration functionality with multi-group support
+    ProjectModule,
     MembershipModule,
     MembershipPlanModule,
     PaymentModule,
