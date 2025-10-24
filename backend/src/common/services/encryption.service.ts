@@ -11,10 +11,8 @@ export class EncryptionService {
   private readonly key: Buffer;
 
   constructor(private configService: ConfigService) {
-    const encryptionKey = this.configService.get<string>('ENCRYPTION_KEY');
-    if (!encryptionKey) {
-      throw new Error('ENCRYPTION_KEY environment variable is required');
-    }
+    const encryptionKey =
+      this.configService.getOrThrow<string>('ENCRYPTION_KEY');
 
     // Derive key from the provided key using PBKDF2
     this.key = crypto.pbkdf2Sync(
@@ -37,7 +35,9 @@ export class EncryptionService {
       const authTag = cipher.getAuthTag();
 
       // Format: iv:authTag:encrypted
-      return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
+      return (
+        iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted
+      );
     } catch (error) {
       throw new Error(`Encryption failed: ${error.message}`);
     }

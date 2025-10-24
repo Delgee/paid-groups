@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { TelegramApiService } from '../../modules/bot/services/telegram-api.service';
 import { TelegramChannelService } from './telegram-channel.service';
 import { TelegramGroup } from '../../modules/telegram-groups/telegram-groups.entity';
+import { delay } from '../../common/utils/delay.util';
 
 export interface SyncResult {
   success: boolean;
@@ -218,7 +219,7 @@ export class TelegramSyncService {
           }
 
           // Add small delay between syncs to respect Telegram API rate limits
-          await this.delay(1000); // 1 second delay
+          await delay(1000); // 1 second delay
         } catch (error) {
           result.errors.push({
             groupId: group.id,
@@ -335,123 +336,6 @@ export class TelegramSyncService {
   }
 
   /**
-   * Enables automatic synchronization for a group.
-   * Validates sync prerequisites and updates database flags.
-   *
-   * @param groupId - The UUID of the group to enable sync for
-   * @param tenantId - The tenant UUID for isolation
-   * @returns Promise<boolean> - True if sync was enabled successfully
-   */
-  async enableAutoSync(groupId: string, tenantId: string): Promise<boolean> {
-    try {
-      this.logger.log(`Enabling auto sync for group ${groupId}`);
-
-      // Fetch the group with tenant isolation
-      const group = await this.telegramGroupRepository.findOne({
-        where: { id: groupId, tenant_id: tenantId },
-        relations: ['project'],
-      });
-
-      if (!group) {
-        this.logger.error(`Group not found: groupId=${groupId}, tenantId=${tenantId}`);
-        return false;
-      }
-
-      // Validate that sync can be enabled
-      const validation = await this.validateSyncConfiguration(groupId, tenantId);
-      if (!validation.canSync) {
-        this.logger.error(`Cannot enable sync for group ${groupId}: ${validation.issues.join(', ')}`);
-        return false;
-      }
-
-      // NOTE: sync_enabled field has been removed from entity
-      // This method now just validates and posts announcement
-      this.logger.log(`Sync validation passed for group ${groupId}`);
-
-      // Post announcement message to channel
-      if (group.telegram_chat_id && group.project?.bot_token) {
-        const announcement = `🔄 Auto-sync has been enabled for this group!\n\n` +
-                           `Your channel will now automatically stay synchronized with group updates:\n` +
-                           `✅ Group name changes\n` +
-                           `✅ Description updates\n` +
-                           `✅ Regular sync notifications\n\n` +
-                           `🤖 Powered by your Telegram bot integration`;
-
-        const messagePosted = await this.telegramApiService.sendMessage(
-          group.project.bot_token,
-          group.telegram_chat_id,
-          announcement,
-          { parse_mode: 'HTML' },
-        );
-
-        if (!messagePosted) {
-          this.logger.warn(`Failed to post sync enable announcement for group ${groupId}`);
-        }
-      }
-
-      this.logger.log(`Auto sync enabled successfully for group ${groupId}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`Failed to enable auto sync for group ${groupId}: ${error.message}`, error.stack);
-      return false;
-    }
-  }
-
-  /**
-   * Disables automatic synchronization for a group.
-   * Updates database flags and posts notification message.
-   *
-   * @param groupId - The UUID of the group to disable sync for
-   * @param tenantId - The tenant UUID for isolation
-   * @returns Promise<boolean> - True if sync was disabled successfully
-   */
-  async disableAutoSync(groupId: string, tenantId: string): Promise<boolean> {
-    try {
-      this.logger.log(`Disabling auto sync for group ${groupId}`);
-
-      // Fetch the group with tenant isolation
-      const group = await this.telegramGroupRepository.findOne({
-        where: { id: groupId, tenant_id: tenantId },
-        relations: ['project'],
-      });
-
-      if (!group) {
-        this.logger.error(`Group not found: groupId=${groupId}, tenantId=${tenantId}`);
-        return false;
-      }
-
-      // Post announcement message before disabling (if possible)
-      if (group.telegram_chat_id && group.project?.bot_token) {
-        const announcement = `⏸️ Auto-sync has been disabled for this group.\n\n` +
-                           `The channel will no longer automatically receive updates when group details change.\n` +
-                           `You can re-enable sync anytime from your dashboard.\n\n` +
-                           `Thank you for using our service! 🙏`;
-
-        const messagePosted = await this.telegramApiService.sendMessage(
-          group.project.bot_token,
-          group.telegram_chat_id,
-          announcement,
-          { parse_mode: 'HTML' },
-        );
-
-        if (!messagePosted) {
-          this.logger.warn(`Failed to post sync disable announcement for group ${groupId}`);
-        }
-      }
-
-      // NOTE: sync_enabled field has been removed from entity
-      // This method now just posts announcement
-      this.logger.log(`Sync disable announcement posted for group ${groupId}`);
-
-      this.logger.log(`Auto sync disabled successfully for group ${groupId}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`Failed to disable auto sync for group ${groupId}: ${error.message}`, error.stack);
-      return false;
-    }
-  }
-
-  /**
    * Retrieves the last synchronization status for a group.
    * NOTE: Sync status fields have been removed. This method now always returns no status.
    *
@@ -496,16 +380,5 @@ export class TelegramSyncService {
         error: `Status retrieval failed: ${error.message}`,
       };
     }
-  }
-
-  /**
-   * Utility method to add delays between operations.
-   * Helps respect Telegram API rate limits during bulk operations.
-   *
-   * @private
-   * @param ms - Milliseconds to delay
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
