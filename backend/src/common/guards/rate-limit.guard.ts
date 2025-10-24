@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
+import { getClientIp } from '../utils/client-ip.util';
 
 @Injectable()
 export class RateLimitGuard implements CanActivate {
@@ -61,7 +62,7 @@ export class RateLimitGuard implements CanActivate {
 
   private getClientId(request: Request): string {
     // Use IP address and user agent as client identifier
-    const ip = request.ip || request.socket.remoteAddress || 'unknown';
+    const ip = getClientIp(request);
     const userAgent = request.get('user-agent') || 'unknown';
     return `${ip}-${userAgent}`;
   }

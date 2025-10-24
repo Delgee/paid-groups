@@ -3,9 +3,8 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
+  BadRequestException,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
 import { DataSource } from 'typeorm';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { validate as isValidUUID } from 'uuid';
@@ -17,39 +16,24 @@ export class TenantInterceptor implements NestInterceptor {
     private dataSource: DataSource,
   ) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  async intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
     const tenantId = request.tenant_id || request.user?.tenant_id;
 
     if (tenantId) {
+      // Validate UUID to prevent SQL injection
+      if (!isValidUUID(tenantId)) {
+        throw new BadRequestException('Invalid tenant ID format');
+      }
+
       // Set the tenant context for PostgreSQL RLS
-      return this.setTenantContext(tenantId).pipe(
-        switchMap(() => next.handle()),
+      // SET commands don't support parameterized queries in PostgreSQL
+      // We validate the UUID above to ensure it's safe
+      await this.dataSource.query(
+        `SET LOCAL app.current_tenant = '${tenantId}'`,
       );
     }
 
     return next.handle();
-  }
-
-  private setTenantContext(tenantId: string): Observable<any> {
-    return new Observable(observer => {
-      // Validate UUID to prevent SQL injection
-      if (!isValidUUID(tenantId)) {
-        observer.error(new Error('Invalid tenant ID format'));
-        return;
-      }
-
-      // SET commands don't support parameterized queries in PostgreSQL
-      // We validate the UUID above to ensure it's safe
-      this.dataSource
-        .query(`SET LOCAL app.current_tenant = '${tenantId}'`)
-        .then(() => {
-          observer.next(null);
-          observer.complete();
-        })
-        .catch(error => {
-          observer.error(error);
-        });
-    });
   }
 }

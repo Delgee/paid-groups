@@ -4,15 +4,20 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { Request, Response } from 'express';
 import { LoggerService } from '../logger/logger.service';
 import { v4 as uuidv4 } from 'uuid';
+import { getClientIp } from '../utils/client-ip.util';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  constructor(private readonly logger: LoggerService) {
+  constructor(
+    private readonly logger: LoggerService,
+    private readonly configService: ConfigService,
+  ) {
     this.logger.setContext('HTTP');
   }
 
@@ -24,16 +29,16 @@ export class LoggingInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse<Response>();
     const { method, originalUrl: url, headers, body } = request;
-    
+
     // Generate request ID
     const requestId = uuidv4();
     request['requestId'] = requestId;
-    
+
     // Set request metadata
     const loggerWithMeta = new LoggerService();
     loggerWithMeta.setContext('HTTP');
     loggerWithMeta.setRequestId(requestId);
-    
+
     // Extract tenant and user info if available
     if (request.user) {
       const user = request.user as any;
@@ -43,7 +48,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
     const startTime = Date.now();
     const userAgent = headers['user-agent'] || 'Unknown';
-    const ip = this.getClientIp(request);
+    const ip = getClientIp(request);
 
     // Log incoming request
     loggerWithMeta.http(`${method} ${url}`, {
@@ -55,7 +60,9 @@ export class LoggingInterceptor implements NestInterceptor {
       requestId,
       contentLength: headers['content-length'],
       // Only log body for non-sensitive endpoints and if it's not too large
-      body: this.shouldLogBody(url, method) ? this.sanitizeBody(body) : undefined,
+      body: this.shouldLogBody(url, method)
+        ? this.sanitizeBody(body)
+        : undefined,
     });
 
     return next.handle().pipe(
@@ -85,55 +92,56 @@ export class LoggingInterceptor implements NestInterceptor {
         const duration = Date.now() - startTime;
         const statusCode = error.status || 500;
 
-        loggerWithMeta.error(`${method} ${url} - ERROR ${statusCode}`, error.stack, {
-          type: 'error_response',
-          method,
-          url,
-          statusCode,
-          duration,
-          requestId,
-          errorMessage: error.message,
-          errorName: error.name,
-        });
+        loggerWithMeta.error(
+          `${method} ${url} - ERROR ${statusCode}`,
+          error.stack,
+          {
+            type: 'error_response',
+            method,
+            url,
+            statusCode,
+            duration,
+            requestId,
+            errorMessage: error.message,
+            errorName: error.name,
+          },
+        );
 
         throw error;
       }),
     );
   }
 
-  private getClientIp(request: Request): string {
-    return (
-      request.headers['x-forwarded-for'] ||
-      request.headers['x-real-ip'] ||
-      request.connection?.remoteAddress ||
-      request.socket?.remoteAddress ||
-      'unknown'
-    ) as string;
-  }
-
   private shouldLogBody(url: string, method: string): boolean {
     // Don't log bodies for GET requests
     if (method === 'GET') return false;
-    
+
     // Don't log sensitive endpoints
     const sensitiveEndpoints = ['/auth/login', '/auth/register', '/webhooks'];
-    if (sensitiveEndpoints.some(endpoint => url.includes(endpoint))) return false;
-    
-    return process.env.LOG_REQUEST_BODIES === 'true';
+    if (sensitiveEndpoints.some((endpoint) => url.includes(endpoint)))
+      return false;
+
+    return this.configService.get<boolean>('LOG_REQUEST_BODIES', false);
   }
 
-  private sanitizeBody(body: any): any {
+  private sanitizeBody(body: unknown) {
     if (!body || typeof body !== 'object') return body;
-    
-    const sensitiveFields = ['password', 'token', 'secret', 'key', 'authorization'];
+
+    const sensitiveFields = [
+      'password',
+      'token',
+      'secret',
+      'key',
+      'authorization',
+    ];
     const sanitized = { ...body };
-    
+
     for (const field of sensitiveFields) {
       if (sanitized[field]) {
         sanitized[field] = '***REDACTED***';
       }
     }
-    
+
     return sanitized;
   }
 }
