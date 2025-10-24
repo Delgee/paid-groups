@@ -9,8 +9,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { TelegramUpdateDto } from './dto/telegram-update.dto';
-import { RegistrationHandler, BotResponse } from './handlers/registration.handler';
+import {
+  RegistrationHandler,
+  BotResponse,
+} from './handlers/registration.handler';
 import { ProjectCreationHandler } from './handlers/project-creation.handler';
 import { GroupConnectionHandler } from './handlers/group-connection.handler';
 import { PlanCreationHandler } from './handlers/plan-creation.handler';
@@ -18,7 +20,10 @@ import { AccountLinkingHandler } from './handlers/account-linking.handler';
 import { StatusHandler } from './handlers/status.handler';
 import { HelpHandler } from './handlers/help.handler';
 import { CancelHandler } from './handlers/cancel.handler';
-import { BotCommandLogger, LogCommandRequest } from './bot-command-logger.service';
+import {
+  BotCommandLogger,
+  LogCommandRequest,
+} from './bot-command-logger.service';
 import { TelegramBotService } from './telegram-bot.service';
 import { ResponseStatus } from './entities/bot-command.entity';
 import { SessionStep } from './interfaces/onboarding-session.interface';
@@ -28,7 +33,9 @@ import { v4 as uuidv4 } from 'uuid';
 @ApiTags('Onboarding Bot')
 @Controller('onboarding-bot')
 export class OnboardingBotController {
-  private readonly validBotToken = process.env.TELEGRAM_ONBOARDING_BOT_TOKEN || 'test-onboarding-bot-token-123';
+  private readonly validBotToken =
+    process.env.TELEGRAM_ONBOARDING_BOT_TOKEN ||
+    'test-onboarding-bot-token-123';
 
   constructor(
     private readonly registrationHandler: RegistrationHandler,
@@ -70,15 +77,26 @@ export class OnboardingBotController {
 
     // Handle callback queries (button clicks)
     if (update.callback_query) {
-      return this.handleCallbackQuery(botToken, update.callback_query, correlationId, startTime);
+      return this.handleCallbackQuery(
+        botToken,
+        update.callback_query,
+        correlationId,
+        startTime,
+      );
     }
 
     // Validate message update structure
-    if (!update || !update.message || !update.message.from || !update.message.chat) {
+    if (
+      !update ||
+      !update.message ||
+      !update.message.from ||
+      !update.message.chat
+    ) {
       throw new BadRequestException({
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Invalid update format - message, from, and chat are required.',
+          message:
+            'Invalid update format - message, from, and chat are required.',
         },
       });
     }
@@ -93,7 +111,11 @@ export class OnboardingBotController {
 
     try {
       // Check for forwarded messages first
-      if (update.message.forward_from || update.message.forward_from_chat || update.message.sender_chat) {
+      if (
+        update.message.forward_from ||
+        update.message.forward_from_chat ||
+        update.message.sender_chat
+      ) {
         command = 'forwarded_message';
 
         // Extract forwarded message info
@@ -121,25 +143,28 @@ export class OnboardingBotController {
             );
             break;
           case 'newproject':
-            botResponse = await this.projectCreationHandler.handleNewProjectCommand(
-              telegramUserId,
-              telegramChatId,
-              correlationId,
-            );
+            botResponse =
+              await this.projectCreationHandler.handleNewProjectCommand(
+                telegramUserId,
+                telegramChatId,
+                correlationId,
+              );
             break;
           case 'addgroup':
-            botResponse = await this.groupConnectionHandler.handleAddGroupCommand(
-              telegramUserId,
-              telegramChatId,
-              correlationId,
-            );
+            botResponse =
+              await this.groupConnectionHandler.handleAddGroupCommand(
+                telegramUserId,
+                telegramChatId,
+                correlationId,
+              );
             break;
           case 'createplan':
-            botResponse = await this.planCreationHandler.handleCreatePlanCommand(
-              telegramUserId,
-              telegramChatId,
-              correlationId,
-            );
+            botResponse =
+              await this.planCreationHandler.handleCreatePlanCommand(
+                telegramUserId,
+                telegramChatId,
+                correlationId,
+              );
             break;
           case 'link':
             botResponse = await this.accountLinkingHandler.handleLinkCommand(
@@ -159,10 +184,14 @@ export class OnboardingBotController {
             botResponse = { text: this.helpHandler.getHelpMessage() };
             break;
           case 'cancel':
-            botResponse = { text: await this.cancelHandler.handleCancel(telegramUserId) };
+            botResponse = {
+              text: await this.cancelHandler.handleCancel(telegramUserId),
+            };
             break;
           default:
-            botResponse = { text: `Unknown command. Send /help to see available commands.` };
+            botResponse = {
+              text: `Unknown command. Send /help to see available commands.`,
+            };
         }
       } else {
         // Handle text input based on session state
@@ -172,64 +201,73 @@ export class OnboardingBotController {
         const session = await this.sessionService.getSession(telegramUserId);
 
         if (!session) {
-          botResponse = { text: 'Please send /start to begin, or use a command like /newproject, /addgroup, /createplan.' };
+          botResponse = {
+            text: 'Please send /start to begin, or use a command like /newproject, /addgroup, /createplan.',
+          };
         } else {
           // Route to appropriate handler based on current step
           switch (session.current_step) {
             case SessionStep.REGISTRATION_EMAIL:
             case SessionStep.REGISTRATION_NAME:
             case SessionStep.REGISTRATION_COMPANY:
-              botResponse = await this.registrationHandler.handleRegistrationFlow(
-                telegramUserId,
-                telegramChatId,
-                messageText,
-                correlationId,
-              );
+              botResponse =
+                await this.registrationHandler.handleRegistrationFlow(
+                  telegramUserId,
+                  telegramChatId,
+                  messageText,
+                  correlationId,
+                );
               break;
 
             case SessionStep.PROJECT_NAME:
             case SessionStep.PROJECT_DESCRIPTION:
             case SessionStep.BOT_TOKEN:
-              botResponse = await this.projectCreationHandler.handleProjectCreationFlow(
-                telegramUserId,
-                telegramChatId,
-                messageText,
-                correlationId,
-              );
+              botResponse =
+                await this.projectCreationHandler.handleProjectCreationFlow(
+                  telegramUserId,
+                  telegramChatId,
+                  messageText,
+                  correlationId,
+                );
               break;
 
             case SessionStep.GROUP_CONNECTION:
-              botResponse = await this.groupConnectionHandler.handleGroupConnectionFlow(
-                telegramUserId,
-                telegramChatId,
-                messageText,
-                correlationId,
-              );
+              botResponse =
+                await this.groupConnectionHandler.handleGroupConnectionFlow(
+                  telegramUserId,
+                  telegramChatId,
+                  messageText,
+                  correlationId,
+                );
               break;
 
             case SessionStep.PLAN_NAME:
             case SessionStep.PLAN_PRICE:
             case SessionStep.PLAN_DESCRIPTION:
-              botResponse = await this.planCreationHandler.handlePlanCreationFlow(
-                telegramUserId,
-                telegramChatId,
-                messageText,
-                correlationId,
-              );
+              botResponse =
+                await this.planCreationHandler.handlePlanCreationFlow(
+                  telegramUserId,
+                  telegramChatId,
+                  messageText,
+                  correlationId,
+                );
               break;
 
             case SessionStep.LINK_EMAIL:
             case SessionStep.LINK_VERIFICATION:
-              botResponse = await this.accountLinkingHandler.handleAccountLinkingFlow(
-                telegramUserId,
-                telegramChatId,
-                messageText,
-                correlationId,
-              );
+              botResponse =
+                await this.accountLinkingHandler.handleAccountLinkingFlow(
+                  telegramUserId,
+                  telegramChatId,
+                  messageText,
+                  correlationId,
+                );
               break;
 
             default:
-              botResponse = { text: 'Please use a command like /start, /newproject, /addgroup, /createplan, or /help.' };
+              botResponse = {
+                text: 'Please use a command like /start, /newproject, /addgroup, /createplan, or /help.',
+              };
           }
         }
       }
@@ -291,12 +329,13 @@ export class OnboardingBotController {
       // Route callback query based on callback_data prefix
       if (callbackData.startsWith('group_type:')) {
         const groupType = callbackData.split(':')[1] as 'channel' | 'group';
-        botResponse = await this.groupConnectionHandler.handleGroupTypeSelection(
-          telegramUserId,
-          telegramChatId,
-          groupType,
-          correlationId,
-        );
+        botResponse =
+          await this.groupConnectionHandler.handleGroupTypeSelection(
+            telegramUserId,
+            telegramChatId,
+            groupType,
+            correlationId,
+          );
       } else if (callbackData.startsWith('select_project:')) {
         const projectId = callbackData.split(':')[1];
         botResponse = await this.groupConnectionHandler.handleProjectSelection(
@@ -362,7 +401,10 @@ export class OnboardingBotController {
       }
 
       // Answer the callback query (removes loading state)
-      await this.telegramBotService.answerCallbackQuery(botToken, callbackQueryId);
+      await this.telegramBotService.answerCallbackQuery(
+        botToken,
+        callbackQueryId,
+      );
 
       // Send response message
       await this.telegramBotService.sendMessage(
