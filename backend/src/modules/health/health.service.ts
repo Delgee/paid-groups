@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { TelegramBot } from '../bot/entities/telegram-bot.entity';
 import { TelegramApiService } from '../bot/services/telegram-api.service';
 import { firstValueFrom } from 'rxjs';
@@ -34,6 +36,8 @@ export class HealthService {
     private botRepository: Repository<TelegramBot>,
     private httpService: HttpService,
     private telegramApiService: TelegramApiService,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
   ) {}
 
   async getHealthStatus(): Promise<HealthStatus> {
@@ -132,20 +136,34 @@ export class HealthService {
 
   private async checkRedisHealth(): Promise<HealthCheck> {
     const startTime = Date.now();
-    
+
     try {
-      // If Redis is configured, check it here
-      // For now, we'll assume it's healthy if not configured
-      if (!process.env.REDIS_URL) {
+      // Perform a simple set/get operation to verify Redis connectivity
+      const testKey = 'health:check:ping';
+      const testValue = Date.now().toString();
+
+      // Set a value with 10 second TTL
+      await this.cacheManager.set(testKey, testValue, 10000);
+
+      // Retrieve the value to confirm round-trip
+      const retrieved = await this.cacheManager.get<string>(testKey);
+
+      if (retrieved !== testValue) {
         return {
           name: 'redis',
-          status: 'healthy',
-          message: 'Redis not configured, skipping check',
+          status: 'unhealthy',
+          message: 'Redis read/write verification failed',
           duration_ms: Date.now() - startTime,
+          details: {
+            expected: testValue,
+            received: retrieved,
+          },
         };
       }
 
-      // TODO: Implement actual Redis health check when Redis is integrated
+      // Clean up test key
+      await this.cacheManager.del(testKey);
+
       return {
         name: 'redis',
         status: 'healthy',
@@ -153,6 +171,8 @@ export class HealthService {
         duration_ms: Date.now() - startTime,
       };
     } catch (error) {
+      this.logger.error('Redis health check failed', error.stack);
+
       return {
         name: 'redis',
         status: 'unhealthy',

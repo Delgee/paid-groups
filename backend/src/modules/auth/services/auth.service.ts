@@ -1,11 +1,19 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../entities/user.entity';
-import { Tenant, SubscriptionTier, SubscriptionStatus } from '../../tenant/entities/tenant.entity';
+import {
+  Tenant,
+  SubscriptionTier,
+  SubscriptionStatus,
+} from '../../tenant/entities/tenant.entity';
 import { JwtPayload, ExtendedJwtPayload } from '../../../common/types';
 
 export interface RegisterDto {
@@ -89,7 +97,7 @@ export class AuthService {
 
     // Generate tokens
     const tokens = await this.generateTokens(savedUser);
-    
+
     // Save refresh token
     await this.saveRefreshToken(savedUser.id, tokens.refresh_token);
 
@@ -118,7 +126,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password_hash,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -135,7 +146,7 @@ export class AuthService {
 
     // Generate tokens
     const tokens = await this.generateTokens(user);
-    
+
     // Save refresh token
     await this.saveRefreshToken(user.id, tokens.refresh_token);
 
@@ -159,9 +170,9 @@ export class AuthService {
   async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<AuthResponse> {
     try {
       // Verify refresh token with the refresh secret
-      const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') ||
-                           this.configService.get<string>('JWT_SECRET') ||
-                           'dev-secret-min-32-chars-for-testing';
+      const refreshSecret =
+        this.configService.get<string>('JWT_REFRESH_SECRET') ||
+        this.configService.getOrThrow<string>('JWT_SECRET');
 
       const decoded = this.jwtService.verify(refreshTokenDto.refresh_token, {
         secret: refreshSecret,
@@ -174,7 +185,11 @@ export class AuthService {
         },
       });
 
-      if (!user || !user.is_active || user.refresh_token_expires_at < new Date()) {
+      if (
+        !user ||
+        !user.is_active ||
+        user.refresh_token_expires_at < new Date()
+      ) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
@@ -225,33 +240,34 @@ export class AuthService {
     };
 
     // Get JWT expiration times from environment variables
-    const accessTokenExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
-    const refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
-    const refreshSecret = this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
+    const accessTokenExpiresIn =
+      this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
+    const refreshTokenExpiresIn =
+      this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
+    const refreshSecret =
+      this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
 
     const extendedPayload: ExtendedJwtPayload = {
       ...payload,
       iat: Math.floor(Date.now() / 1000),
-      jti: Date.now().toString() + Math.random().toString(36).substring(2, 7)
+      jti: Date.now().toString() + Math.random().toString(36).substring(2, 7),
     };
 
-    const access_token = this.jwtService.sign(
-      extendedPayload,
-      {
-        expiresIn: accessTokenExpiresIn,
-      }
-    );
+    const access_token = this.jwtService.sign(extendedPayload, {
+      expiresIn: accessTokenExpiresIn,
+    });
 
     const refresh_token = this.jwtService.sign(
       {
         sub: user.id,
         type: 'refresh',
-        jti: Date.now().toString() + Math.random().toString(36).substring(2, 11) // unique token ID
+        jti:
+          Date.now().toString() + Math.random().toString(36).substring(2, 11), // unique token ID
       },
       {
         expiresIn: refreshTokenExpiresIn,
         secret: refreshSecret,
-      }
+      },
     );
 
     return {
@@ -292,7 +308,13 @@ export class AuthService {
       case UserRole.SUPER_ADMIN:
         return ['*']; // All permissions
       case UserRole.OWNER:
-        return ['tenant:read', 'tenant:write', 'bots:*', 'members:*', 'payments:*'];
+        return [
+          'tenant:read',
+          'tenant:write',
+          'bots:*',
+          'members:*',
+          'payments:*',
+        ];
       case UserRole.ADMIN:
         return ['bots:read', 'bots:write', 'members:*'];
       case UserRole.MEMBER:
@@ -303,8 +325,11 @@ export class AuthService {
   }
 
   private async saveRefreshToken(userId: string, refresh_token: string) {
-    const refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
-    const expiresInSeconds = this.parseExpirationToSeconds(refreshTokenExpiresIn);
+    const refreshTokenExpiresIn =
+      this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
+    const expiresInSeconds = this.parseExpirationToSeconds(
+      refreshTokenExpiresIn,
+    );
 
     const expires_at = new Date();
     expires_at.setSeconds(expires_at.getSeconds() + expiresInSeconds);
