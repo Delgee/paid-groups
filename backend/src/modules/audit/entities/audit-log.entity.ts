@@ -64,11 +64,13 @@ export class AuditLog {
   @CreateDateColumn()
   created_at: Date;
 
-  @ManyToOne(() => Tenant, tenant => tenant.audit_logs, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Tenant, (tenant) => tenant.audit_logs, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'tenant_id' })
   tenant: Tenant;
 
-  @ManyToOne(() => User, user => user.audit_logs, { onDelete: 'SET NULL' })
+  @ManyToOne(() => User, (user) => user.audit_logs, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 }

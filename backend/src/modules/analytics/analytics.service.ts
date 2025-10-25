@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThan, LessThan } from 'typeorm';
+import { Repository, Between, LessThan } from 'typeorm';
 import { Payment } from '../payment/entities/payment.entity';
 import {
   Membership,
@@ -51,6 +51,8 @@ export interface MembershipMetrics {
   average_lifetime_value: number;
 }
 
+// TODO: Implement actual calculations
+
 @Injectable()
 export class AnalyticsService {
   constructor(
@@ -72,7 +74,7 @@ export class AnalyticsService {
   async getDashboardMetrics(tenantId: string): Promise<DashboardMetrics> {
     const now = new Date();
     const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    // const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
     // Active members count
     const activeMembers = await this.membershipRepository.count({

@@ -1,8 +1,18 @@
 import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../../common/types';
-import { AnalyticsService, DashboardMetrics, RevenueMetrics, MembershipMetrics } from './analytics.service';
+import {
+  AnalyticsService,
+  DashboardMetrics,
+  RevenueMetrics,
+  MembershipMetrics,
+} from './analytics.service';
 
 @ApiTags('Analytics')
 @ApiBearerAuth()
@@ -12,7 +22,9 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
-  @ApiOperation({ summary: 'Get dashboard metrics including MRR, churn rate, and top groups' })
+  @ApiOperation({
+    summary: 'Get dashboard metrics including MRR, churn rate, and top groups',
+  })
   @ApiResponse({
     status: 200,
     description: 'Dashboard metrics retrieved successfully',
@@ -25,7 +37,9 @@ export class AnalyticsController {
   }
 
   @Get('revenue')
-  @ApiOperation({ summary: 'Get revenue metrics including MRR, ARR, and daily revenue' })
+  @ApiOperation({
+    summary: 'Get revenue metrics including MRR, ARR, and daily revenue',
+  })
   @ApiResponse({
     status: 200,
     description: 'Revenue metrics retrieved successfully',
@@ -40,7 +54,9 @@ export class AnalyticsController {
   }
 
   @Get('memberships')
-  @ApiOperation({ summary: 'Get membership metrics including churn rate and lifetime value' })
+  @ApiOperation({
+    summary: 'Get membership metrics including churn rate and lifetime value',
+  })
   @ApiResponse({
     status: 200,
     description: 'Membership metrics retrieved successfully',
