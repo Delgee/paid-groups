@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../entities/user.entity';
 import { Tenant, SubscriptionTier, SubscriptionStatus } from '../../tenant/entities/tenant.entity';
-import { JwtPayload, ExtendedJwtPayload } from '../types/jwt-payload.type';
+import { JwtPayload, ExtendedJwtPayload } from '../../../common/types';
 
 export interface RegisterDto {
   email: string;

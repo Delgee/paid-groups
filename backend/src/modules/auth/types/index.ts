@@ -1,1 +1,0 @@
-export { JwtPayload, ExtendedJwtPayload } from './jwt-payload.type';

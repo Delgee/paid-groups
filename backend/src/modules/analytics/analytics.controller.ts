@@ -1,6 +1,7 @@
 import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { AuthenticatedRequest } from '../../common/types';
 import { AnalyticsService, DashboardMetrics, RevenueMetrics, MembershipMetrics } from './analytics.service';
 
 @ApiTags('Analytics')
@@ -17,7 +18,7 @@ export class AnalyticsController {
     description: 'Dashboard metrics retrieved successfully',
   })
   async getDashboardMetrics(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<DashboardMetrics> {
     const tenantId = req.user.tenant_id;
     return this.analyticsService.getDashboardMetrics(tenantId);
@@ -30,7 +31,7 @@ export class AnalyticsController {
     description: 'Revenue metrics retrieved successfully',
   })
   async getRevenueMetrics(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Query('days') days?: string,
   ): Promise<RevenueMetrics> {
     const tenantId = req.user.tenant_id;
@@ -45,7 +46,7 @@ export class AnalyticsController {
     description: 'Membership metrics retrieved successfully',
   })
   async getMembershipMetrics(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<MembershipMetrics> {
     const tenantId = req.user.tenant_id;
     return this.analyticsService.getMembershipMetrics(tenantId);

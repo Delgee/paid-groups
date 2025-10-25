@@ -1,4 +1,4 @@
-import { UserRole } from '../entities/user.entity';
+import { UserRole } from '../../modules/auth/entities/user.entity';
 
 /**
  * JWT Access Token Payload
