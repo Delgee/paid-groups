@@ -25,12 +25,9 @@ export default function BotConfigurationsPage() {
       setLoading(true);
       const data = await botConfigurationApi.getAll();
       setBotConfigs(data);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load bot configurations',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to load bot configurations';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -40,17 +37,11 @@ export default function BotConfigurationsPage() {
     try {
       setSyncing(id);
       await botConfigurationApi.sync(id);
-      toast({
-        title: 'Success',
-        description: 'Bot synced successfully',
-      });
+      toast.success('Bot synced successfully');
       await loadBotConfigurations();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to sync bot',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to sync bot';
+      toast.error(errorMessage);
     } finally {
       setSyncing(null);
     }
@@ -63,17 +54,11 @@ export default function BotConfigurationsPage() {
 
     try {
       await botConfigurationApi.delete(id);
-      toast({
-        title: 'Success',
-        description: 'Bot configuration deleted',
-      });
+      toast.success('Bot configuration deleted successfully');
       await loadBotConfigurations();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete bot configuration',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to delete bot configuration';
+      toast.error(errorMessage);
     }
   };
 

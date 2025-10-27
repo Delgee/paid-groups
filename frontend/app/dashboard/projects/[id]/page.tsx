@@ -44,8 +44,9 @@ export default function ProjectDetailPage() {
       setLoading(true);
       const data = await projectApi.getById(projectId);
       setProject(data);
-    } catch (error) {
-      toast.error('Failed to load project');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to load project';
+      toast.error(errorMessage);
       router.push('/dashboard/projects');
     } finally {
       setLoading(false);
@@ -74,8 +75,9 @@ export default function ProjectDetailPage() {
       await projectApi.sync(projectId);
       toast.success('Project synced successfully');
       await loadProject();
-    } catch (error) {
-      toast.error('Failed to sync project');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to sync project';
+      toast.error(errorMessage);
     } finally {
       setSyncing(false);
     }
@@ -96,9 +98,10 @@ export default function ProjectDetailPage() {
       setDeleteDialogOpen(false);
       setGroupToDelete(null);
       await loadTelegramGroups();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete telegram group:', error);
-      toast.error('Failed to delete telegram group');
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to delete telegram group';
+      toast.error(errorMessage);
     } finally {
       setDeleting(false);
     }

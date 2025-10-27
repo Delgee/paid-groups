@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { projectApi } from '@/lib/api/projects';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeftIcon } from 'lucide-react';
@@ -29,7 +28,6 @@ const formSchema = z.object({
   welcome_message: z.string()
     .min(10, 'Welcome message must be at least 10 characters')
     .max(4096, 'Welcome message cannot exceed 4096 characters'),
-  is_active: z.boolean().default(true),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -49,7 +47,6 @@ export default function CreateProjectPage() {
       display_name: '',
       description: '',
       welcome_message: '',
-      is_active: true,
     },
   });
 
@@ -75,9 +72,7 @@ export default function CreateProjectPage() {
       form.clearErrors('bot_username');
       form.clearErrors('display_name');
 
-      toast.success('Bot Verified', {
-        description: `Successfully verified @${botInfo.username}`,
-      });
+      toast.success(`Successfully verified @${botInfo.username}`);
     } catch (error: any) {
       // Clear fields on error
       form.setValue('bot_username', '');
@@ -127,9 +122,7 @@ export default function CreateProjectPage() {
           message: errorMessage,
         });
 
-        toast.error('Failed to Create Project', {
-          description: errorMessage,
-        });
+        toast.error(`Failed to create project: ${errorMessage}`);
       } else if (errorData?.code === 'VALIDATION_ERROR' && errorData?.details?.field) {
         // Set error on the specific field mentioned in the error
         const fieldName = errorData.details.field as keyof FormData;
@@ -138,24 +131,16 @@ export default function CreateProjectPage() {
           message: errorData.message || 'Validation failed',
         });
 
-        toast.error('Validation Error', {
-          description: errorData.message || 'Please check the form for errors',
-        });
+        toast.error(`Validation error: ${errorData.message || 'Please check the form for errors'}`);
       } else if (error.response?.status === 401) {
-        toast.error('Authentication Error', {
-          description: 'Your session has expired. Please login again.',
-        });
+        toast.error('Authentication error: Your session has expired. Please login again.');
       } else if (error.response?.status === 403) {
-        toast.error('Permission Denied', {
-          description: 'You do not have permission to create projects.',
-        });
+        toast.error('Permission denied: You do not have permission to create projects.');
       } else {
         // Generic error
         const message = errorData?.message || error.response?.data?.message || error.message || 'Failed to create project. Please try again.';
 
-        toast.error('Error', {
-          description: message,
-        });
+        toast.error(message);
       }
     } finally {
       setSubmitting(false);
@@ -306,27 +291,6 @@ export default function CreateProjectPage() {
                       Message sent when users start the bot with /start
                     </FormDescription>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="is_active"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Active</FormLabel>
-                      <FormDescription>
-                        Enable this project to start processing payments
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
                   </FormItem>
                 )}
               />

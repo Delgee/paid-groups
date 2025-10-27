@@ -54,9 +54,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
   const createUserMutation = useMutation({
     mutationFn: apiClient.createUser.bind(apiClient),
     onSuccess: (data: CreateUserResponse) => {
-      toast.success(`${data.role.charAt(0).toUpperCase() + data.role.slice(1)} user ${data.name} has been created.`, {
-        id: 'user-creation-success'
-      });
+      toast.success(`${data.role.charAt(0).toUpperCase() + data.role.slice(1)} user ${data.name} has been created`);
 
       // Invalidate and refetch user list
       queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
@@ -82,17 +80,11 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
           type: 'server',
           message: 'A user with this email already exists',
         });
-        toast.error('A user with this email already exists in your organization.', {
-          id: 'user-creation-duplicate-error'
-        });
+        toast.error('A user with this email already exists in your organization');
       } else if (error.isForbidden) {
-        toast.error('Only owner users can create admin and moderator users.', {
-          id: 'user-creation-forbidden-error'
-        });
+        toast.error('Only owner users can create admin and moderator users');
       } else {
-        toast.error(error.message || 'An unexpected error occurred.', {
-          id: 'user-creation-error'
-        });
+        toast.error(error.message || 'An unexpected error occurred');
       }
     },
   });

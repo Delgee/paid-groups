@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { projectApi } from '@/lib/api/projects';
 import { ArrowLeftIcon, RefreshCwIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -46,7 +45,6 @@ const formSchema = z.object({
     .string()
     .min(10, 'Welcome message must be at least 10 characters')
     .max(4096, 'Welcome message cannot exceed 4096 characters'),
-  is_active: z.boolean().default(true),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -66,7 +64,6 @@ export default function EditProjectPage() {
       display_name: '',
       description: '',
       welcome_message: '',
-      is_active: true,
     },
   });
 
@@ -86,10 +83,10 @@ export default function EditProjectPage() {
         display_name: data.display_name,
         description: data.description || '',
         welcome_message: data.welcome_message,
-        is_active: data.is_active,
       });
-    } catch (error) {
-      toast.error('Failed to load project');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to load project';
+      toast.error(errorMessage);
       router.push('/dashboard/projects');
     } finally {
       setLoading(false);
@@ -105,7 +102,6 @@ export default function EditProjectPage() {
         display_name: data.display_name,
         description: data.description || undefined,
         welcome_message: data.welcome_message,
-        is_active: data.is_active,
       };
 
       await projectApi.update(projectId, payload);
@@ -130,21 +126,13 @@ export default function EditProjectPage() {
           message: errorData.message || 'Validation failed',
         });
 
-        toast.error('Validation Error', {
-          description: errorData.message || 'Please check the form for errors',
-        });
+        toast.error(`Validation error: ${errorData.message || 'Please check the form for errors'}`);
       } else if (error.response?.status === 401) {
-        toast.error('Authentication Error', {
-          description: 'Your session has expired. Please login again.',
-        });
+        toast.error('Authentication error: Your session has expired. Please login again.');
       } else if (error.response?.status === 403) {
-        toast.error('Permission Denied', {
-          description: 'You do not have permission to update projects.',
-        });
+        toast.error('Permission denied: You do not have permission to update projects.');
       } else if (error.response?.status === 404) {
-        toast.error('Project Not Found', {
-          description: 'The project you are trying to update does not exist.',
-        });
+        toast.error('Project not found: The project you are trying to update does not exist.');
         router.push('/dashboard/projects');
       } else {
         // Generic error
@@ -154,9 +142,7 @@ export default function EditProjectPage() {
           error.message ||
           'Failed to update project. Please try again.';
 
-        toast.error('Error', {
-          description: message,
-        });
+        toast.error(message);
       }
     } finally {
       setSubmitting(false);
@@ -272,27 +258,6 @@ export default function EditProjectPage() {
                       Message sent when users start the bot with /start
                     </FormDescription>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name='is_active'
-                render={({ field }) => (
-                  <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
-                    <div className='space-y-0.5'>
-                      <FormLabel className='text-base'>Active</FormLabel>
-                      <FormDescription>
-                        Enable this project to start processing payments
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
                   </FormItem>
                 )}
               />

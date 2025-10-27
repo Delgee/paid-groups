@@ -76,18 +76,12 @@ export default function CreateBotConfigurationPage() {
 
       await botConfigurationApi.create(payload);
 
-      toast({
-        title: 'Success',
-        description: 'Bot configuration created successfully',
-      });
+      toast.success('Bot configuration created successfully');
 
       router.push('/dashboard/bot-configurations');
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to create bot configuration',
-        variant: 'destructive',
-      });
+      const errorMessage = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Failed to create bot configuration';
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

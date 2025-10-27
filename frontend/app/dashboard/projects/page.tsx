@@ -25,12 +25,9 @@ export default function ProjectsPage() {
       setLoading(true);
       const response = await projectApi.getAll();
       setProjects(response.data || []);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load projects',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to load projects';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -40,17 +37,11 @@ export default function ProjectsPage() {
     try {
       setSyncing(id);
       await projectApi.sync(id);
-      toast({
-        title: 'Success',
-        description: 'Project synced successfully',
-      });
+      toast.success('Project synced successfully');
       await loadProjects();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to sync project',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to sync project';
+      toast.error(errorMessage);
     } finally {
       setSyncing(null);
     }
@@ -63,17 +54,11 @@ export default function ProjectsPage() {
 
     try {
       await projectApi.delete(id);
-      toast({
-        title: 'Success',
-        description: 'Project deleted',
-      });
+      toast.success('Project deleted successfully');
       await loadProjects();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete project',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to delete project';
+      toast.error(errorMessage);
     }
   };
 
