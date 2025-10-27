@@ -16,6 +16,7 @@ import {
   PaginatedProjectsResponseDto,
 } from '../dto/project-response.dto';
 import { TelegramApiService } from '../../bot/services/telegram-api.service';
+import { ProjectWebhookService } from './project-webhook.service';
 
 @Injectable()
 export class ProjectService {
@@ -26,6 +27,7 @@ export class ProjectService {
     private readonly projectRepository: Repository<Project>,
     private readonly dataSource: DataSource,
     private readonly telegramApiService: TelegramApiService,
+    private readonly webhookService: ProjectWebhookService,
   ) {}
 
   /**
@@ -53,14 +55,45 @@ export class ProjectService {
       });
     }
 
+    // Create project entity first to get the ID
     const project = this.projectRepository.create({
       ...createDto,
       tenant_id: tenantId,
     });
 
     const saved = await this.projectRepository.save(project);
-    this.logger.log(`Project created: ${saved.id}`);
 
+    // Auto-generate webhook configuration
+    try {
+      const webhookResult = await this.webhookService.setupWebhook(
+        createDto.bot_token,
+        tenantId,
+        saved.id,
+      );
+
+      if (webhookResult.success) {
+        // Update project with webhook details
+        saved.webhook_url = webhookResult.webhookUrl;
+        saved.webhook_secret = webhookResult.webhookSecret;
+        await this.projectRepository.save(saved);
+
+        this.logger.log(
+          `Webhook configured for project ${saved.id}: ${webhookResult.webhookUrl}`,
+        );
+      } else {
+        this.logger.warn(
+          `Failed to setup webhook for project ${saved.id}: ${webhookResult.error}`,
+        );
+        // Don't fail project creation if webhook setup fails
+      }
+    } catch (webhookError) {
+      this.logger.error(
+        `Error setting up webhook for project ${saved.id}: ${webhookError.message}`,
+      );
+      // Continue - webhook can be set up later via refresh endpoint
+    }
+
+    this.logger.log(`Project created: ${saved.id}`);
     return ProjectResponseDto.fromEntity(saved);
   }
 
@@ -321,5 +354,48 @@ export class ProjectService {
       id: botInfo.id,
       is_bot: botInfo.is_bot,
     };
+  }
+
+  /**
+   * Refresh webhook configuration for a project
+   * Generates new webhook secret and re-registers with Telegram
+   */
+  async refreshWebhook(
+    tenantId: string,
+    id: string,
+  ): Promise<{ success: boolean; message: string; webhookUrl?: string }> {
+    this.logger.log(`Refreshing webhook for project ${id}`);
+
+    const project = await this.findOneRaw(tenantId, id);
+
+    const webhookResult = await this.webhookService.refreshWebhook(
+      project.bot_token,
+      tenantId,
+      id,
+    );
+
+    if (webhookResult.success) {
+      // Update project with new webhook details
+      project.webhook_url = webhookResult.webhookUrl;
+      project.webhook_secret = webhookResult.webhookSecret;
+      await this.projectRepository.save(project);
+
+      this.logger.log(`Webhook refreshed for project ${id}`);
+
+      return {
+        success: true,
+        message: 'Webhook refreshed successfully',
+        webhookUrl: webhookResult.webhookUrl,
+      };
+    } else {
+      this.logger.error(
+        `Failed to refresh webhook for project ${id}: ${webhookResult.error}`,
+      );
+
+      return {
+        success: false,
+        message: `Failed to refresh webhook: ${webhookResult.error}`,
+      };
+    }
   }
 }

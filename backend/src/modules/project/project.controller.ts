@@ -182,4 +182,33 @@ export class ProjectController {
   ): Promise<{ username: string; first_name: string; id: number; is_bot: boolean }> {
     return this.projectService.verifyBotToken(body.bot_token);
   }
+
+  @Post(':id/webhook/refresh')
+  @ApiOperation({
+    summary: 'Refresh webhook configuration',
+    description:
+      'Generates a new webhook secret and re-registers the webhook with Telegram API',
+  })
+  @ApiParam({ name: 'id', description: 'Project UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Webhook refreshed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        webhookUrl: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Project not found' })
+  async refreshWebhook(
+    @TenantId() tenantId: string,
+    @CorrelationId() correlationId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ success: boolean; message: string; webhookUrl?: string }> {
+    this.logger.log('Refreshing webhook', { correlationId, tenantId, projectId: id });
+    return this.projectService.refreshWebhook(tenantId, id);
+  }
 }

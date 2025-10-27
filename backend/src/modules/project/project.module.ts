@@ -5,6 +5,9 @@ import { Project } from './entities/project.entity';
 import { ProjectService } from './services/project.service';
 import { ProjectController } from './project.controller';
 import { BotModule } from '../bot/bot.module';
+import { ProjectWebhookService } from './services/project-webhook.service';
+import { WebhookHealthCheckService } from './services/webhook-health-check.service';
+import { EncryptionService } from '../../common/services/encryption.service';
 
 @Module({
   imports: [
@@ -13,7 +16,12 @@ import { BotModule } from '../bot/bot.module';
     BotModule,
   ],
   controllers: [ProjectController],
-  providers: [ProjectService],
-  exports: [ProjectService],
+  providers: [
+    ProjectService,
+    ProjectWebhookService,
+    WebhookHealthCheckService,
+    EncryptionService,
+  ],
+  exports: [ProjectService, ProjectWebhookService],
 })
 export class ProjectModule {}

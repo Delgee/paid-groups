@@ -5,7 +5,6 @@ import {
   MaxLength,
   IsOptional,
   Matches,
-  IsBoolean,
   MinLength,
   IsObject,
 } from 'class-validator';
@@ -20,7 +19,8 @@ export class CreateProjectDto {
   @IsNotEmpty()
   @MaxLength(255)
   @Matches(/^\d+:[A-Za-z0-9_-]+$/, {
-    message: 'bot_token must be a valid Telegram bot token format (numeric_id:alphanumeric_secret)',
+    message:
+      'bot_token must be a valid Telegram bot token format (numeric_id:alphanumeric_secret)',
   })
   bot_token: string;
 
@@ -33,7 +33,8 @@ export class CreateProjectDto {
   @IsNotEmpty()
   @MaxLength(255)
   @Matches(/^[a-zA-Z0-9_]{5,32}$/, {
-    message: 'bot_username must be 5-32 characters, alphanumeric with underscores only',
+    message:
+      'bot_username must be 5-32 characters, alphanumeric with underscores only',
   })
   bot_username: string;
 
@@ -60,7 +61,8 @@ export class CreateProjectDto {
 
   @ApiProperty({
     description: 'Message sent when users start the bot with /start',
-    example: 'Welcome! Choose a membership plan to access our premium channels.',
+    example:
+      'Welcome! Choose a membership plan to access our premium channels.',
     maxLength: 4096,
   })
   @IsString()
@@ -68,14 +70,6 @@ export class CreateProjectDto {
   @MinLength(10)
   @MaxLength(4096)
   welcome_message: string;
-
-  @ApiPropertyOptional({
-    description: 'Bot operational status',
-    default: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  is_active?: boolean;
 
   @ApiPropertyOptional({
     description: 'Webhook URL for receiving bot updates',

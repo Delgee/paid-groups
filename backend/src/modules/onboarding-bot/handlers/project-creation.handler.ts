@@ -21,7 +21,10 @@ export class ProjectCreationHandler {
     correlationId: string,
   ): Promise<BotResponse> {
     // Check if user is registered
-    const account = await this.telegramUserAccountService.findByTelegramUserId(telegramUserId);
+    const account =
+      await this.telegramUserAccountService.findByTelegramUserId(
+        telegramUserId,
+      );
 
     if (!account || !account.user) {
       return {
@@ -32,12 +35,23 @@ Please send /start to register your account.`,
     }
 
     // Start project creation flow - create or reset session
-    const existingSession = await this.sessionService.getSession(telegramUserId);
+    const existingSession =
+      await this.sessionService.getSession(telegramUserId);
     if (existingSession) {
-      await this.sessionService.advanceStep(telegramUserId, SessionStep.PROJECT_NAME);
+      await this.sessionService.advanceStep(
+        telegramUserId,
+        SessionStep.PROJECT_NAME,
+      );
     } else {
-      await this.sessionService.createSession(telegramUserId, telegramChatId, correlationId);
-      await this.sessionService.advanceStep(telegramUserId, SessionStep.PROJECT_NAME);
+      await this.sessionService.createSession(
+        telegramUserId,
+        telegramChatId,
+        correlationId,
+      );
+      await this.sessionService.advanceStep(
+        telegramUserId,
+        SessionStep.PROJECT_NAME,
+      );
     }
 
     return {
@@ -63,10 +77,15 @@ Examples:
     const session = await this.sessionService.getSession(telegramUserId);
 
     if (!session) {
-      return { text: 'Session expired. Please send /newproject to start again.' };
+      return {
+        text: 'Session expired. Please send /newproject to start again.',
+      };
     }
 
-    const account = await this.telegramUserAccountService.findByTelegramUserId(telegramUserId);
+    const account =
+      await this.telegramUserAccountService.findByTelegramUserId(
+        telegramUserId,
+      );
 
     switch (session.current_step) {
       case SessionStep.PROJECT_NAME:
@@ -82,9 +101,13 @@ Examples:
           };
         }
 
-        await this.sessionService.advanceStep(telegramUserId, SessionStep.PROJECT_DESCRIPTION, {
-          project_name: message,
-        });
+        await this.sessionService.advanceStep(
+          telegramUserId,
+          SessionStep.PROJECT_DESCRIPTION,
+          {
+            project_name: message,
+          },
+        );
 
         return {
           text: `✅ Project name: <b>${message}</b>
@@ -97,9 +120,13 @@ You can skip this step by typing "skip".`,
       case SessionStep.PROJECT_DESCRIPTION:
         const description = message.toLowerCase() === 'skip' ? '' : message;
 
-        await this.sessionService.advanceStep(telegramUserId, SessionStep.BOT_TOKEN, {
-          project_description: description,
-        });
+        await this.sessionService.advanceStep(
+          telegramUserId,
+          SessionStep.BOT_TOKEN,
+          {
+            project_description: description,
+          },
+        );
 
         return {
           text: `<b>Step 3:</b> Enter your Telegram Bot Token
@@ -149,14 +176,16 @@ Please check your token and try again, or get a new one from @BotFather:`,
             },
           );
 
-          const project = await this.projectService.create(account.user.tenant_id, {
-            bot_token: message,
-            bot_username: botInfo.username,
-            display_name: updatedSession.data.project_name!,
-            description: updatedSession.data.project_description || '',
-            welcome_message: `Welcome! I'm ${updatedSession.data.project_name}. Choose a membership plan to get started.`,
-            is_active: true,
-          });
+          await this.projectService.create(
+            account.user.tenant_id,
+            {
+              bot_token: message,
+              bot_username: botInfo.username,
+              display_name: updatedSession.data.project_name!,
+              description: updatedSession.data.project_description || '',
+              welcome_message: `Welcome! I'm ${updatedSession.data.project_name}. Choose a membership plan to get started.`,
+            },
+          );
 
           // Clear session
           await this.sessionService.clearSession(telegramUserId);
@@ -173,8 +202,18 @@ Please check your token and try again, or get a new one from @BotFather:`,
             keyboard: {
               inline_keyboard: [
                 [{ text: '➕ Add Telegram Group', callback_data: 'add_group' }],
-                [{ text: '💰 Create Membership Plan', callback_data: 'create_plan' }],
-                [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
+                [
+                  {
+                    text: '💰 Create Membership Plan',
+                    callback_data: 'create_plan',
+                  },
+                ],
+                [
+                  {
+                    text: '📊 View Dashboard',
+                    callback_data: 'view_dashboard',
+                  },
+                ],
                 [{ text: '❓ Get Help', callback_data: 'help' }],
               ],
             },
@@ -201,7 +240,9 @@ Please try again or get a new token from @BotFather:`,
         }
 
       default:
-        return { text: 'Something went wrong. Please send /newproject to begin again.' };
+        return {
+          text: 'Something went wrong. Please send /newproject to begin again.',
+        };
     }
   }
 }
