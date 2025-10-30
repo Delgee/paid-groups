@@ -31,6 +31,24 @@ export class ProjectWebhookProcessorService {
   ) {}
 
   /**
+   * Decrypt bot token for use with Telegram API
+   * @private
+   */
+  private decryptBotToken(encryptedToken: string): string {
+    try {
+      return this.encryptionService.decrypt(encryptedToken);
+    } catch (error) {
+      this.logger.error(`Failed to decrypt bot token: ${error.message}`);
+      throw new UnauthorizedException({
+        error: {
+          code: 'INVALID_BOT_TOKEN',
+          message: 'Bot token is invalid or corrupted',
+        },
+      });
+    }
+  }
+
+  /**
    * Process incoming Telegram webhook update
    */
   async processUpdate(
@@ -198,8 +216,9 @@ export class ProjectWebhookProcessorService {
       project.welcome_message ||
       `Hello ${firstName}! 👋\n\nWelcome to ${project.display_name}.\n\nUse /help to see available commands.`;
 
+    const decryptedToken = this.decryptBotToken(project.bot_token);
     await this.telegramApiService.sendMessage(
-      project.bot_token,
+      decryptedToken,
       chatId,
       welcomeText,
     );
@@ -229,8 +248,9 @@ This bot manages access to premium Telegram groups. Purchase a membership plan t
 For support, please contact the group administrators.
     `.trim();
 
+    const decryptedToken = this.decryptBotToken(project.bot_token);
     await this.telegramApiService.sendMessage(
-      project.bot_token,
+      decryptedToken,
       chatId,
       helpText,
       { parse_mode: 'Markdown' },
@@ -259,8 +279,9 @@ Status: Active
 To check your detailed membership status, please visit the dashboard.
     `.trim();
 
+    const decryptedToken = this.decryptBotToken(project.bot_token);
     await this.telegramApiService.sendMessage(
-      project.bot_token,
+      decryptedToken,
       chatId,
       statusText,
       { parse_mode: 'Markdown' },
@@ -285,8 +306,9 @@ To view available subscription plans and purchase membership, please visit our w
 Use /status to check your current membership status.
     `.trim();
 
+    const decryptedToken = this.decryptBotToken(project.bot_token);
     await this.telegramApiService.sendMessage(
-      project.bot_token,
+      decryptedToken,
       chatId,
       subscribeText,
       { parse_mode: 'Markdown' },
@@ -309,9 +331,11 @@ Use /status to check your current membership status.
     this.logger.debug(`Handling callback query: ${data} for project ${project.id}`);
 
     try {
+      const decryptedToken = this.decryptBotToken(project.bot_token);
+
       // Answer the callback query to remove loading indicator
       await this.telegramApiService.answerCallbackQuery(
-        project.bot_token,
+        decryptedToken,
         queryId,
       );
 
@@ -341,8 +365,9 @@ Use /status to check your current membership status.
     // TODO: Implement subscription flow
     const message = `To complete your subscription, please visit our payment page.\n\nPlan ID: ${planId}`;
 
+    const decryptedToken = this.decryptBotToken(project.bot_token);
     await this.telegramApiService.sendMessage(
-      project.bot_token,
+      decryptedToken,
       chatId,
       message,
     );
