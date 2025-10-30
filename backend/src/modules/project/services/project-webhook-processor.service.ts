@@ -11,6 +11,7 @@ import { Project } from '../entities/project.entity';
 import { TelegramUpdate } from '../project-webhook.controller';
 import { TelegramApiService } from '../../bot/services/telegram-api.service';
 import { EncryptionService } from '../../../common/services/encryption.service';
+import { ProjectCommandHandlerService } from './project-command-handler.service';
 
 /**
  * ProjectWebhookProcessorService
@@ -28,6 +29,7 @@ export class ProjectWebhookProcessorService {
     private readonly dataSource: DataSource,
     private readonly telegramApiService: TelegramApiService,
     private readonly encryptionService: EncryptionService,
+    private readonly commandHandler: ProjectCommandHandlerService,
   ) {}
 
   /**
@@ -153,12 +155,24 @@ export class ProjectWebhookProcessorService {
    */
   private async handleMessage(project: Project, message: any): Promise<void> {
     const chatId = message.chat.id;
-    const userId = message.from.id;
+    const userId = message.from?.id;
     const text = message.text || '';
 
     this.logger.debug(
       `Handling message from user ${userId} in chat ${chatId}: ${text.substring(0, 50)}`,
     );
+
+    // Handle new chat members
+    if (message.new_chat_members && message.new_chat_members.length > 0) {
+      await this.handleNewChatMembers(project, message);
+      return;
+    }
+
+    // Handle left chat member
+    if (message.left_chat_member) {
+      await this.handleLeftChatMember(project, message);
+      return;
+    }
 
     // Handle commands
     if (text.startsWith('/')) {
@@ -176,12 +190,24 @@ export class ProjectWebhookProcessorService {
   private async handleCommand(project: Project, message: any): Promise<void> {
     const text = message.text.trim();
     const command = text.split(' ')[0].toLowerCase();
+    const args = text.split(' ').slice(1);
     const chatId = message.chat.id;
+    const userId = message.from.id;
     const firstName = message.from.first_name;
 
     this.logger.log(`Processing command ${command} for project ${project.id}`);
 
+    // Build command context for admin commands
+    const ctx = {
+      project,
+      message,
+      chatId,
+      userId,
+      args,
+    };
+
     switch (command) {
+      // User commands
       case '/start':
         await this.handleStartCommand(project, chatId, firstName);
         break;
@@ -191,11 +217,28 @@ export class ProjectWebhookProcessorService {
         break;
 
       case '/status':
-        await this.handleStatusCommand(project, chatId, message.from.id);
+        await this.handleStatusCommand(project, chatId, userId);
         break;
 
       case '/subscribe':
         await this.handleSubscribeCommand(project, chatId);
+        break;
+
+      // Admin commands
+      case '/ban':
+        await this.commandHandler.handleBanCommand(ctx);
+        break;
+
+      case '/extend':
+        await this.commandHandler.handleExtendCommand(ctx);
+        break;
+
+      case '/stats':
+        await this.commandHandler.handleStatsCommand(ctx);
+        break;
+
+      case '/members':
+        await this.commandHandler.handleMembersCommand(ctx);
         break;
 
       default:
@@ -375,6 +418,94 @@ Use /status to check your current membership status.
     this.logger.log(
       `Sent subscription callback response for plan ${planId} to chat ${chatId}`,
     );
+  }
+
+  /**
+   * Handle new members joining a group
+   */
+  private async handleNewChatMembers(
+    project: Project,
+    message: any,
+  ): Promise<void> {
+    const chatId = message.chat.id;
+    const newMembers = message.new_chat_members;
+
+    this.logger.log(
+      `Processing ${newMembers.length} new members in chat ${chatId} for project ${project.id}`,
+    );
+
+    for (const newMember of newMembers) {
+      // Skip bots
+      if (newMember.is_bot) {
+        this.logger.debug(`Skipping bot member ${newMember.id}`);
+        continue;
+      }
+
+      try {
+        const decryptedToken = this.decryptBotToken(project.bot_token);
+
+        // TODO: When membership module is integrated:
+        // 1. Create or update member record
+        // 2. Check if member has valid membership for this group
+        // 3. If no valid membership, send payment instructions and optionally kick
+        // 4. If valid membership, send welcome message
+
+        // For now, send a generic welcome message
+        const welcomeText = `👋 Welcome ${newMember.first_name}!\n\nYou've joined ${message.chat.title || 'the group'}.\n\nTo access premium content, you need an active membership. Use /subscribe to view available plans.`;
+
+        await this.telegramApiService.sendMessage(
+          decryptedToken,
+          chatId,
+          welcomeText,
+        );
+
+        this.logger.log(
+          `Processed new member ${newMember.id} (${newMember.first_name}) in chat ${chatId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Error processing new member ${newMember.id}:`,
+          error.stack,
+        );
+      }
+    }
+  }
+
+  /**
+   * Handle members leaving a group
+   */
+  private async handleLeftChatMember(
+    project: Project,
+    message: any,
+  ): Promise<void> {
+    const chatId = message.chat.id;
+    const leftMember = message.left_chat_member;
+
+    // Skip bots
+    if (leftMember.is_bot) {
+      this.logger.debug(`Skipping bot leaving chat ${chatId}`);
+      return;
+    }
+
+    this.logger.log(
+      `Member ${leftMember.id} (${leftMember.first_name}) left chat ${chatId} for project ${project.id}`,
+    );
+
+    try {
+      // TODO: When membership module is integrated:
+      // 1. Find member record by telegram_user_id
+      // 2. Update member status or handle membership cleanup
+      // 3. Log member departure for analytics
+
+      this.logger.debug(
+        `Member departure logged for ${leftMember.id} from chat ${chatId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error processing left member ${leftMember.id}:`,
+        error.stack,
+      );
+    }
   }
 
   /**

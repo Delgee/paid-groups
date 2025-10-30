@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { ProjectService } from './services/project.service';
 import { ProjectSecurityService } from './services/project-security.service';
+import { ProjectHealthMonitorService } from './services/project-health-monitor.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { GetProjectsDto } from './dto/get-projects.dto';
@@ -44,6 +45,7 @@ export class ProjectController {
   constructor(
     private readonly projectService: ProjectService,
     private readonly securityService: ProjectSecurityService,
+    private readonly healthMonitorService: ProjectHealthMonitorService,
   ) {}
 
   @Post()
@@ -253,5 +255,82 @@ export class ProjectController {
 
     const alerts = await this.securityService.detectTampering(id);
     return { alerts };
+  }
+
+  @Get(':id/health')
+  @ApiOperation({ summary: 'Get project health status' })
+  @ApiParam({ name: 'id', description: 'Project ID', type: 'string', format: 'uuid' })
+  @ApiResponse({
+    status: 200,
+    description: 'Health status retrieved',
+    schema: {
+      type: 'object',
+      properties: {
+        projectId: { type: 'string' },
+        projectName: { type: 'string' },
+        status: { type: 'string', enum: ['healthy', 'degraded', 'unhealthy'] },
+        checks: { type: 'object' },
+        lastCheck: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Project not found' })
+  async getHealth(
+    @TenantId() tenantId: string,
+    @CorrelationId() correlationId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<any> {
+    this.logger.log('Getting project health', { correlationId, tenantId, projectId: id });
+
+    // Verify project belongs to tenant
+    await this.projectService.findOne(tenantId, id);
+
+    const healthStatus = await this.healthMonitorService.getProjectHealthStatus(id);
+    return healthStatus || { message: 'Health data not yet available. Check back in 5 minutes.' };
+  }
+
+  @Post(':id/health/check')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Force health check on a project' })
+  @ApiParam({ name: 'id', description: 'Project ID', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Health check completed' })
+  @ApiResponse({ status: 404, description: 'Project not found' })
+  async forceHealthCheck(
+    @TenantId() tenantId: string,
+    @CorrelationId() correlationId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<any> {
+    this.logger.log('Forcing health check', { correlationId, tenantId, projectId: id });
+
+    // Verify project belongs to tenant
+    await this.projectService.findOne(tenantId, id);
+
+    const healthStatus = await this.healthMonitorService.forceHealthCheck(id);
+    return healthStatus;
+  }
+
+  @Get('health/summary')
+  @ApiOperation({ summary: 'Get health summary for all projects' })
+  @ApiResponse({
+    status: 200,
+    description: 'Health summary retrieved',
+    schema: {
+      type: 'object',
+      properties: {
+        total: { type: 'number' },
+        healthy: { type: 'number' },
+        degraded: { type: 'number' },
+        unhealthy: { type: 'number' },
+      },
+    },
+  })
+  async getHealthSummary(
+    @TenantId() tenantId: string,
+    @CorrelationId() correlationId: string,
+  ): Promise<any> {
+    this.logger.log('Getting health summary', { correlationId, tenantId });
+
+    const summary = await this.healthMonitorService.getHealthSummary();
+    return summary;
   }
 }
