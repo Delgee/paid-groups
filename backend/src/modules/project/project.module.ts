@@ -9,6 +9,7 @@ import { BotModule } from '../bot/bot.module';
 import { ProjectWebhookService } from './services/project-webhook.service';
 import { ProjectWebhookProcessorService } from './services/project-webhook-processor.service';
 import { WebhookHealthCheckService } from './services/webhook-health-check.service';
+import { ProjectSecurityService } from './services/project-security.service';
 import { EncryptionService } from '../../common/services/encryption.service';
 
 @Module({
@@ -23,8 +24,9 @@ import { EncryptionService } from '../../common/services/encryption.service';
     ProjectWebhookService,
     ProjectWebhookProcessorService,
     WebhookHealthCheckService,
+    ProjectSecurityService,
     EncryptionService,
   ],
-  exports: [ProjectService, ProjectWebhookService],
+  exports: [ProjectService, ProjectWebhookService, ProjectSecurityService],
 })
 export class ProjectModule {}

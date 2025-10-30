@@ -21,6 +21,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ProjectService } from './services/project.service';
+import { ProjectSecurityService } from './services/project-security.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { GetProjectsDto } from './dto/get-projects.dto';
@@ -40,7 +41,10 @@ import { CorrelationId } from '../../common/middleware/correlation-id.middleware
 export class ProjectController {
   private readonly logger = new Logger(ProjectController.name);
 
-  constructor(private readonly projectService: ProjectService) {}
+  constructor(
+    private readonly projectService: ProjectService,
+    private readonly securityService: ProjectSecurityService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new project' })
@@ -210,5 +214,44 @@ export class ProjectController {
   ): Promise<{ success: boolean; message: string; webhookUrl?: string }> {
     this.logger.log('Refreshing webhook', { correlationId, tenantId, projectId: id });
     return this.projectService.refreshWebhook(tenantId, id);
+  }
+
+  @Post(':id/security/scan')
+  @ApiOperation({ summary: 'Run security scan on a project' })
+  @ApiParam({ name: 'id', description: 'Project ID', type: 'string', format: 'uuid' })
+  @ApiResponse({
+    status: 200,
+    description: 'Security scan completed',
+    schema: {
+      type: 'object',
+      properties: {
+        alerts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              type: { type: 'string' },
+              message: { type: 'string' },
+              severity: { type: 'string' },
+              timestamp: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Project not found' })
+  async runSecurityScan(
+    @TenantId() tenantId: string,
+    @CorrelationId() correlationId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ alerts: any[] }> {
+    this.logger.log('Running security scan', { correlationId, tenantId, projectId: id });
+
+    // Verify project belongs to tenant
+    await this.projectService.findOne(tenantId, id);
+
+    const alerts = await this.securityService.detectTampering(id);
+    return { alerts };
   }
 }
