@@ -9,7 +9,7 @@ import { Repository, DataSource } from 'typeorm';
 import * as crypto from 'crypto';
 import { Project } from '../entities/project.entity';
 import { TelegramUpdate } from '../project-webhook.controller';
-import { TelegramApiService } from '../../bot/services/telegram-api.service';
+import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 import { EncryptionService } from '../../../common/services/encryption.service';
 import { ProjectCommandHandlerService } from './project-command-handler.service';
 

@@ -4,7 +4,7 @@ import { TelegramUserAccountService } from '../telegram-user-account.service';
 import { SessionStep } from '../interfaces/onboarding-session.interface';
 import { BotResponse } from './registration.handler';
 import { ProjectService } from '../../project/services/project.service';
-import { TelegramApiService } from '../../bot/services/telegram-api.service';
+import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 
 @Injectable()
 export class ProjectCreationHandler {

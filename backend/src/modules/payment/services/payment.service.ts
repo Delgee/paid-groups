@@ -9,7 +9,7 @@ import { Member } from '../../membership/entities/member.entity';
 import { Membership, MembershipStatus } from '../../membership/entities/membership.entity';
 import { MembershipPlan } from '../../membership/entities/membership-plan.entity';
 import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
-import { TelegramApiService } from '../../bot/services/telegram-api.service';
+import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 import { MessageTemplateService } from '../../bot/services/message-template.service';
 
 export interface ProcessPaymentCompletedData {

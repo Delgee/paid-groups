@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TelegramApiService } from '../../modules/bot/services/telegram-api.service';
+import { TelegramApiService } from './telegram-api.service';
 import { TelegramChannelService } from './telegram-channel.service';
 import { TelegramGroup } from '../../modules/telegram-groups/telegram-groups.entity';
 import { delay } from '../../common/utils/delay.util';

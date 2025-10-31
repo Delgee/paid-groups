@@ -6,7 +6,7 @@ import { Membership, MembershipStatus } from '../entities/membership.entity';
 import { Member } from '../entities/member.entity';
 import { MembershipPlan } from '../entities/membership-plan.entity';
 import { TelegramBot } from '../../bot/entities/telegram-bot.entity';
-import { TelegramApiService } from '../../bot/services/telegram-api.service';
+import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 
 @Injectable()
 export class MembershipExpirationJob {

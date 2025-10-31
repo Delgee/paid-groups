@@ -15,7 +15,7 @@ import {
   ProjectResponseDto,
   PaginatedProjectsResponseDto,
 } from '../dto/project-response.dto';
-import { TelegramApiService } from '../../bot/services/telegram-api.service';
+import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 import { ProjectWebhookService } from './project-webhook.service';
 import { EncryptionService } from '../../../common/services/encryption.service';
 

@@ -5,7 +5,7 @@ import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { TelegramBot } from '../bot/entities/telegram-bot.entity';
-import { TelegramApiService } from '../bot/services/telegram-api.service';
+import { TelegramApiService } from '../../integrations/telegram/telegram-api.service';
 import { firstValueFrom } from 'rxjs';
 
 export interface HealthStatus {

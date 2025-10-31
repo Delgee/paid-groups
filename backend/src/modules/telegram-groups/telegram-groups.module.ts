@@ -5,7 +5,7 @@ import { TelegramGroupsService } from './telegram-groups.service';
 import { TelegramGroup } from './telegram-groups.entity';
 import { TelegramBot } from '../bot/entities/telegram-bot.entity';
 import { Project } from '../project/entities/project.entity';
-import { TelegramApiService } from '../bot/services/telegram-api.service';
+import { TelegramApiService } from '../../integrations/telegram/telegram-api.service';
 import { TelegramChannelService } from '../../integrations/telegram/telegram-channel.service';
 import { TelegramSyncService } from '../../integrations/telegram/telegram-sync.service';
 

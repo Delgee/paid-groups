@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { TelegramApiService, TelegramChat } from '../../modules/bot/services/telegram-api.service';
+import { TelegramApiService, TelegramChat } from './telegram-api.service';
 
 export interface ChannelConnectionResult {
   success: boolean;
