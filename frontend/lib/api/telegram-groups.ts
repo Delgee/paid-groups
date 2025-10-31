@@ -41,7 +41,6 @@ export interface CreateTelegramGroupData {
   description?: string;
   project_id: string;
   telegram_chat_id: string;
-  invite_link?: string;
   settings?: Record<string, any>;
 }
 
@@ -59,7 +58,6 @@ export interface UpdateTelegramGroupData {
  */
 export interface ConnectChannelData {
   telegram_chat_id: string;
-  invite_link?: string;
   verify_permissions?: boolean;
 }
 
@@ -170,7 +168,6 @@ export class TelegramGroupsApi {
    *   description: 'Exclusive content for premium members',
    *   project_id: 'project-uuid-here',
    *   telegram_chat_id: '-1001234567890',
-   *   invite_link: 'https://t.me/+AbCdEfGhIjKlMnOp',
    *   settings: { welcome_message: 'Welcome to our VIP group!' }
    * });
    * ```
@@ -294,7 +291,6 @@ export class TelegramGroupsApi {
    * ```typescript
    * const result = await telegramGroupsApi.connectChannel('group-uuid-here', {
    *   telegram_chat_id: '-1001234567890',
-   *   invite_link: 'https://t.me/+AbCdEfGhIjKlMnOp',
    *   verify_permissions: true
    * });
    * ```

@@ -52,11 +52,6 @@ const telegramGroupFormSchema = z.object({
     .refine((val) => val.startsWith('-'), {
       message: 'Chat ID for groups/channels must be negative (start with -)',
     }),
-  invite_link: z
-    .string()
-    .regex(/^https:\/\/t\.me\//, 'Invite link must start with https://t.me/')
-    .optional()
-    .or(z.literal('')),
   settings: z
     .string()
     .optional()
@@ -135,7 +130,6 @@ export function TelegramGroupForm({
       description: initialData?.description || '',
       project_id: preselectedProjectId || initialData?.project_id || '',
       telegram_chat_id: initialData?.telegram_chat_id?.toString() || '',
-      invite_link: initialData?.invite_link || '',
       settings: initialData?.settings ? JSON.stringify(initialData.settings, null, 2) : '',
     },
   });
@@ -152,7 +146,6 @@ export function TelegramGroupForm({
       if (mode === 'create') {
         (submitData as CreateTelegramGroupData).project_id = data.project_id;
         (submitData as CreateTelegramGroupData).telegram_chat_id = data.telegram_chat_id;
-        (submitData as CreateTelegramGroupData).invite_link = data.invite_link || undefined;
       }
 
       await onSubmit(submitData);
@@ -418,28 +411,6 @@ export function TelegramGroupForm({
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="invite_link"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Invite Link</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="https://t.me/+AbCdEfGhIjKlMnOp"
-                        data-testid="invite-link-input"
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage data-testid="invite-link-error" />
-                    <p className="text-sm text-muted-foreground">
-                      Optional: Your Telegram invite link for this group/channel
-                    </p>
-                  </FormItem>
-                )}
-              />
             </>
           )}
 
@@ -452,11 +423,6 @@ export function TelegramGroupForm({
                   {initialData.username && (
                     <p className="text-sm text-muted-foreground">
                       @{initialData.username}
-                    </p>
-                  )}
-                  {initialData.invite_link && (
-                    <p className="text-xs text-muted-foreground mt-1 break-all">
-                      {initialData.invite_link}
                     </p>
                   )}
                 </div>

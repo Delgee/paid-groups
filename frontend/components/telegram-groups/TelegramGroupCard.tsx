@@ -81,9 +81,6 @@ export function TelegramGroupCard({
     if (group.username) {
       return `https://t.me/${group.username}`;
     }
-    if (group.invite_link) {
-      return group.invite_link;
-    }
     return null;
   };
 

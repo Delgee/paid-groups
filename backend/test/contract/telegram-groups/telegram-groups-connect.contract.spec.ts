@@ -90,7 +90,6 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
       // Fake chat IDs return: "Channel not found or bot cannot access the channel"
       const validRequest = {
         telegram_chat_id: '-1001234567890',
-        invite_link: 'https://t.me/+AbCdEfGhIjKlMnOp',
         verify_permissions: true,
       };
 
@@ -104,7 +103,7 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
       expect(response.body).toMatchObject({
         id: groupId,
         telegram_chat_id: expect.any(Number),
-        invite_link: validRequest.invite_link,
+        invite_link: null, // invite_link is deprecated and should be null
         bot_assigned: true, // Should be set to true after successful connection
         connection_status: 'connected',
         updated_at: expect.stringMatching(
@@ -136,7 +135,7 @@ describe('POST /v1/telegram-groups/{id}/connect-channel - Contract Test', () => 
     it('should return 400 for missing required telegram_chat_id field', async () => {
       const invalidRequest = {
         // missing telegram_chat_id
-        invite_link: 'https://t.me/+AbCdEfGhIjKlMnOp',
+        verify_permissions: true,
       };
 
       const response = await request(app.getHttpServer())

@@ -158,7 +158,6 @@ export class TelegramGroupsService {
         is_active: true,
         telegram_chat_id: channelInfo.id,
         username: channelInfo.username || null,
-        invite_link: createDto.invite_link || null,
         group_type: this.mapTelegramTypeToGroupType(channelInfo.type),
         member_count: channelInfo.member_count || 0,
       });
@@ -361,7 +360,6 @@ export class TelegramGroupsService {
       // Disconnect from channel
       group.telegram_chat_id = null;
       group.username = null;
-      group.invite_link = null;
 
       // Soft delete
       group.is_active = false;
@@ -444,7 +442,6 @@ export class TelegramGroupsService {
       group.telegram_chat_id = channelInfo.id;
       group.group_type = this.mapTelegramTypeToGroupType(channelInfo.type);
       group.username = channelInfo.username || null;
-      group.invite_link = connectDto.invite_link || null;
       group.member_count = channelInfo.member_count || 0;
 
       const updatedGroup = await this.telegramGroupRepository.save(group);
