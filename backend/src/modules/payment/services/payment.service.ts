@@ -6,11 +6,14 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { Payment, PaymentStatus } from '../entities/payment.entity';
 import { Member } from '../../membership/entities/member.entity';
-import { Membership, MembershipStatus } from '../../membership/entities/membership.entity';
+import {
+  Membership,
+  MembershipStatus,
+} from '../../membership/entities/membership.entity';
 import { MembershipPlan } from '../../membership/entities/membership-plan.entity';
 import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
-import { MessageTemplateService } from '../../bot/services/message-template.service';
+import { MessageTemplateService } from '@/modules/project/services/message-template.service';
 
 export interface ProcessPaymentCompletedData {
   paymentId: string;
@@ -82,14 +85,19 @@ export class PaymentService {
     });
   }
 
-  async queuePaymentCompleted(data: ProcessPaymentCompletedData): Promise<void> {
-    this.logger.info(`Queuing payment completed processing for payment ${data.qpayPaymentId}`, {
-      paymentId: data.qpayPaymentId,
-      tenantId: data.tenantId,
-      memberId: data.memberId,
-      amount: data.amount,
-    });
-    
+  async queuePaymentCompleted(
+    data: ProcessPaymentCompletedData,
+  ): Promise<void> {
+    this.logger.info(
+      `Queuing payment completed processing for payment ${data.qpayPaymentId}`,
+      {
+        paymentId: data.qpayPaymentId,
+        tenantId: data.tenantId,
+        memberId: data.memberId,
+        amount: data.amount,
+      },
+    );
+
     await this.paymentQueue.add('process-payment-completed', data, {
       attempts: 3,
       backoff: {
@@ -102,8 +110,10 @@ export class PaymentService {
   }
 
   async queuePaymentFailed(data: ProcessPaymentFailedData): Promise<void> {
-    this.logger.log(`Queuing payment failed processing for payment ${data.qpayPaymentId}`);
-    
+    this.logger.log(
+      `Queuing payment failed processing for payment ${data.qpayPaymentId}`,
+    );
+
     await this.paymentQueue.add('process-payment-failed', data, {
       attempts: 2,
       backoff: {
@@ -115,13 +125,25 @@ export class PaymentService {
     });
   }
 
-  async processPaymentCompleted(data: ProcessPaymentCompletedData): Promise<void> {
-    this.logger.paymentProcessed(data.qpayPaymentId, 'processing', data.amount, data.currency);
+  async processPaymentCompleted(
+    data: ProcessPaymentCompletedData,
+  ): Promise<void> {
+    this.logger.paymentProcessed(
+      data.qpayPaymentId,
+      'processing',
+      data.amount,
+      data.currency,
+    );
 
     try {
       // Check if payment already exists
-      const existingPayment = await this.findByQPayPaymentId(data.qpayPaymentId);
-      if (existingPayment && existingPayment.status === PaymentStatus.COMPLETED) {
+      const existingPayment = await this.findByQPayPaymentId(
+        data.qpayPaymentId,
+      );
+      if (
+        existingPayment &&
+        existingPayment.status === PaymentStatus.COMPLETED
+      ) {
         this.logger.log(`Payment ${data.qpayPaymentId} already processed`);
         return;
       }
@@ -131,7 +153,10 @@ export class PaymentService {
       if (existingPayment) {
         existingPayment.status = PaymentStatus.COMPLETED;
         existingPayment.paid_at = new Date();
-        existingPayment.metadata = { ...existingPayment.metadata, ...data.metadata };
+        existingPayment.metadata = {
+          ...existingPayment.metadata,
+          ...data.metadata,
+        };
         payment = await this.paymentRepository.save(existingPayment);
       } else {
         payment = await this.createPayment({
@@ -148,14 +173,24 @@ export class PaymentService {
       }
 
       // Process membership
-      await this.createOrExtendMembership(data.tenantId, data.memberId, data.planId, payment.id);
+      await this.createOrExtendMembership(
+        data.tenantId,
+        data.memberId,
+        data.planId,
+        payment.id,
+      );
 
       // Queue notification sending
       await this.queuePaymentNotification(payment.id, 'completed');
 
-      this.logger.log(`Successfully processed payment completion: ${data.qpayPaymentId}`);
+      this.logger.log(
+        `Successfully processed payment completion: ${data.qpayPaymentId}`,
+      );
     } catch (error) {
-      this.logger.error(`Error processing completed payment ${data.qpayPaymentId}:`, error);
+      this.logger.error(
+        `Error processing completed payment ${data.qpayPaymentId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -165,14 +200,19 @@ export class PaymentService {
 
     try {
       // Check if payment already exists
-      const existingPayment = await this.findByQPayPaymentId(data.qpayPaymentId);
-      
+      const existingPayment = await this.findByQPayPaymentId(
+        data.qpayPaymentId,
+      );
+
       let payment: Payment;
       if (existingPayment) {
         existingPayment.status = PaymentStatus.FAILED;
         existingPayment.failed_at = new Date();
         existingPayment.failure_reason = data.failureReason || 'Payment failed';
-        existingPayment.metadata = { ...existingPayment.metadata, ...data.metadata };
+        existingPayment.metadata = {
+          ...existingPayment.metadata,
+          ...data.metadata,
+        };
         payment = await this.paymentRepository.save(existingPayment);
       } else {
         payment = await this.createPayment({
@@ -192,9 +232,14 @@ export class PaymentService {
       // Queue failure notification
       await this.queuePaymentNotification(payment.id, 'failed');
 
-      this.logger.log(`Successfully processed payment failure: ${data.qpayPaymentId}`);
+      this.logger.log(
+        `Successfully processed payment failure: ${data.qpayPaymentId}`,
+      );
     } catch (error) {
-      this.logger.error(`Error processing failed payment ${data.qpayPaymentId}:`, error);
+      this.logger.error(
+        `Error processing failed payment ${data.qpayPaymentId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -203,10 +248,12 @@ export class PaymentService {
     tenantId: string,
     memberId: string,
     planId: string | undefined,
-    paymentId: string
+    paymentId: string,
   ): Promise<void> {
     if (!planId) {
-      this.logger.warn(`No plan ID provided for payment ${paymentId}, skipping membership creation`);
+      this.logger.warn(
+        `No plan ID provided for payment ${paymentId}, skipping membership creation`,
+      );
       return;
     }
 
@@ -261,7 +308,9 @@ export class PaymentService {
       existingMembership.group_id = plan.group_id; // Update group_id
 
       membership = await this.membershipRepository.save(existingMembership);
-      this.logger.log(`Extended membership ${membership.id} for member ${memberId}`);
+      this.logger.log(
+        `Extended membership ${membership.id} for member ${memberId}`,
+      );
     } else {
       // Create new membership
       membership = this.membershipRepository.create({
@@ -277,15 +326,24 @@ export class PaymentService {
 
       membership = await this.membershipRepository.save(membership);
       isNewMembership = true;
-      this.logger.log(`Created new membership ${membership.id} for member ${memberId}`);
+      this.logger.log(
+        `Created new membership ${membership.id} for member ${memberId}`,
+      );
     }
 
     // Auto-add user to Telegram group (only for new memberships)
     if (isNewMembership) {
       try {
-        await this.addMemberToTelegramGroup(member, plan, membership, expiresAt);
+        await this.addMemberToTelegramGroup(
+          member,
+          plan,
+          membership,
+          expiresAt,
+        );
       } catch (error) {
-        this.logger.error(`Failed to add member ${memberId} to Telegram group: ${error.message}`);
+        this.logger.error(
+          `Failed to add member ${memberId} to Telegram group: ${error.message}`,
+        );
         // Don't throw - membership is still valid, user can join manually
       }
     }
@@ -298,7 +356,7 @@ export class PaymentService {
     member: Member,
     plan: MembershipPlan,
     membership: Membership,
-    expiresAt: Date
+    expiresAt: Date,
   ): Promise<void> {
     // Get the telegram group with project details
     const telegramGroup = await this.telegramGroupRepository.findOne({
@@ -307,17 +365,23 @@ export class PaymentService {
     });
 
     if (!telegramGroup) {
-      this.logger.warn(`Telegram group ${plan.group_id} not found for plan ${plan.id}`);
+      this.logger.warn(
+        `Telegram group ${plan.group_id} not found for plan ${plan.id}`,
+      );
       return;
     }
 
     if (!telegramGroup.telegram_chat_id) {
-      this.logger.warn(`Telegram group ${plan.group_id} has no chat_id configured`);
+      this.logger.warn(
+        `Telegram group ${plan.group_id} has no chat_id configured`,
+      );
       return;
     }
 
     if (!telegramGroup.project || !telegramGroup.project.bot_token) {
-      this.logger.warn(`No project configured for telegram group ${plan.group_id}`);
+      this.logger.warn(
+        `No project configured for telegram group ${plan.group_id}`,
+      );
       return;
     }
 
@@ -332,7 +396,7 @@ export class PaymentService {
       botToken,
       chatId,
       linkExpireDate,
-      1 // Single use
+      1, // Single use
     );
 
     if (!inviteLink) {
@@ -347,18 +411,20 @@ export class PaymentService {
       plan.name,
       inviteLink,
       expiresAt,
-      telegramGroup.project.message_templates || {}
+      telegramGroup.project.message_templates || {},
     );
 
     const sent = await this.telegramApiService.sendMessage(
       botToken,
       member.telegram_user_id,
       welcomeMessage,
-      { parse_mode: 'HTML' }
+      { parse_mode: 'HTML' },
     );
 
     if (sent) {
-      this.logger.log(`Sent invite link to member ${member.telegram_user_id} for group ${telegramGroup.group_name}`);
+      this.logger.log(
+        `Sent invite link to member ${member.telegram_user_id} for group ${telegramGroup.group_name}`,
+      );
 
       // Store invite link in membership metadata
       membership.metadata = {
@@ -368,7 +434,9 @@ export class PaymentService {
       };
       await this.membershipRepository.save(membership);
     } else {
-      this.logger.error(`Failed to send invite link to member ${member.telegram_user_id}`);
+      this.logger.error(
+        `Failed to send invite link to member ${member.telegram_user_id}`,
+      );
     }
   }
 
@@ -381,10 +449,14 @@ export class PaymentService {
     planName: string,
     inviteLink: string,
     expiresAt: Date,
-    botTemplates: Record<string, any>
+    botTemplates: Record<string, any>,
   ): string {
-    const fullName = [member.first_name, member.last_name].filter(Boolean).join(' ') || member.username || `User ${member.telegram_user_id}`;
-    const firstName = member.first_name || member.username || `User ${member.telegram_user_id}`;
+    const fullName =
+      [member.first_name, member.last_name].filter(Boolean).join(' ') ||
+      member.username ||
+      `User ${member.telegram_user_id}`;
+    const firstName =
+      member.first_name || member.username || `User ${member.telegram_user_id}`;
 
     return this.messageTemplateService.buildWelcomeMessage(botTemplates, {
       user_name: fullName,
@@ -394,23 +466,30 @@ export class PaymentService {
       expires_at: expiresAt.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       }),
       invite_link: inviteLink,
     });
   }
 
-  private async queuePaymentNotification(paymentId: string, type: 'completed' | 'failed'): Promise<void> {
+  private async queuePaymentNotification(
+    paymentId: string,
+    type: 'completed' | 'failed',
+  ): Promise<void> {
     // Queue notification sending (to be implemented with telegram notifications)
-    await this.paymentQueue.add('send-payment-notification', {
-      paymentId,
-      type,
-    }, {
-      delay: 1000, // Send notification after 1 second
-      attempts: 2,
-      removeOnComplete: 20,
-      removeOnFail: 10,
-    });
+    await this.paymentQueue.add(
+      'send-payment-notification',
+      {
+        paymentId,
+        type,
+      },
+      {
+        delay: 1000, // Send notification after 1 second
+        attempts: 2,
+        removeOnComplete: 20,
+        removeOnFail: 10,
+      },
+    );
   }
 
   async getPaymentStats(tenantId: string): Promise<{
@@ -420,24 +499,27 @@ export class PaymentService {
     failed: number;
     totalRevenue: number;
   }> {
-    const [
-      total,
-      completed,
-      pending,
-      failed,
-      revenueResult
-    ] = await Promise.all([
-      this.paymentRepository.count({ where: { tenant_id: tenantId } }),
-      this.paymentRepository.count({ where: { tenant_id: tenantId, status: PaymentStatus.COMPLETED } }),
-      this.paymentRepository.count({ where: { tenant_id: tenantId, status: PaymentStatus.PENDING } }),
-      this.paymentRepository.count({ where: { tenant_id: tenantId, status: PaymentStatus.FAILED } }),
-      this.paymentRepository
-        .createQueryBuilder('payment')
-        .select('SUM(payment.amount_mnt)', 'total')
-        .where('payment.tenant_id = :tenantId', { tenantId })
-        .andWhere('payment.status = :status', { status: PaymentStatus.COMPLETED })
-        .getRawOne()
-    ]);
+    const [total, completed, pending, failed, revenueResult] =
+      await Promise.all([
+        this.paymentRepository.count({ where: { tenant_id: tenantId } }),
+        this.paymentRepository.count({
+          where: { tenant_id: tenantId, status: PaymentStatus.COMPLETED },
+        }),
+        this.paymentRepository.count({
+          where: { tenant_id: tenantId, status: PaymentStatus.PENDING },
+        }),
+        this.paymentRepository.count({
+          where: { tenant_id: tenantId, status: PaymentStatus.FAILED },
+        }),
+        this.paymentRepository
+          .createQueryBuilder('payment')
+          .select('SUM(payment.amount_mnt)', 'total')
+          .where('payment.tenant_id = :tenantId', { tenantId })
+          .andWhere('payment.status = :status', {
+            status: PaymentStatus.COMPLETED,
+          })
+          .getRawOne(),
+      ]);
 
     return {
       total,
@@ -451,9 +533,14 @@ export class PaymentService {
   /**
    * Send payment notification to user via Telegram
    */
-  async sendPaymentNotification(payment: Payment, type: 'completed' | 'failed'): Promise<void> {
+  async sendPaymentNotification(
+    payment: Payment,
+    type: 'completed' | 'failed',
+  ): Promise<void> {
     if (!payment.member || !payment.member.telegram_user_id) {
-      this.logger.warn(`Cannot send payment notification - no Telegram user ID for payment ${payment.id}`);
+      this.logger.warn(
+        `Cannot send payment notification - no Telegram user ID for payment ${payment.id}`,
+      );
       return;
     }
 
@@ -477,7 +564,9 @@ export class PaymentService {
 
       // If no bot token found, try to get the first active bot for the tenant
       if (!botToken) {
-        this.logger.warn(`No bot token found for payment ${payment.id}, skipping notification`);
+        this.logger.warn(
+          `No bot token found for payment ${payment.id}, skipping notification`,
+        );
         return;
       }
 
@@ -487,23 +576,30 @@ export class PaymentService {
         membership,
         telegramGroup,
         type,
-        telegramGroup?.project?.message_templates || {}
+        telegramGroup?.project?.message_templates || {},
       );
 
       const sent = await this.telegramApiService.sendMessage(
         botToken,
         payment.member.telegram_user_id,
         message,
-        { parse_mode: 'HTML' }
+        { parse_mode: 'HTML' },
       );
 
       if (sent) {
-        this.logger.log(`Payment notification sent to user ${payment.member.telegram_user_id} for payment ${payment.id}`);
+        this.logger.log(
+          `Payment notification sent to user ${payment.member.telegram_user_id} for payment ${payment.id}`,
+        );
       } else {
-        this.logger.error(`Failed to send payment notification to user ${payment.member.telegram_user_id}`);
+        this.logger.error(
+          `Failed to send payment notification to user ${payment.member.telegram_user_id}`,
+        );
       }
     } catch (error) {
-      this.logger.error(`Error sending payment notification for payment ${payment.id}:`, error);
+      this.logger.error(
+        `Error sending payment notification for payment ${payment.id}:`,
+        error,
+      );
       // Don't throw - notifications are best effort
     }
   }
@@ -516,14 +612,18 @@ export class PaymentService {
     membership: Membership | null,
     telegramGroup: TelegramGroup | null,
     type: 'completed' | 'failed',
-    botTemplates: Record<string, any>
+    botTemplates: Record<string, any>,
   ): string {
     const member = payment.member;
     const fullName = member
-      ? ([member.first_name, member.last_name].filter(Boolean).join(' ') || member.username || `User ${member.telegram_user_id}`)
+      ? [member.first_name, member.last_name].filter(Boolean).join(' ') ||
+        member.username ||
+        `User ${member.telegram_user_id}`
       : '';
     const firstName = member
-      ? (member.first_name || member.username || `User ${member.telegram_user_id}`)
+      ? member.first_name ||
+        member.username ||
+        `User ${member.telegram_user_id}`
       : '';
 
     const variables = {
@@ -532,27 +632,37 @@ export class PaymentService {
       amount: payment.amount_mnt.toLocaleString(),
       currency: payment.currency,
       payment_id: payment.qpay_payment_id || payment.id,
-      payment_date: payment.paid_at?.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }) || '',
+      payment_date:
+        payment.paid_at?.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }) || '',
       group_name: telegramGroup?.group_name || '',
       plan_name: membership?.plan?.name || '',
-      expires_at: membership?.expires_at.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      }) || '',
-      failure_reason: payment.failure_reason ? `<b>Reason:</b> ${payment.failure_reason}` : '',
+      expires_at:
+        membership?.expires_at.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }) || '',
+      failure_reason: payment.failure_reason
+        ? `<b>Reason:</b> ${payment.failure_reason}`
+        : '',
     };
 
     if (type === 'completed') {
-      return this.messageTemplateService.buildPaymentSuccessMessage(botTemplates, variables);
+      return this.messageTemplateService.buildPaymentSuccessMessage(
+        botTemplates,
+        variables,
+      );
     } else {
-      return this.messageTemplateService.buildPaymentFailedMessage(botTemplates, variables);
+      return this.messageTemplateService.buildPaymentFailedMessage(
+        botTemplates,
+        variables,
+      );
     }
   }
 }

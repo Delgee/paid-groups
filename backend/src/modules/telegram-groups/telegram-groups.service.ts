@@ -1,8 +1,13 @@
-import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 import { TelegramGroup, GroupType } from './telegram-groups.entity';
-import { TelegramBot } from '../bot/entities/telegram-bot.entity';
 import { Project } from '../project/entities/project.entity';
 import { TelegramApiService } from '../../integrations/telegram/telegram-api.service';
 import { TelegramChannelService } from '../../integrations/telegram/telegram-channel.service';
@@ -52,8 +57,6 @@ export class TelegramGroupsService {
   constructor(
     @InjectRepository(TelegramGroup)
     private readonly telegramGroupRepository: Repository<TelegramGroup>,
-    @InjectRepository(TelegramBot)
-    private readonly telegramBotRepository: Repository<TelegramBot>,
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
     private readonly telegramApiService: TelegramApiService,
@@ -75,26 +78,35 @@ export class TelegramGroupsService {
    * @throws BadRequestException - When project_id is invalid, doesn't belong to tenant, or bot lacks permissions
    * @throws ConflictException - When group name already exists for the tenant
    */
-  async create(createDto: CreateTelegramGroupDto, tenantId: string): Promise<TelegramGroup> {
+  async create(
+    createDto: CreateTelegramGroupDto,
+    tenantId: string,
+  ): Promise<TelegramGroup> {
     try {
-      this.logger.log(`Creating new telegram group: ${createDto.group_name} for tenant ${tenantId}`);
+      this.logger.log(
+        `Creating new telegram group: ${createDto.group_name} for tenant ${tenantId}`,
+      );
 
       // Validate that project exists and belongs to tenant
       const project = await this.projectRepository.findOne({
         where: {
           id: createDto.project_id,
           tenant_id: tenantId,
-          is_active: true
+          is_active: true,
         },
       });
 
       if (!project) {
-        throw new BadRequestException('Project not found or not accessible for this tenant');
+        throw new BadRequestException(
+          'Project not found or not accessible for this tenant',
+        );
       }
 
       // Validate bot token exists
       if (!project.bot_token) {
-        throw new BadRequestException('Project does not have a valid bot token configured');
+        throw new BadRequestException(
+          'Project does not have a valid bot token configured',
+        );
       }
 
       // Check for duplicate group name within tenant
@@ -102,18 +114,22 @@ export class TelegramGroupsService {
         where: {
           group_name: createDto.group_name,
           tenant_id: tenantId,
-          is_active: true
+          is_active: true,
         },
       });
 
       if (existingGroup) {
-        throw new ConflictException(`Group with name "${createDto.group_name}" already exists`);
+        throw new ConflictException(
+          `Group with name "${createDto.group_name}" already exists`,
+        );
       }
 
       // Parse telegram_chat_id to number for channel validation
       const chatId = parseInt(createDto.telegram_chat_id, 10);
       if (isNaN(chatId)) {
-        throw new BadRequestException('Invalid telegram_chat_id format. Must be a numeric string.');
+        throw new BadRequestException(
+          'Invalid telegram_chat_id format. Must be a numeric string.',
+        );
       }
 
       // Check if another group is already connected to this channel
@@ -121,7 +137,7 @@ export class TelegramGroupsService {
         where: {
           telegram_chat_id: chatId,
           tenant_id: tenantId,
-          is_active: true
+          is_active: true,
         },
       });
 
@@ -132,16 +148,20 @@ export class TelegramGroupsService {
       }
 
       // Validate bot permissions in the Telegram channel
-      this.logger.log(`Validating bot permissions for channel ${createDto.telegram_chat_id} ${project.bot_token}`);
-      const connectionResult = await this.telegramChannelService.connectToChannel(
-        project.bot_token,
-        createDto.telegram_chat_id,
-        true, // verify_permissions = true
+      this.logger.log(
+        `Validating bot permissions for channel ${createDto.telegram_chat_id} ${project.bot_token}`,
       );
+      const connectionResult =
+        await this.telegramChannelService.connectToChannel(
+          project.bot_token,
+          createDto.telegram_chat_id,
+          true, // verify_permissions = true
+        );
 
       if (!connectionResult.success) {
         throw new BadRequestException(
-          connectionResult.error || 'Failed to validate bot permissions in the Telegram channel',
+          connectionResult.error ||
+            'Failed to validate bot permissions in the Telegram channel',
         );
       }
 
@@ -166,17 +186,22 @@ export class TelegramGroupsService {
 
       // Post welcome message to channel
       try {
-        const welcomePosted = await this.telegramChannelService.postWelcomeMessage(
-          project.bot_token,
-          createDto.telegram_chat_id,
-          createDto.group_name,
-        );
+        const welcomePosted =
+          await this.telegramChannelService.postWelcomeMessage(
+            project.bot_token,
+            createDto.telegram_chat_id,
+            createDto.group_name,
+          );
 
         if (!welcomePosted) {
-          this.logger.warn(`Failed to post welcome message to channel ${createDto.telegram_chat_id}`);
+          this.logger.warn(
+            `Failed to post welcome message to channel ${createDto.telegram_chat_id}`,
+          );
         }
       } catch (welcomeError) {
-        this.logger.warn(`Error posting welcome message: ${welcomeError.message}`);
+        this.logger.warn(
+          `Error posting welcome message: ${welcomeError.message}`,
+        );
       }
 
       // Fetch with project relation for response
@@ -191,7 +216,10 @@ export class TelegramGroupsService {
 
       return groupWithProject!;
     } catch (error) {
-      this.logger.error(`Failed to create telegram group: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create telegram group: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -203,9 +231,15 @@ export class TelegramGroupsService {
    * @param query - Optional query parameters for filtering and pagination
    * @returns Promise<TelegramGroupsListResponse> - Paginated list of groups with metadata
    */
-  async findAll(tenantId: string, query?: GetTelegramGroupsDto): Promise<TelegramGroupsListResponse> {
+  async findAll(
+    tenantId: string,
+    query?: GetTelegramGroupsDto,
+  ): Promise<TelegramGroupsListResponse> {
     try {
-      this.logger.log(`Fetching telegram groups for tenant ${tenantId} with query:`, query);
+      this.logger.log(
+        `Fetching telegram groups for tenant ${tenantId} with query:`,
+        query,
+      );
 
       const page = query?.page || 1;
       const limit = Math.min(query?.limit || 20, 100); // Cap at 100 items per page
@@ -228,20 +262,25 @@ export class TelegramGroupsService {
         relations: ['project'],
         order: {
           updated_at: 'DESC',
-          created_at: 'DESC'
+          created_at: 'DESC',
         },
         skip,
         take: limit,
       });
 
-      this.logger.log(`Found ${total} telegram groups for tenant ${tenantId} (page ${page}/${Math.ceil(total / limit)})`);
+      this.logger.log(
+        `Found ${total} telegram groups for tenant ${tenantId} (page ${page}/${Math.ceil(total / limit)})`,
+      );
 
       return {
         data: groups,
         pagination: calculatePagination(total, page, limit),
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch telegram groups for tenant ${tenantId}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch telegram groups for tenant ${tenantId}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -262,20 +301,27 @@ export class TelegramGroupsService {
         where: {
           id,
           tenant_id: tenantId,
-          is_active: true
+          is_active: true,
         },
         relations: ['project'],
       });
 
       if (!group) {
-        this.logger.warn(`Telegram group not found: id=${id}, tenantId=${tenantId}`);
+        this.logger.warn(
+          `Telegram group not found: id=${id}, tenantId=${tenantId}`,
+        );
         return null;
       }
 
-      this.logger.log(`Found telegram group: ${group.id} - ${group.group_name}`);
+      this.logger.log(
+        `Found telegram group: ${group.id} - ${group.group_name}`,
+      );
       return group;
     } catch (error) {
-      this.logger.error(`Failed to fetch telegram group ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch telegram group ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -289,7 +335,11 @@ export class TelegramGroupsService {
    * @returns Promise<TelegramGroup> - The updated telegram group
    * @throws NotFoundException - When group is not found
    */
-  async update(id: string, updateDto: UpdateTelegramGroupDto, tenantId: string): Promise<TelegramGroup> {
+  async update(
+    id: string,
+    updateDto: UpdateTelegramGroupDto,
+    tenantId: string,
+  ): Promise<TelegramGroup> {
     try {
       this.logger.log(`Updating telegram group ${id} for tenant ${tenantId}`);
 
@@ -307,12 +357,14 @@ export class TelegramGroupsService {
               group_name: updateDto.group_name,
               tenant_id: tenantId,
               is_active: true,
-              id: Not(id) // Exclude current group from check
+              id: Not(id), // Exclude current group from check
             },
           });
 
           if (existingGroup) {
-            throw new ConflictException(`Group with name "${updateDto.group_name}" already exists`);
+            throw new ConflictException(
+              `Group with name "${updateDto.group_name}" already exists`,
+            );
           }
         }
         group.group_name = updateDto.group_name;
@@ -331,10 +383,15 @@ export class TelegramGroupsService {
 
       const updatedGroup = await this.telegramGroupRepository.save(group);
 
-      this.logger.log(`Telegram group updated successfully: ${id} - ${updatedGroup.group_name}`);
+      this.logger.log(
+        `Telegram group updated successfully: ${id} - ${updatedGroup.group_name}`,
+      );
       return updatedGroup;
     } catch (error) {
-      this.logger.error(`Failed to update telegram group ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update telegram group ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -370,7 +427,10 @@ export class TelegramGroupsService {
       this.logger.log(`Telegram group removed successfully: ${id}`);
       return true;
     } catch (error) {
-      this.logger.error(`Failed to remove telegram group ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to remove telegram group ${id}: ${error.message}`,
+        error.stack,
+      );
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -388,9 +448,15 @@ export class TelegramGroupsService {
    * @returns Promise<ConnectChannelResponse> - Connection result with channel info or error
    * @throws NotFoundException - When group is not found
    */
-  async connectChannel(id: string, connectDto: ConnectChannelDto, tenantId: string): Promise<ConnectChannelResponse> {
+  async connectChannel(
+    id: string,
+    connectDto: ConnectChannelDto,
+    tenantId: string,
+  ): Promise<ConnectChannelResponse> {
     try {
-      this.logger.log(`Connecting channel for telegram group ${id}: ${connectDto.telegram_chat_id}`);
+      this.logger.log(
+        `Connecting channel for telegram group ${id}: ${connectDto.telegram_chat_id}`,
+      );
 
       const group = await this.findOne(id, tenantId);
       if (!group) {
@@ -411,7 +477,7 @@ export class TelegramGroupsService {
           telegram_chat_id: parseInt(connectDto.telegram_chat_id),
           tenant_id: tenantId,
           is_active: true,
-          id: Not(id) // Exclude current group
+          id: Not(id), // Exclude current group
         },
       });
 
@@ -423,11 +489,12 @@ export class TelegramGroupsService {
       }
 
       // Connect to channel using channel service
-      const connectionResult = await this.telegramChannelService.connectToChannel(
-        group.project.bot_token,
-        connectDto.telegram_chat_id,
-        connectDto.verify_permissions ?? true,
-      );
+      const connectionResult =
+        await this.telegramChannelService.connectToChannel(
+          group.project.bot_token,
+          connectDto.telegram_chat_id,
+          connectDto.verify_permissions ?? true,
+        );
 
       if (!connectionResult.success) {
         return {
@@ -444,24 +511,31 @@ export class TelegramGroupsService {
       group.username = channelInfo.username || null;
       group.member_count = channelInfo.member_count || 0;
 
-      const updatedGroup = await this.telegramGroupRepository.save(group);
+      await this.telegramGroupRepository.save(group);
 
       // Post welcome message to channel
       try {
-        const welcomePosted = await this.telegramChannelService.postWelcomeMessage(
-          group.project.bot_token,
-          connectDto.telegram_chat_id,
-          group.group_name,
-        );
+        const welcomePosted =
+          await this.telegramChannelService.postWelcomeMessage(
+            group.project.bot_token,
+            connectDto.telegram_chat_id,
+            group.group_name,
+          );
 
         if (!welcomePosted) {
-          this.logger.warn(`Failed to post welcome message to channel ${connectDto.telegram_chat_id}`);
+          this.logger.warn(
+            `Failed to post welcome message to channel ${connectDto.telegram_chat_id}`,
+          );
         }
       } catch (welcomeError) {
-        this.logger.warn(`Error posting welcome message: ${welcomeError.message}`);
+        this.logger.warn(
+          `Error posting welcome message: ${welcomeError.message}`,
+        );
       }
 
-      this.logger.log(`Channel connected successfully for group ${id}: ${channelInfo.title}`);
+      this.logger.log(
+        `Channel connected successfully for group ${id}: ${channelInfo.title}`,
+      );
 
       return {
         success: true,
@@ -475,7 +549,10 @@ export class TelegramGroupsService {
         },
       };
     } catch (error) {
-      this.logger.error(`Failed to connect channel for group ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to connect channel for group ${id}: ${error.message}`,
+        error.stack,
+      );
 
       if (error instanceof NotFoundException) {
         throw error;
@@ -510,12 +587,16 @@ export class TelegramGroupsService {
       if (!group.telegram_chat_id || !group.project?.bot_token) {
         return {
           success: false,
-          error: 'Group cannot be synced: not connected to a channel or bot token missing',
+          error:
+            'Group cannot be synced: not connected to a channel or bot token missing',
         };
       }
 
       // Trigger sync through sync service
-      const syncResult = await this.telegramSyncService.syncGroupToChannel(id, tenantId);
+      const syncResult = await this.telegramSyncService.syncGroupToChannel(
+        id,
+        tenantId,
+      );
 
       if (syncResult.success) {
         this.logger.log(`Sync completed successfully for group ${id}`);
@@ -536,7 +617,10 @@ export class TelegramGroupsService {
         };
       }
     } catch (error) {
-      this.logger.error(`Failed to sync telegram group ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to sync telegram group ${id}: ${error.message}`,
+        error.stack,
+      );
 
       if (error instanceof NotFoundException) {
         throw error;

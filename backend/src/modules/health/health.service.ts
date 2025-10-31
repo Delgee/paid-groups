@@ -4,9 +4,9 @@ import { DataSource, Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
-import { TelegramBot } from '../bot/entities/telegram-bot.entity';
 import { TelegramApiService } from '../../integrations/telegram/telegram-api.service';
 import { firstValueFrom } from 'rxjs';
+import { Project } from '../project/entities/project.entity';
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';
@@ -32,8 +32,8 @@ export class HealthService {
   constructor(
     @InjectDataSource()
     private dataSource: DataSource,
-    @InjectRepository(TelegramBot)
-    private botRepository: Repository<TelegramBot>,
+    @InjectRepository(Project)
+    private projectRepository: Repository<Project>,
     private httpService: HttpService,
     private telegramApiService: TelegramApiService,
     @Inject(CACHE_MANAGER)
@@ -42,7 +42,7 @@ export class HealthService {
 
   async getHealthStatus(): Promise<HealthStatus> {
     const checks: HealthCheck[] = [];
-    
+
     try {
       // Database health check
       const dbHealth = await this.checkDatabaseHealth();
@@ -59,7 +59,6 @@ export class HealthService {
       // Telegram health check
       const telegramHealth = await this.checkTelegramHealth();
       checks.push(telegramHealth);
-
     } catch (error) {
       this.logger.error('Error during health check:', error);
       checks.push({
@@ -71,11 +70,14 @@ export class HealthService {
     }
 
     // Determine overall status
-    const unhealthyChecks = checks.filter(check => check.status === 'unhealthy');
+    const unhealthyChecks = checks.filter(
+      (check) => check.status === 'unhealthy',
+    );
     let status: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
-    
+
     if (unhealthyChecks.length > 0) {
-      status = unhealthyChecks.length === checks.length ? 'unhealthy' : 'degraded';
+      status =
+        unhealthyChecks.length === checks.length ? 'unhealthy' : 'degraded';
     }
 
     return {
@@ -105,11 +107,11 @@ export class HealthService {
 
   private async checkDatabaseHealth(): Promise<HealthCheck> {
     const startTime = Date.now();
-    
+
     try {
       // Simple query to check database connectivity
       await this.dataSource.query('SELECT 1');
-      
+
       // Check connection pool status (simplified)
       const poolStatus = {
         is_connected: this.dataSource.isInitialized,
@@ -185,24 +187,26 @@ export class HealthService {
 
   private async checkQPayHealth(): Promise<HealthCheck> {
     const startTime = Date.now();
-    
+
     try {
       const qpayUrl = process.env.QPAY_API_URL || 'https://merchant.qpay.mn/v2';
-      
+
       // Make a simple request to check QPay API availability
       const response = await firstValueFrom(
         this.httpService.get(`${qpayUrl}/auth/token`, {
           timeout: 5000,
           validateStatus: () => true, // Accept any status code
-        })
+        }),
       );
 
       const isHealthy = response.status < 500;
-      
+
       return {
         name: 'qpay',
         status: isHealthy ? 'healthy' : 'unhealthy',
-        message: isHealthy ? 'QPay API is reachable' : 'QPay API is not responding',
+        message: isHealthy
+          ? 'QPay API is reachable'
+          : 'QPay API is not responding',
         duration_ms: Date.now() - startTime,
         details: {
           status_code: response.status,
@@ -222,34 +226,40 @@ export class HealthService {
 
   private async checkTelegramHealth(): Promise<HealthCheck> {
     const startTime = Date.now();
-    
+
     try {
       // Get a sample bot to test Telegram API connectivity
-      const sampleBot = await this.botRepository.findOne({
+      const sampleProject = await this.projectRepository.findOne({
         where: { is_active: true },
       });
 
-      if (!sampleBot) {
+      if (!sampleProject) {
         return {
           name: 'telegram',
           status: 'healthy',
-          message: 'No active bots configured, skipping check',
+          message: 'No active projects configured, skipping check',
           duration_ms: Date.now() - startTime,
         };
       }
 
       // Try to verify bot token to check Telegram API connectivity
-      const botInfo = await this.telegramApiService.verifyBotToken(sampleBot.bot_token);
-      
+      const projectInfo = await this.telegramApiService.verifyBotToken(
+        sampleProject.bot_token,
+      );
+
       return {
         name: 'telegram',
-        status: botInfo ? 'healthy' : 'unhealthy',
-        message: botInfo ? 'Telegram API is reachable' : 'Telegram API connectivity issue',
+        status: projectInfo ? 'healthy' : 'unhealthy',
+        message: projectInfo
+          ? 'Telegram API is reachable'
+          : 'Telegram API connectivity issue',
         duration_ms: Date.now() - startTime,
-        details: botInfo ? {
-          bot_id: botInfo.id,
-          bot_username: botInfo.username,
-        } : undefined,
+        details: projectInfo
+          ? {
+              bot_id: projectInfo.id,
+              bot_username: projectInfo.username,
+            }
+          : undefined,
       };
     } catch (error) {
       return {

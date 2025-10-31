@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Tenant, SubscriptionTier, SubscriptionStatus } from '../entities/tenant.entity';
+import {
+  Tenant,
+  SubscriptionTier,
+  SubscriptionStatus,
+} from '../entities/tenant.entity';
 
 export interface CreateTenantDto {
   name: string;
@@ -35,8 +39,10 @@ export class TenantService {
   async create(createTenantDto: CreateTenantDto): Promise<Tenant> {
     const tenant = this.tenantRepository.create({
       ...createTenantDto,
-      subscription_tier: createTenantDto.subscription_tier || SubscriptionTier.FREE,
-      subscription_status: createTenantDto.subscription_status || SubscriptionStatus.ACTIVE,
+      subscription_tier:
+        createTenantDto.subscription_tier || SubscriptionTier.FREE,
+      subscription_status:
+        createTenantDto.subscription_status || SubscriptionStatus.ACTIVE,
       max_bots: createTenantDto.max_bots || 1,
       max_groups_per_bot: createTenantDto.max_groups_per_bot || 5,
       max_members: createTenantDto.max_members || 1000,
@@ -60,9 +66,9 @@ export class TenantService {
 
   async update(id: string, updateTenantDto: UpdateTenantDto): Promise<Tenant> {
     const tenant = await this.findById(id);
-    
+
     Object.assign(tenant, updateTenantDto);
-    
+
     return this.tenantRepository.save(tenant);
   }
 
@@ -77,22 +83,30 @@ export class TenantService {
     });
   }
 
-  async findBySubscriptionStatus(status: SubscriptionStatus): Promise<Tenant[]> {
+  async findBySubscriptionStatus(
+    status: SubscriptionStatus,
+  ): Promise<Tenant[]> {
     return this.tenantRepository.find({
       where: { subscription_status: status },
     });
   }
 
-  async updateSubscriptionStatus(id: string, status: SubscriptionStatus): Promise<Tenant> {
+  async updateSubscriptionStatus(
+    id: string,
+    status: SubscriptionStatus,
+  ): Promise<Tenant> {
     const tenant = await this.findById(id);
     tenant.subscription_status = status;
     return this.tenantRepository.save(tenant);
   }
 
-  async updateSubscriptionTier(id: string, tier: SubscriptionTier): Promise<Tenant> {
+  async updateSubscriptionTier(
+    id: string,
+    tier: SubscriptionTier,
+  ): Promise<Tenant> {
     const tenant = await this.findById(id);
     tenant.subscription_tier = tier;
-    
+
     // Update limits based on tier
     switch (tier) {
       case SubscriptionTier.FREE:
@@ -116,12 +130,12 @@ export class TenantService {
         tenant.max_members = -1; // unlimited
         break;
     }
-    
+
     return this.tenantRepository.save(tenant);
   }
 
   async getTenantStats(tenantId: string): Promise<{
-    total_bots: number;
+    total_projects: number;
     total_groups: number;
     total_members: number;
     active_memberships: number;
@@ -134,7 +148,8 @@ export class TenantService {
         'telegram_groups',
         'members',
         'memberships',
-        'payments'
+        'payments',
+        'projects',
       ],
     });
 
@@ -142,13 +157,15 @@ export class TenantService {
       throw new NotFoundException(`Tenant with ID ${tenantId} not found`);
     }
 
-    const activeMemberships = tenant.memberships?.filter(m => m.status === 'active').length || 0;
-    const totalRevenue = tenant.payments
-      ?.filter(p => p.status === 'completed')
-      .reduce((sum, payment) => sum + Number(payment.amount_mnt), 0) || 0;
+    const activeMemberships =
+      tenant.memberships?.filter((m) => m.status === 'active').length || 0;
+    const totalRevenue =
+      tenant.payments
+        ?.filter((p) => p.status === 'completed')
+        .reduce((sum, payment) => sum + Number(payment.amount_mnt), 0) || 0;
 
     return {
-      total_bots: tenant.telegram_bots?.length || 0,
+      total_projects: tenant.projects?.length || 0,
       total_groups: tenant.telegram_groups?.length || 0,
       total_members: tenant.members?.length || 0,
       active_memberships: activeMemberships,

@@ -7,7 +7,6 @@ import {
   OneToMany,
 } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
-import { TelegramBot } from '../../bot/entities/telegram-bot.entity';
 import { Project } from '../../project/entities/project.entity';
 import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { MembershipPlan } from '../../membership/entities/membership-plan.entity';
@@ -72,30 +71,27 @@ export class Tenant {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @OneToMany(() => User, user => user.tenant)
+  @OneToMany(() => User, (user) => user.tenant)
   users: User[];
 
-  @OneToMany(() => TelegramBot, bot => bot.tenant)
-  telegram_bots: TelegramBot[];
-
-  @OneToMany(() => Project, project => project.tenant)
+  @OneToMany(() => Project, (project) => project.tenant)
   projects: Project[];
 
-  @OneToMany(() => TelegramGroup, group => group.tenant)
+  @OneToMany(() => TelegramGroup, (group) => group.tenant)
   telegram_groups: TelegramGroup[];
 
-  @OneToMany(() => MembershipPlan, plan => plan.tenant)
+  @OneToMany(() => MembershipPlan, (plan) => plan.tenant)
   membership_plans: MembershipPlan[];
 
-  @OneToMany(() => Member, member => member.tenant)
+  @OneToMany(() => Member, (member) => member.tenant)
   members: Member[];
 
-  @OneToMany(() => Membership, membership => membership.tenant)
+  @OneToMany(() => Membership, (membership) => membership.tenant)
   memberships: Membership[];
 
-  @OneToMany(() => Payment, payment => payment.tenant)
+  @OneToMany(() => Payment, (payment) => payment.tenant)
   payments: Payment[];
 
-  @OneToMany(() => AuditLog, auditLog => auditLog.tenant)
+  @OneToMany(() => AuditLog, (auditLog) => auditLog.tenant)
   audit_logs: AuditLog[];
 }
