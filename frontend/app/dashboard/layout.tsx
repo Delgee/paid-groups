@@ -38,7 +38,6 @@ interface DashboardLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
-  { name: 'Bot Configurations', href: '/dashboard/bot-configurations', icon: SettingsIcon },
   { name: 'Bots', href: '/dashboard/bots', icon: Bot },
   { name: 'Telegram Groups', href: '/dashboard/telegram-groups', icon: MessageSquare },
   { name: 'Members', href: '/dashboard/members', icon: Users },

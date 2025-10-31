@@ -16,7 +16,6 @@ import { HealthModule } from './modules/health/health.module';
 import { UserManagementModule } from './modules/user-management/user-management.module';
 import { TelegramGroupsModule } from './modules/telegram-groups/telegram-groups.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
-import { BotConfigurationModule } from './modules/bot-configuration/bot-configuration.module';
 import { MembershipPlanModule } from './modules/membership-plan/membership-plan.module';
 import { ProjectModule } from './modules/project/project.module';
 import { OnboardingBotModule } from './modules/onboarding-bot/onboarding-bot.module';
@@ -77,7 +76,6 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     MetricsModule,
     AuthModule,
     TenantModule,
-    BotConfigurationModule,
     ProjectModule,
     MembershipModule,
     MembershipPlanModule,
