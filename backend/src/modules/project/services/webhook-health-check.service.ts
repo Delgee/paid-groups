@@ -49,20 +49,27 @@ export class WebhookHealthCheckService implements OnModuleInit {
     if (runOnStartup) {
       this.logger.log('Running webhook health check on startup...');
       try {
+        // Check onboarding bot webhook first
+        await this.checkOnboardingBotWebhook();
+
+        // Check project webhooks
         const result = await this.checkAllWebhooks();
         this.logHealthCheckSummary(result);
 
-        // Auto-fix mismatched webhooks if enabled
+        // Auto-fix mismatched webhooks if enabled (default: true)
         const autoFix = this.configService.get<boolean>(
           'WEBHOOK_AUTO_FIX_ON_STARTUP',
-          false,
+          true,
         );
 
         if (autoFix && result.mismatchedWebhooks > 0) {
           this.logger.log(
             `Auto-fixing ${result.mismatchedWebhooks} mismatched webhooks...`,
           );
-          await this.fixMismatchedWebhooks();
+          const fixedCount = await this.fixMismatchedWebhooks();
+          this.logger.log(
+            `✅ Successfully fixed ${fixedCount} out of ${result.mismatchedWebhooks} mismatched webhooks`,
+          );
         }
       } catch (error) {
         this.logger.error(
@@ -152,7 +159,7 @@ export class WebhookHealthCheckService implements OnModuleInit {
               projectId: project.id,
               tenantId: project.tenant_id,
               status: 'mismatched',
-              message: `Telegram webhook verification failed. Current: ${verification.currentUrl}`,
+              message: `Telegram webhook verification failed. Current: ${verification.currentUrl || '(not set)'}, Expected: ${expectedWebhookUrl}`,
             });
             continue;
           }
@@ -277,5 +284,103 @@ export class WebhookHealthCheckService implements OnModuleInit {
     const result = await this.checkAllWebhooks();
     this.logHealthCheckSummary(result);
     return result;
+  }
+
+  /**
+   * Check and fix onboarding bot webhook
+   */
+  async checkOnboardingBotWebhook(): Promise<void> {
+    const botToken = this.configService.get<string>(
+      'TELEGRAM_ONBOARDING_BOT_TOKEN',
+    );
+
+    if (!botToken) {
+      this.logger.warn(
+        '⚠️  TELEGRAM_ONBOARDING_BOT_TOKEN not configured, skipping onboarding bot webhook check',
+      );
+      return;
+    }
+
+    const baseUrl = this.configService.get<string>('BASE_URL');
+
+    if (!baseUrl) {
+      this.logger.error(
+        '❌ BASE_URL not configured, cannot check onboarding bot webhook',
+      );
+      return;
+    }
+
+    // Generate expected webhook URL
+    const expectedWebhookUrl = `${baseUrl}/v1/onboarding-bot/webhook/${botToken}`;
+
+    try {
+      this.logger.log('🔍 Checking onboarding bot webhook...');
+
+      // Check if Telegram verification is enabled (disabled by default to avoid rate limits and ngrok issues)
+      const verifyWithTelegram = this.configService.get<boolean>(
+        'WEBHOOK_VERIFY_WITH_TELEGRAM',
+        false,
+      );
+
+      if (!verifyWithTelegram) {
+        this.logger.debug(
+          `⏭️  Telegram webhook verification is disabled. Expected webhook URL: ${expectedWebhookUrl}`,
+        );
+        return;
+      }
+
+      // Verify current webhook with Telegram API
+      const verification = await this.webhookService.verifyWebhook(
+        botToken,
+        expectedWebhookUrl,
+      );
+
+      if (verification.isValid) {
+        this.logger.log(
+          `✅ Onboarding bot webhook is healthy: ${verification.currentUrl}`,
+        );
+        return;
+      }
+
+      // Webhook mismatch detected
+      this.logger.warn(
+        `⚠️  Onboarding bot webhook mismatch detected. Expected: ${expectedWebhookUrl}, Current: ${verification.currentUrl || '(not set)'}`,
+      );
+
+      // Auto-fix if enabled
+      const autoFix = this.configService.get<boolean>(
+        'WEBHOOK_AUTO_FIX_ON_STARTUP',
+        true,
+      );
+
+      if (autoFix) {
+        this.logger.log('🔧 Auto-fixing onboarding bot webhook...');
+
+        // Set the correct webhook
+        const result = await this.webhookService.setWebhook(
+          botToken,
+          expectedWebhookUrl,
+        );
+
+        if (result.success) {
+          this.logger.log(
+            `✅ Successfully fixed onboarding bot webhook: ${expectedWebhookUrl}`,
+          );
+        } else {
+          this.logger.error(
+            `❌ Failed to fix onboarding bot webhook: ${result.error}`,
+          );
+        }
+      } else {
+        this.logger.warn(
+          '⚠️  Auto-fix is disabled. Please manually update the onboarding bot webhook.',
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to check onboarding bot webhook: ${error.message}`,
+        error.stack,
+      );
+    }
   }
 }

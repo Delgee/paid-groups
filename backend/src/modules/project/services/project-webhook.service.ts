@@ -101,20 +101,25 @@ export class ProjectWebhookService {
     expectedWebhookUrl: string,
   ): Promise<{ isValid: boolean; currentUrl?: string; error?: string }> {
     try {
+
+      console.log('botToken', botToken);
+      console.log('expectedWebhookUrl', expectedWebhookUrl);
       const bot = new Telegraf(botToken);
       const webhookInfo = await bot.telegram.getWebhookInfo();
 
+      // Telegram returns empty string when no webhook is set
+      const currentUrl = webhookInfo.url || null;
       const isValid = webhookInfo.url === expectedWebhookUrl;
 
       if (!isValid) {
         this.logger.warn(
-          `Webhook URL mismatch. Expected: ${expectedWebhookUrl}, Got: ${webhookInfo.url}`,
+          `Webhook URL mismatch. Expected: ${expectedWebhookUrl}, Got: ${currentUrl || '(not set)'}`,
         );
       }
 
       return {
         isValid,
-        currentUrl: webhookInfo.url,
+        currentUrl: currentUrl,
       };
     } catch (error) {
       this.logger.error(`Failed to verify webhook: ${error.message}`);
@@ -185,5 +190,46 @@ export class ProjectWebhookService {
 
     // Use constant-time comparison to prevent timing attacks
     return this.encryptionService.verifyHash(providedSecret, storedSecret);
+  }
+
+  /**
+   * Set webhook for any bot (including onboarding bot)
+   * Used for webhook health checks and auto-fixing
+   */
+  async setWebhook(
+    botToken: string,
+    webhookUrl: string,
+  ): Promise<WebhookSetupResult> {
+    try {
+      const bot = new Telegraf(botToken);
+
+      // Set webhook with Telegram API
+      await bot.telegram.setWebhook(webhookUrl, {
+        allowed_updates: [
+          'message',
+          'callback_query',
+          'chat_member',
+          'my_chat_member',
+        ],
+        drop_pending_updates: false, // Keep pending updates for onboarding bot
+      });
+
+      this.logger.log(`Webhook set successfully: ${webhookUrl}`);
+
+      return {
+        success: true,
+        webhookUrl,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to set webhook: ${error.message}`,
+        error.stack,
+      );
+
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
   }
 }

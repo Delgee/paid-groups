@@ -7,12 +7,13 @@ import { MembershipService } from './services/membership.service';
 import { MembershipExpirationJob } from './jobs/membership-expiration.job';
 import { Member } from './entities/member.entity';
 import { Membership } from './entities/membership.entity';
+import { MembershipPlan } from '../membership-plan/entities/membership-plan.entity';
 import { Project } from '../project/entities/project.entity';
 import { TelegramIntegrationModule } from '../../integrations/telegram/telegram-integration.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Member, Membership, Project]),
+    TypeOrmModule.forFeature([Member, Membership, MembershipPlan, Project]),
     TelegramIntegrationModule,
   ],
   controllers: [MemberController, MembershipController],

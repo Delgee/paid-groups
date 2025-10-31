@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { Context, Markup } from 'telegraf';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,7 +7,11 @@ import { MembershipPlanService } from '../../membership-plan/services/membership
 import { PaymentTransactionService } from '../../payment/services/payment-transaction.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { TelegramBotHandlerService, BotConfiguration } from '../../../integrations/telegram/telegram-bot-handler.service';
+import {
+  TelegramBotHandlerService,
+  BotConfiguration,
+} from '../../../integrations/telegram/telegram-bot-handler.service';
+import { EncryptionService } from '../../../common/services/encryption.service';
 
 /**
  * Project Bot Handler
@@ -27,13 +31,17 @@ export class ProjectBotHandler implements OnModuleInit {
     private readonly paymentTransactionService: PaymentTransactionService,
     @InjectQueue('membership') private membershipQueue: Queue,
     private readonly telegramBotHandler: TelegramBotHandlerService,
+    private readonly encryptionService: EncryptionService,
   ) {}
 
   async onModuleInit() {
     this.logger.log('Initializing Telegram bots for projects...');
     // Don't block app startup - initialize bots in background
     this.initializeBots().catch((error) => {
-      this.logger.error('Failed to initialize project bots during startup', error.stack);
+      this.logger.error(
+        'Failed to initialize project bots during startup',
+        error.stack,
+      );
     });
   }
 
@@ -47,17 +55,40 @@ export class ProjectBotHandler implements OnModuleInit {
         await this.createBotInstance(project);
       }
 
-      this.logger.log(`Initialized ${activeProjects.length} active project bots`);
+      this.logger.log(
+        `Initialized ${activeProjects.length} active project bots`,
+      );
     } catch (error) {
       this.logger.error('Failed to initialize project bots', error.stack);
     }
   }
 
+  /**
+   * Decrypt bot token for use with Telegram API
+   * @private
+   */
+  private decryptBotToken(encryptedToken: string): string {
+    try {
+      return this.encryptionService.decrypt(encryptedToken);
+    } catch (error) {
+      this.logger.error(`Failed to decrypt bot token: ${error.message}`);
+      throw new BadRequestException({
+        error: {
+          code: 'INVALID_BOT_TOKEN',
+          message: 'Bot token is invalid or corrupted',
+        },
+      });
+    }
+  }
+
   async createBotInstance(project: Project): Promise<void> {
     try {
+      // Decrypt bot token before using it with Telegram API
+      const decryptedBotToken = this.decryptBotToken(project.bot_token);
+
       const config: BotConfiguration = {
         id: project.id,
-        botToken: project.bot_token,
+        botToken: decryptedBotToken,
         botUsername: project.bot_username,
         welcomeMessage: project.welcome_message,
         tenantId: project.tenant_id,
@@ -67,32 +98,30 @@ export class ProjectBotHandler implements OnModuleInit {
       this.telegramBotHandler.registerCommandHandler(
         project.id,
         'start',
-        (ctx) => this.handleStartCommand(ctx, project)
+        (ctx) => this.handleStartCommand(ctx, project),
       );
 
-      this.telegramBotHandler.registerCommandHandler(
-        project.id,
-        'buy',
-        (ctx) => this.handleBuyCommand(ctx, project)
+      this.telegramBotHandler.registerCommandHandler(project.id, 'buy', (ctx) =>
+        this.handleBuyCommand(ctx, project),
       );
 
       this.telegramBotHandler.registerCommandHandler(
         project.id,
         'status',
-        (ctx) => this.handleStatusCommand(ctx, project)
+        (ctx) => this.handleStatusCommand(ctx, project),
       );
 
       // Register callback query handlers
       this.telegramBotHandler.registerCallbackQueryHandler(
         project.id,
         'show_plans',
-        (ctx) => this.handleBuyCommand(ctx, project)
+        (ctx) => this.handleBuyCommand(ctx, project),
       );
 
       this.telegramBotHandler.registerCallbackQueryHandler(
         project.id,
         'my_status',
-        (ctx) => this.handleStatusCommand(ctx, project)
+        (ctx) => this.handleStatusCommand(ctx, project),
       );
 
       this.telegramBotHandler.registerCallbackQueryHandler(
@@ -104,15 +133,20 @@ export class ProjectBotHandler implements OnModuleInit {
           if (telegramUserId) {
             await this.initiatePayment(ctx, project, planId, telegramUserId);
           }
-        }
+        },
       );
 
       // Create and launch bot instance
       await this.telegramBotHandler.createBotInstance(config);
 
-      this.logger.log(`Project bot @${project.bot_username} launched successfully (project: ${project.id})`);
+      this.logger.log(
+        `Project bot @${project.bot_username} launched successfully (project: ${project.id})`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to create bot instance for project ${project.id} (@${project.bot_username})`, error.stack);
+      this.logger.error(
+        `Failed to create bot instance for project ${project.id} (@${project.bot_username})`,
+        error.stack,
+      );
     }
   }
 
@@ -121,7 +155,9 @@ export class ProjectBotHandler implements OnModuleInit {
       const telegramUserId = ctx.from.id.toString();
       const userName = ctx.from.first_name;
 
-      this.logger.log(`Start command from user ${telegramUserId} on project bot ${project.bot_username}`);
+      this.logger.log(
+        `Start command from user ${telegramUserId} on project bot ${project.bot_username}`,
+      );
 
       // Send welcome message from project configuration
       await ctx.reply(
@@ -129,7 +165,7 @@ export class ProjectBotHandler implements OnModuleInit {
         Markup.inlineKeyboard([
           [Markup.button.callback('🛒 View Plans', 'show_plans')],
           [Markup.button.callback('📊 My Status', 'my_status')],
-        ])
+        ]),
       );
     } catch (error) {
       this.logger.error('Error handling start command', error.stack);
@@ -144,23 +180,28 @@ export class ProjectBotHandler implements OnModuleInit {
       // Fetch active membership plans for this project
       const plans = await this.membershipPlanService.findActiveByProject(
         project.tenant_id,
-        project.id
+        project.id,
       );
 
       if (plans.length === 0) {
-        await ctx.reply('No membership plans are currently available. Please check back later.');
+        await ctx.reply(
+          'No membership plans are currently available. Please check back later.',
+        );
         return;
       }
 
       // Create inline keyboard with plan options showing number of groups
       const keyboard = plans.map((plan) => {
         const groupCount = plan.telegram_groups?.length || 0;
-        const groupText = groupCount > 0 ? ` • ${groupCount} group${groupCount > 1 ? 's' : ''}` : '';
+        const groupText =
+          groupCount > 0
+            ? ` • ${groupCount} group${groupCount > 1 ? 's' : ''}`
+            : '';
 
         return [
           Markup.button.callback(
             `${plan.name} - ${plan.price_mnt.toLocaleString()} MNT (${plan.duration_days} days)${groupText}`,
-            `buy_plan_${plan.id}`
+            `buy_plan_${plan.id}`,
           ),
         ];
       });
@@ -170,10 +211,12 @@ export class ProjectBotHandler implements OnModuleInit {
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard(keyboard),
-        }
+        },
       );
 
-      this.logger.log(`Showed ${plans.length} plans to user ${telegramUserId} on project ${project.id}`);
+      this.logger.log(
+        `Showed ${plans.length} plans to user ${telegramUserId} on project ${project.id}`,
+      );
     } catch (error) {
       this.logger.error('Error handling buy command', error.stack);
       await ctx.reply('An error occurred. Please try again later.');
@@ -193,9 +236,9 @@ export class ProjectBotHandler implements OnModuleInit {
 
       await ctx.reply(
         '📊 *Your Membership Status*\n\n' +
-        'Status: Checking...\n' +
-        'Use /buy to purchase a membership plan.',
-        { parse_mode: 'Markdown' }
+          'Status: Checking...\n' +
+          'Use /buy to purchase a membership plan.',
+        { parse_mode: 'Markdown' },
       );
     } catch (error) {
       this.logger.error('Error handling status command', error.stack);
@@ -203,27 +246,32 @@ export class ProjectBotHandler implements OnModuleInit {
     }
   }
 
-
   async initiatePayment(
     ctx: Context,
     project: Project,
     planId: string,
-    telegramUserId: string
+    telegramUserId: string,
   ) {
     try {
       // Get plan details with telegram_groups relation
-      const plan = await this.membershipPlanService.findOne(project.tenant_id, planId);
+      const plan = await this.membershipPlanService.findOne(
+        project.tenant_id,
+        planId,
+      );
 
       if (!plan.is_active) {
-        await ctx.reply('This plan is no longer available. Please choose another plan.');
+        await ctx.reply(
+          'This plan is no longer available. Please choose another plan.',
+        );
         return;
       }
 
       // Show groups included in the plan
       const groupCount = plan.telegram_groups?.length || 0;
-      const groupText = groupCount > 0
-        ? `\nAccess to ${groupCount} group${groupCount > 1 ? 's' : ''}`
-        : '';
+      const groupText =
+        groupCount > 0
+          ? `\nAccess to ${groupCount} group${groupCount > 1 ? 's' : ''}`
+          : '';
 
       // Create payment transaction with project_id
       const result = await this.paymentTransactionService.initiatePayment(
@@ -239,28 +287,30 @@ export class ProjectBotHandler implements OnModuleInit {
           snapshot_plan_name: plan.name,
           snapshot_price: plan.price_mnt,
           snapshot_duration_days: plan.duration_days,
-        }
+        },
       );
 
-      this.logger.log(`Payment initiated for user ${telegramUserId}, transaction ${result.transaction.id}, project ${project.id}`);
+      this.logger.log(
+        `Payment initiated for user ${telegramUserId}, transaction ${result.transaction.id}, project ${project.id}`,
+      );
 
       // Send payment link to user
       await ctx.reply(
         `💳 *Payment for ${plan.name}*\n\n` +
-        `Price: ${plan.price_mnt.toLocaleString()} MNT\n` +
-        `Duration: ${plan.duration_days} days${groupText}\n\n` +
-        `Click the button below to complete your payment:`,
+          `Price: ${plan.price_mnt.toLocaleString()} MNT\n` +
+          `Duration: ${plan.duration_days} days${groupText}\n\n` +
+          `Click the button below to complete your payment:`,
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard([
             [Markup.button.url('💰 Pay Now', result.payment_link)],
           ]),
-        }
+        },
       );
     } catch (error) {
       this.logger.error('Error initiating payment', error.stack);
       await ctx.reply(
-        '❌ Failed to initiate payment. Please try again or contact support.'
+        '❌ Failed to initiate payment. Please try again or contact support.',
       );
     }
   }
