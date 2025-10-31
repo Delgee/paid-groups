@@ -3,8 +3,8 @@ import { HttpModule } from '@nestjs/axios';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
-import { TelegramBot } from '../bot/entities/telegram-bot.entity';
-import { BotModule } from '../bot/bot.module';
+import { TelegramIntegrationModule } from '../../integrations/telegram/telegram-integration.module';
+import { Project } from '../project/entities/project.entity';
 
 @Module({
   imports: [
@@ -12,8 +12,8 @@ import { BotModule } from '../bot/bot.module';
       timeout: 5000,
       maxRedirects: 3,
     }),
-    TypeOrmModule.forFeature([TelegramBot]),
-    BotModule,
+    TypeOrmModule.forFeature([Project]),
+    TelegramIntegrationModule,
   ],
   controllers: [HealthController],
   providers: [HealthService],

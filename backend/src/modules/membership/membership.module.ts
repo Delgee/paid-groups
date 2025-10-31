@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MemberController } from './member.controller';
 import { MembershipController } from './membership.controller';
@@ -10,13 +10,12 @@ import { MembershipExpirationJob } from './jobs/membership-expiration.job';
 import { Member } from './entities/member.entity';
 import { Membership } from './entities/membership.entity';
 import { MembershipPlan } from './entities/membership-plan.entity';
-import { TelegramBot } from '../bot/entities/telegram-bot.entity';
-import { BotModule } from '../bot/bot.module';
+import { TelegramIntegrationModule } from '../../integrations/telegram/telegram-integration.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Member, Membership, MembershipPlan, TelegramBot]),
-    forwardRef(() => BotModule),
+    TypeOrmModule.forFeature([Member, Membership, MembershipPlan]),
+    TelegramIntegrationModule,
   ],
   controllers: [MemberController, MembershipController, MembershipPlanController],
   providers: [MemberService, MembershipService, MembershipPlanService, MembershipExpirationJob],

@@ -22,7 +22,7 @@ import { Tenant } from '../tenant/entities/tenant.entity';
 import { ProjectModule } from '../project/project.module';
 import { TelegramGroupsModule } from '../telegram-groups/telegram-groups.module';
 import { MembershipPlanModule } from '../membership-plan/membership-plan.module';
-import { BotModule } from '../bot/bot.module';
+import { TelegramIntegrationModule } from '../../integrations/telegram/telegram-integration.module';
 
 @Module({
   imports: [
@@ -31,7 +31,7 @@ import { BotModule } from '../bot/bot.module';
     ProjectModule,
     TelegramGroupsModule,
     MembershipPlanModule,
-    BotModule,
+    TelegramIntegrationModule,
   ],
   controllers: [OnboardingBotController],
   providers: [

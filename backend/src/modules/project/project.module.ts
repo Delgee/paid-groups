@@ -6,7 +6,7 @@ import { Project } from './entities/project.entity';
 import { ProjectService } from './services/project.service';
 import { ProjectController } from './project.controller';
 import { ProjectWebhookController } from './project-webhook.controller';
-import { BotModule } from '../bot/bot.module';
+import { TelegramIntegrationModule } from '../../integrations/telegram/telegram-integration.module';
 import { ProjectWebhookService } from './services/project-webhook.service';
 import { ProjectWebhookProcessorService } from './services/project-webhook-processor.service';
 import { WebhookHealthCheckService } from './services/webhook-health-check.service';
@@ -21,7 +21,7 @@ import { EncryptionService } from '../../common/services/encryption.service';
     TypeOrmModule.forFeature([Project]),
     ConfigModule,
     ScheduleModule.forRoot(),
-    BotModule,
+    TelegramIntegrationModule,
   ],
   controllers: [ProjectController, ProjectWebhookController],
   providers: [
