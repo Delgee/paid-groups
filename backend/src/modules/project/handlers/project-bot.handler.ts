@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Telegraf, Context, Markup } from 'telegraf';
+import { Context, Markup } from 'telegraf';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Project } from '../entities/project.entity';
@@ -7,18 +7,18 @@ import { MembershipPlanService } from '../../membership-plan/services/membership
 import { PaymentTransactionService } from '../../payment/services/payment-transaction.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { TelegramBotHandlerService, BotConfiguration } from '../../../integrations/telegram/telegram-bot-handler.service';
 
 /**
  * Project Bot Handler
  *
- * Manages Telegram bot instances for projects.
+ * Manages Telegram bot instances for projects using centralized TelegramBotHandlerService.
  * Replaces the old TelegramBotHandler that used BotConfiguration.
  * Handles bot commands, payment initiation, and user interactions.
  */
 @Injectable()
 export class ProjectBotHandler implements OnModuleInit {
   private readonly logger = new Logger(ProjectBotHandler.name);
-  private bots: Map<string, Telegraf> = new Map(); // Map of project_id -> Telegraf instance
 
   constructor(
     @InjectRepository(Project)
@@ -26,6 +26,7 @@ export class ProjectBotHandler implements OnModuleInit {
     private readonly membershipPlanService: MembershipPlanService,
     private readonly paymentTransactionService: PaymentTransactionService,
     @InjectQueue('membership') private membershipQueue: Queue,
+    private readonly telegramBotHandler: TelegramBotHandlerService,
   ) {}
 
   async onModuleInit() {
@@ -54,37 +55,62 @@ export class ProjectBotHandler implements OnModuleInit {
 
   async createBotInstance(project: Project): Promise<void> {
     try {
-      const bot = new Telegraf(project.bot_token);
+      const config: BotConfiguration = {
+        id: project.id,
+        botToken: project.bot_token,
+        botUsername: project.bot_username,
+        welcomeMessage: project.welcome_message,
+        tenantId: project.tenant_id,
+      };
 
-      // Start command handler
-      bot.start(async (ctx) => {
-        await this.handleStartCommand(ctx, project);
-      });
+      // Register command handlers
+      this.telegramBotHandler.registerCommandHandler(
+        project.id,
+        'start',
+        (ctx) => this.handleStartCommand(ctx, project)
+      );
 
-      // Buy command handler
-      bot.command('buy', async (ctx) => {
-        await this.handleBuyCommand(ctx, project);
-      });
+      this.telegramBotHandler.registerCommandHandler(
+        project.id,
+        'buy',
+        (ctx) => this.handleBuyCommand(ctx, project)
+      );
 
-      // My membership command handler
-      bot.command('status', async (ctx) => {
-        await this.handleStatusCommand(ctx, project);
-      });
+      this.telegramBotHandler.registerCommandHandler(
+        project.id,
+        'status',
+        (ctx) => this.handleStatusCommand(ctx, project)
+      );
 
-      // Callback query handler for plan selection
-      bot.on('callback_query', async (ctx) => {
-        await this.handleCallbackQuery(ctx, project);
-      });
+      // Register callback query handlers
+      this.telegramBotHandler.registerCallbackQueryHandler(
+        project.id,
+        'show_plans',
+        (ctx) => this.handleBuyCommand(ctx, project)
+      );
 
-      // Launch bot
-      await bot.launch();
-      this.bots.set(project.id, bot);
+      this.telegramBotHandler.registerCallbackQueryHandler(
+        project.id,
+        'my_status',
+        (ctx) => this.handleStatusCommand(ctx, project)
+      );
+
+      this.telegramBotHandler.registerCallbackQueryHandler(
+        project.id,
+        /^buy_plan_/,
+        async (ctx, _config, data) => {
+          const planId = data.replace('buy_plan_', '');
+          const telegramUserId = ctx.from?.id.toString();
+          if (telegramUserId) {
+            await this.initiatePayment(ctx, project, planId, telegramUserId);
+          }
+        }
+      );
+
+      // Create and launch bot instance
+      await this.telegramBotHandler.createBotInstance(config);
 
       this.logger.log(`Project bot @${project.bot_username} launched successfully (project: ${project.id})`);
-
-      // Enable graceful stop
-      process.once('SIGINT', () => bot.stop('SIGINT'));
-      process.once('SIGTERM', () => bot.stop('SIGTERM'));
     } catch (error) {
       this.logger.error(`Failed to create bot instance for project ${project.id} (@${project.bot_username})`, error.stack);
     }
@@ -177,37 +203,6 @@ export class ProjectBotHandler implements OnModuleInit {
     }
   }
 
-  async handleCallbackQuery(ctx: Context, project: Project) {
-    try {
-      if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
-        return;
-      }
-
-      const data = ctx.callbackQuery.data;
-      const telegramUserId = ctx.from.id.toString();
-
-      await ctx.answerCbQuery();
-
-      if (data === 'show_plans') {
-        await this.handleBuyCommand(ctx, project);
-        return;
-      }
-
-      if (data === 'my_status') {
-        await this.handleStatusCommand(ctx, project);
-        return;
-      }
-
-      if (data.startsWith('buy_plan_')) {
-        const planId = data.replace('buy_plan_', '');
-        await this.initiatePayment(ctx, project, planId, telegramUserId);
-        return;
-      }
-    } catch (error) {
-      this.logger.error('Error handling callback query', error.stack);
-      await ctx.reply('An error occurred. Please try again later.');
-    }
-  }
 
   async initiatePayment(
     ctx: Context,
@@ -271,12 +266,8 @@ export class ProjectBotHandler implements OnModuleInit {
   }
 
   async stopBot(projectId: string) {
-    const bot = this.bots.get(projectId);
-    if (bot) {
-      bot.stop();
-      this.bots.delete(projectId);
-      this.logger.log(`Project bot ${projectId} stopped`);
-    }
+    await this.telegramBotHandler.stopBot(projectId);
+    this.logger.log(`Project bot ${projectId} stopped`);
   }
 
   async restartBot(project: Project) {
@@ -284,7 +275,7 @@ export class ProjectBotHandler implements OnModuleInit {
     await this.createBotInstance(project);
   }
 
-  getBotInstance(projectId: string): Telegraf | undefined {
-    return this.bots.get(projectId);
+  getBotInstance(projectId: string) {
+    return this.telegramBotHandler.getBotInstance(projectId);
   }
 }

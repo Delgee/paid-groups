@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Telegraf, Context, Markup } from 'telegraf';
+import { Context, Markup } from 'telegraf';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BotConfiguration } from '../entities/bot-configuration.entity';
@@ -7,11 +7,18 @@ import { MembershipPlanService } from '../../membership-plan/services/membership
 import { PaymentTransactionService } from '../../payment/services/payment-transaction.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { TelegramBotHandlerService, BotConfiguration as TelegramBotConfig } from '../../../integrations/telegram/telegram-bot-handler.service';
 
+/**
+ * TelegramBotHandler (Legacy)
+ *
+ * @deprecated This handler is for legacy BotConfiguration entities.
+ * New implementations should use Project entities and ProjectBotHandler.
+ * Uses centralized TelegramBotHandlerService for bot instance management.
+ */
 @Injectable()
 export class TelegramBotHandler implements OnModuleInit {
   private readonly logger = new Logger(TelegramBotHandler.name);
-  private bots: Map<string, Telegraf> = new Map();
 
   constructor(
     @InjectRepository(BotConfiguration)
@@ -19,6 +26,7 @@ export class TelegramBotHandler implements OnModuleInit {
     private readonly membershipPlanService: MembershipPlanService,
     private readonly paymentTransactionService: PaymentTransactionService,
     @InjectQueue('membership') private membershipQueue: Queue,
+    private readonly telegramBotHandler: TelegramBotHandlerService,
   ) {}
 
   async onModuleInit() {
@@ -47,37 +55,62 @@ export class TelegramBotHandler implements OnModuleInit {
 
   async createBotInstance(botConfig: BotConfiguration): Promise<void> {
     try {
-      const bot = new Telegraf(botConfig.bot_token);
+      const config: TelegramBotConfig = {
+        id: botConfig.id,
+        botToken: botConfig.bot_token,
+        botUsername: botConfig.bot_username,
+        welcomeMessage: botConfig.welcome_message,
+        tenantId: botConfig.tenant_id,
+      };
 
-      // Start command handler
-      bot.start(async (ctx) => {
-        await this.handleStartCommand(ctx, botConfig);
-      });
+      // Register command handlers
+      this.telegramBotHandler.registerCommandHandler(
+        botConfig.id,
+        'start',
+        (ctx) => this.handleStartCommand(ctx, botConfig)
+      );
 
-      // Buy command handler
-      bot.command('buy', async (ctx) => {
-        await this.handleBuyCommand(ctx, botConfig);
-      });
+      this.telegramBotHandler.registerCommandHandler(
+        botConfig.id,
+        'buy',
+        (ctx) => this.handleBuyCommand(ctx, botConfig)
+      );
 
-      // My membership command handler
-      bot.command('status', async (ctx) => {
-        await this.handleStatusCommand(ctx, botConfig);
-      });
+      this.telegramBotHandler.registerCommandHandler(
+        botConfig.id,
+        'status',
+        (ctx) => this.handleStatusCommand(ctx, botConfig)
+      );
 
-      // Callback query handler for plan selection
-      bot.on('callback_query', async (ctx) => {
-        await this.handleCallbackQuery(ctx, botConfig);
-      });
+      // Register callback query handlers
+      this.telegramBotHandler.registerCallbackQueryHandler(
+        botConfig.id,
+        'show_plans',
+        (ctx) => this.handleBuyCommand(ctx, botConfig)
+      );
 
-      // Launch bot
-      await bot.launch();
-      this.bots.set(botConfig.id, bot);
+      this.telegramBotHandler.registerCallbackQueryHandler(
+        botConfig.id,
+        'my_status',
+        (ctx) => this.handleStatusCommand(ctx, botConfig)
+      );
+
+      this.telegramBotHandler.registerCallbackQueryHandler(
+        botConfig.id,
+        /^buy_plan_/,
+        async (ctx, _config, data) => {
+          const planId = data.replace('buy_plan_', '');
+          const telegramUserId = ctx.from?.id.toString();
+          if (telegramUserId) {
+            await this.initiatePayment(ctx, botConfig, planId, telegramUserId);
+          }
+        }
+      );
+
+      // Create and launch bot instance
+      await this.telegramBotHandler.createBotInstance(config);
 
       this.logger.log(`Bot @${botConfig.bot_username} launched successfully`);
-
-      // Enable graceful stop
-      process.once('SIGINT', () => bot.stop('SIGINT'));
-      process.once('SIGTERM', () => bot.stop('SIGTERM'));
     } catch (error) {
       this.logger.error(`Failed to create bot instance for ${botConfig.bot_username}`, error.stack);
     }
@@ -165,37 +198,6 @@ export class TelegramBotHandler implements OnModuleInit {
     }
   }
 
-  async handleCallbackQuery(ctx: Context, botConfig: BotConfiguration) {
-    try {
-      if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
-        return;
-      }
-
-      const data = ctx.callbackQuery.data;
-      const telegramUserId = ctx.from.id.toString();
-
-      await ctx.answerCbQuery();
-
-      if (data === 'show_plans') {
-        await this.handleBuyCommand(ctx, botConfig);
-        return;
-      }
-
-      if (data === 'my_status') {
-        await this.handleStatusCommand(ctx, botConfig);
-        return;
-      }
-
-      if (data.startsWith('buy_plan_')) {
-        const planId = data.replace('buy_plan_', '');
-        await this.initiatePayment(ctx, botConfig, planId, telegramUserId);
-        return;
-      }
-    } catch (error) {
-      this.logger.error('Error handling callback query', error.stack);
-      await ctx.reply('An error occurred. Please try again later.');
-    }
-  }
 
   async initiatePayment(
     ctx: Context,
@@ -253,12 +255,8 @@ export class TelegramBotHandler implements OnModuleInit {
   }
 
   async stopBot(botConfigId: string) {
-    const bot = this.bots.get(botConfigId);
-    if (bot) {
-      bot.stop();
-      this.bots.delete(botConfigId);
-      this.logger.log(`Bot ${botConfigId} stopped`);
-    }
+    await this.telegramBotHandler.stopBot(botConfigId);
+    this.logger.log(`Bot ${botConfigId} stopped`);
   }
 
   async restartBot(botConfig: BotConfiguration) {
@@ -266,7 +264,7 @@ export class TelegramBotHandler implements OnModuleInit {
     await this.createBotInstance(botConfig);
   }
 
-  getBotInstance(botConfigId: string): Telegraf | undefined {
-    return this.bots.get(botConfigId);
+  getBotInstance(botConfigId: string) {
+    return this.telegramBotHandler.getBotInstance(botConfigId);
   }
 }

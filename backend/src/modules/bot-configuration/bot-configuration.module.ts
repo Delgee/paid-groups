@@ -7,6 +7,7 @@ import { BotConfigurationController } from './bot-configuration.controller';
 import { TelegramBotHandler } from './handlers/telegram-bot.handler';
 import { MembershipPlanModule } from '../membership-plan/membership-plan.module';
 import { PaymentModule } from '../payment/payment.module';
+import { TelegramIntegrationModule } from '../../integrations/telegram/telegram-integration.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PaymentModule } from '../payment/payment.module';
     BullModule.registerQueue({
       name: 'membership',
     }),
+    TelegramIntegrationModule,
     forwardRef(() => MembershipPlanModule),
     forwardRef(() => PaymentModule),
   ],
