@@ -8,26 +8,45 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  */
 export class AddAvatarFieldsToProjects1761637537000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Add bot_avatar_file_id column to store Telegram file_id
-    await queryRunner.query(`
-      ALTER TABLE projects
-      ADD COLUMN bot_avatar_file_id varchar(255) NULL
+    // Check and add bot_avatar_file_id column
+    const fileIdExists = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.columns
+        WHERE table_name = 'projects'
+        AND column_name = 'bot_avatar_file_id'
+      );
     `);
 
-    // Add bot_avatar_url column to store full download URL
-    await queryRunner.query(`
-      ALTER TABLE projects
-      ADD COLUMN bot_avatar_url text NULL
+    if (!fileIdExists[0].exists) {
+      await queryRunner.query(`
+        ALTER TABLE projects
+        ADD COLUMN bot_avatar_file_id varchar(255) NULL
+      `);
+
+      await queryRunner.query(`
+        COMMENT ON COLUMN projects.bot_avatar_file_id IS 'Telegram file_id for bot profile photo'
+      `);
+    }
+
+    // Check and add bot_avatar_url column
+    const urlExists = await queryRunner.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.columns
+        WHERE table_name = 'projects'
+        AND column_name = 'bot_avatar_url'
+      );
     `);
 
-    // Add comment for documentation
-    await queryRunner.query(`
-      COMMENT ON COLUMN projects.bot_avatar_file_id IS 'Telegram file_id for bot profile photo'
-    `);
+    if (!urlExists[0].exists) {
+      await queryRunner.query(`
+        ALTER TABLE projects
+        ADD COLUMN bot_avatar_url text NULL
+      `);
 
-    await queryRunner.query(`
-      COMMENT ON COLUMN projects.bot_avatar_url IS 'Full download URL for bot profile photo from Telegram CDN'
-    `);
+      await queryRunner.query(`
+        COMMENT ON COLUMN projects.bot_avatar_url IS 'Full download URL for bot profile photo from Telegram CDN'
+      `);
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

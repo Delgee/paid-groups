@@ -266,14 +266,24 @@ export class PaymentService {
       throw new NotFoundException(`Member ${memberId} not found`);
     }
 
-    // Get the plan details with group relation
+    // Get the plan details with telegram_groups relation
     const plan = await this.planRepository.findOne({
       where: { id: planId, tenant_id: tenantId },
-      relations: ['group'],
+      relations: ['telegram_groups'],
     });
 
     if (!plan) {
       throw new NotFoundException(`Plan ${planId} not found`);
+    }
+
+    // TODO: Support multi-group memberships - currently only creating for first group
+    // In future, should create multiple membership records, one per group
+    const firstGroup = plan.telegram_groups?.[0];
+    if (!firstGroup) {
+      this.logger.warn(
+        `Plan ${planId} has no telegram groups associated, skipping membership creation`,
+      );
+      return;
     }
 
     // Calculate expiration date
@@ -305,7 +315,7 @@ export class PaymentService {
         existingMembership.expires_at = expiresAt;
       }
       existingMembership.status = MembershipStatus.ACTIVE;
-      existingMembership.group_id = plan.group_id; // Update group_id
+      existingMembership.group_id = firstGroup.id; // Update to first group
 
       membership = await this.membershipRepository.save(existingMembership);
       this.logger.log(
@@ -316,7 +326,7 @@ export class PaymentService {
       membership = this.membershipRepository.create({
         tenant_id: tenantId,
         member_id: memberId,
-        group_id: plan.group_id,
+        group_id: firstGroup.id,
         plan_id: planId,
         status: MembershipStatus.ACTIVE,
         starts_at: startsAt,
@@ -358,29 +368,29 @@ export class PaymentService {
     membership: Membership,
     expiresAt: Date,
   ): Promise<void> {
-    // Get the telegram group with project details
+    // Get the telegram group with project details from the membership
     const telegramGroup = await this.telegramGroupRepository.findOne({
-      where: { id: plan.group_id },
+      where: { id: membership.group_id },
       relations: ['project'],
     });
 
     if (!telegramGroup) {
       this.logger.warn(
-        `Telegram group ${plan.group_id} not found for plan ${plan.id}`,
+        `Telegram group ${membership.group_id} not found for membership ${membership.id}`,
       );
       return;
     }
 
     if (!telegramGroup.telegram_chat_id) {
       this.logger.warn(
-        `Telegram group ${plan.group_id} has no chat_id configured`,
+        `Telegram group ${membership.group_id} has no chat_id configured`,
       );
       return;
     }
 
     if (!telegramGroup.project || !telegramGroup.project.bot_token) {
       this.logger.warn(
-        `No project configured for telegram group ${plan.group_id}`,
+        `No project configured for telegram group ${membership.group_id}`,
       );
       return;
     }

@@ -32,10 +32,6 @@ export class MembershipPlan {
   @Column('uuid')
   project_id: string;
 
-  @ApiPropertyOptional({ description: 'Legacy: Telegram group ID (deprecated - use telegram_groups relation)', format: 'uuid' })
-  @Column({ type: 'uuid', nullable: true })
-  group_id?: string;
-
   @ApiProperty({ description: 'Plan display name', maxLength: 255 })
   @Column({ type: 'varchar', length: 255 })
   name: string;
@@ -99,9 +95,4 @@ export class MembershipPlan {
   // Junction table associations
   @OneToMany(() => MembershipPlanGroup, association => association.membership_plan)
   group_associations: MembershipPlanGroup[];
-
-  // Legacy single group relationship (deprecated)
-  // @ManyToOne(() => TelegramGroup, { onDelete: 'CASCADE' })
-  // @JoinColumn({ name: 'group_id' })
-  // telegram_group?: TelegramGroup;
 }
