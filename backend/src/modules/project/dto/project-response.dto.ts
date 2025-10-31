@@ -29,6 +29,12 @@ export class ProjectResponseDto {
   @ApiProperty({ description: 'Last sync timestamp', nullable: true })
   last_sync_at?: Date;
 
+  @ApiProperty({ description: 'Bot avatar file ID from Telegram', nullable: true })
+  bot_avatar_file_id?: string;
+
+  @ApiProperty({ description: 'Bot avatar download URL from Telegram CDN', nullable: true })
+  bot_avatar_url?: string;
+
   @ApiProperty({ description: 'Webhook URL', nullable: true })
   webhook_url?: string;
 
@@ -55,6 +61,8 @@ export class ProjectResponseDto {
     dto.welcome_message = project.welcome_message;
     dto.is_active = project.is_active;
     dto.last_sync_at = project.last_sync_at;
+    dto.bot_avatar_file_id = project.bot_avatar_file_id;
+    dto.bot_avatar_url = project.bot_avatar_url;
     dto.webhook_url = project.webhook_url;
     dto.settings = project.settings;
     dto.message_templates = project.message_templates;

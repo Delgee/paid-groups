@@ -681,4 +681,131 @@ export class TelegramApiService {
       return [];
     }
   }
+
+  /**
+   * Gets user profile photos (including bot's own profile photo)
+   * @param botToken - The bot token
+   * @param userId - User ID to get photos for (use bot's own ID for bot avatar)
+   * @param offset - Sequential number of first photo to return
+   * @param limit - Number of photos to retrieve (1-100)
+   * @returns Promise<object | null> - UserProfilePhotos object or null
+   */
+  async getUserProfilePhotos(
+    botToken: string,
+    userId: number,
+    offset: number = 0,
+    limit: number = 1
+  ): Promise<{ total_count: number; photos: any[][] } | null> {
+    const cacheKey = this.generateCacheKey('user:photos', userId, offset, limit);
+
+    try {
+      // Check cache first
+      const cached = await this.cacheManager.get<{ total_count: number; photos: any[][] }>(cacheKey);
+      if (cached) {
+        this.logger.debug(`User profile photos cache hit for user ${userId}`);
+        return cached;
+      }
+
+      const bot = this.getBotInstance(botToken);
+      const photos = await bot.telegram.getUserProfilePhotos(userId, offset, limit);
+
+      // Cache for 1 hour (profile photos don't change frequently)
+      await this.cacheManager.set(cacheKey, photos, 3600000);
+
+      return photos;
+    } catch (error) {
+      this.logger.error(`Failed to get user profile photos for ${userId}: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Gets file information and download URL
+   * @param botToken - The bot token
+   * @param fileId - File identifier to get info about
+   * @returns Promise<object | null> - File object with file_path or null
+   */
+  async getFile(
+    botToken: string,
+    fileId: string
+  ): Promise<{ file_id: string; file_unique_id: string; file_size?: number; file_path?: string } | null> {
+    const cacheKey = this.generateCacheKey('file:info', fileId);
+
+    try {
+      // Check cache first
+      const cached = await this.cacheManager.get<any>(cacheKey);
+      if (cached) {
+        this.logger.debug(`File info cache hit for ${fileId}`);
+        return cached;
+      }
+
+      const bot = this.getBotInstance(botToken);
+      const file = await bot.telegram.getFile(fileId);
+
+      // Cache for 1 hour
+      await this.cacheManager.set(cacheKey, file, 3600000);
+
+      return file;
+    } catch (error) {
+      this.logger.error(`Failed to get file info for ${fileId}: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Gets bot's own profile photo URL
+   * Convenience method that combines getUserProfilePhotos and getFile
+   * @param botToken - The bot token
+   * @returns Promise<object | null> - Object with file_id and download URL or null
+   */
+  async getBotProfilePhoto(
+    botToken: string
+  ): Promise<{ file_id: string; file_url: string } | null> {
+    try {
+      // First get bot info to get bot's user ID
+      const botInfo = await this.verifyBotToken(botToken);
+      if (!botInfo) {
+        this.logger.error('Could not get bot info to fetch profile photo');
+        return null;
+      }
+
+      // Get bot's profile photos (just the first one)
+      const photos = await this.getUserProfilePhotos(botToken, botInfo.id, 0, 1);
+
+      if (!photos || !photos.photos || photos.photos.length === 0) {
+        this.logger.debug(`Bot ${botInfo.id} has no profile photo`);
+        return null;
+      }
+
+      // Get the largest photo size (last element in sizes array)
+      const photoSizes = photos.photos[0]; // First photo
+      if (!photoSizes || photoSizes.length === 0) {
+        return null;
+      }
+
+      const largestPhoto = photoSizes[photoSizes.length - 1]; // Largest size
+      const fileId = largestPhoto.file_id;
+
+      // Get file info to get download path
+      const file = await this.getFile(botToken, fileId);
+      if (!file || !file.file_path) {
+        this.logger.error(`Could not get file path for photo ${fileId}`);
+        return null;
+      }
+
+      // Construct download URL
+      // Note: Bot token is used in URL, so this should be handled securely
+      const fileUrl = `https://api.telegram.org/file/bot${botToken}/${file.file_path}`;
+
+      this.logger.log(`Bot profile photo retrieved: ${fileId}`);
+
+      return {
+        file_id: fileId,
+        file_url: fileUrl,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get bot profile photo: ${error.message}`);
+      return null;
+    }
+  }
 }

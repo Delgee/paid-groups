@@ -18,6 +18,7 @@ import { Project, projectApi } from '@/lib/api/projects';
 import { TelegramGroup, telegramGroupsApi } from '@/lib/api/telegram-groups';
 import { ArrowLeftIcon, SettingsIcon, RefreshCwIcon, PlusIcon, UsersIcon, LayersIcon, TrashIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { BotAvatar } from '@/components/projects/BotAvatar';
 
 export default function ProjectDetailPage() {
   const router = useRouter();
@@ -139,9 +140,22 @@ export default function ProjectDetailPage() {
       </Button>
 
       <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{project.display_name}</h1>
-          <p className="text-muted-foreground mt-1">@{project.bot_username}</p>
+        <div className="flex items-start gap-4">
+          <BotAvatar
+            avatarUrl={project.bot_avatar_url}
+            displayName={project.display_name}
+            username={project.bot_username}
+            size="xl"
+          />
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{project.display_name}</h1>
+            <p className="text-muted-foreground mt-1">@{project.bot_username}</p>
+            {project.last_sync_at && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Last synced: {new Date(project.last_sync_at).toLocaleString()}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <Badge variant={project.is_active ? 'default' : 'secondary'}>

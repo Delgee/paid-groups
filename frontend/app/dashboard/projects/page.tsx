@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Project, projectApi } from '@/lib/api/projects';
 import { PlusIcon, SettingsIcon, RefreshCwIcon, TrashIcon, BotIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { BotAvatar } from '@/components/projects/BotAvatar';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -107,12 +108,25 @@ export default function ProjectsPage() {
           {projects.map((project) => (
             <Card key={project.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-xl">{project.display_name}</CardTitle>
-                    <CardDescription className="mt-1">
-                      @{project.bot_username}
-                    </CardDescription>
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex items-start gap-3 flex-1">
+                    <BotAvatar
+                      avatarUrl={project.bot_avatar_url}
+                      displayName={project.display_name}
+                      username={project.bot_username}
+                      size="lg"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-xl truncate">{project.display_name}</CardTitle>
+                      <CardDescription className="mt-1 truncate">
+                        @{project.bot_username}
+                      </CardDescription>
+                      {project.last_sync_at && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Last synced: {new Date(project.last_sync_at).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <Badge variant={project.is_active ? 'default' : 'secondary'}>
                     {project.is_active ? 'Active' : 'Inactive'}

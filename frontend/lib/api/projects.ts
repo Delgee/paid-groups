@@ -9,6 +9,10 @@ export interface Project {
   description?: string;
   welcome_message: string;
   is_active: boolean;
+  last_sync_at?: string;
+  bot_avatar_file_id?: string;
+  bot_avatar_url?: string;
+  webhook_url?: string;
   created_at: string;
   updated_at: string;
 }

@@ -353,6 +353,25 @@ export class ProjectService {
       project.display_name = botInfo.first_name;
     }
 
+    // Fetch bot profile photo
+    try {
+      const profilePhoto = await this.telegramApiService.getBotProfilePhoto(decryptedToken);
+
+      if (profilePhoto) {
+        project.bot_avatar_file_id = profilePhoto.file_id;
+        project.bot_avatar_url = profilePhoto.file_url;
+        this.logger.log(`Bot avatar synced for project ${id}: ${profilePhoto.file_id}`);
+      } else {
+        // Clear avatar if bot has no profile photo
+        project.bot_avatar_file_id = null;
+        project.bot_avatar_url = null;
+        this.logger.debug(`Bot has no profile photo for project ${id}`);
+      }
+    } catch (error) {
+      // Don't fail sync if avatar fetch fails
+      this.logger.warn(`Failed to sync bot avatar for project ${id}: ${error.message}`);
+    }
+
     project.last_sync_at = new Date();
     const updated = await this.projectRepository.save(project);
 

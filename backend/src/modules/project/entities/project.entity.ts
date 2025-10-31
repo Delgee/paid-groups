@@ -67,6 +67,14 @@ export class Project {
   @Column({ type: 'timestamp', nullable: true })
   last_sync_at?: Date;
 
+  @ApiPropertyOptional({ description: 'Telegram file_id for bot profile photo', maxLength: 255 })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  bot_avatar_file_id?: string;
+
+  @ApiPropertyOptional({ description: 'Full download URL for bot profile photo from Telegram CDN' })
+  @Column({ type: 'text', nullable: true })
+  bot_avatar_url?: string;
+
   // Bot Infrastructure Fields (from TelegramBot)
   @ApiPropertyOptional({ description: 'Webhook URL for bot updates', maxLength: 500 })
   @Column({ type: 'varchar', length: 500, nullable: true })
