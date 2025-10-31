@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -27,8 +27,8 @@ import { PaymentModule } from '../payment/payment.module';
     ScheduleModule.forRoot(),
     BullModule.registerQueue({ name: 'membership' }),
     TelegramIntegrationModule,
-    MembershipPlanModule,
-    PaymentModule,
+    forwardRef(() => MembershipPlanModule),
+    forwardRef(() => PaymentModule),
   ],
   controllers: [ProjectController, ProjectWebhookController],
   providers: [

@@ -43,7 +43,7 @@ describe('POST /v1/payments/initiate (Contract Test)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           membership_plan_id: 'not-a-uuid',
-          bot_configuration_id: botConfigurationId,
+          project_id: botConfigurationId,
           telegram_user_id: '123456789',
           amount: 50000,
           snapshot_plan_name: 'Monthly Premium',
@@ -62,7 +62,7 @@ describe('POST /v1/payments/initiate (Contract Test)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           membership_plan_id: membershipPlanId,
-          bot_configuration_id: botConfigurationId,
+          project_id: botConfigurationId,
           telegram_user_id: 'not-a-number',
           amount: 50000,
           snapshot_plan_name: 'Monthly Premium',
@@ -81,7 +81,7 @@ describe('POST /v1/payments/initiate (Contract Test)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           membership_plan_id: membershipPlanId,
-          bot_configuration_id: botConfigurationId,
+          project_id: botConfigurationId,
           telegram_user_id: '123456789',
           amount: 0,
           snapshot_plan_name: 'Monthly Premium',
@@ -112,7 +112,7 @@ describe('POST /v1/payments/initiate (Contract Test)', () => {
     it('should return 201 with payment transaction and QPay link', async () => {
       const validRequest = {
         membership_plan_id: membershipPlanId,
-        bot_configuration_id: botConfigurationId,
+        project_id: botConfigurationId,
         telegram_user_id: '123456789',
         telegram_username: 'testuser',
         telegram_first_name: 'Test',
@@ -158,7 +158,7 @@ describe('POST /v1/payments/initiate (Contract Test)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           membership_plan_id: '550e8400-e29b-41d4-a716-999999999999',
-          bot_configuration_id: botConfigurationId,
+          project_id: botConfigurationId,
           telegram_user_id: '123456789',
           amount: 50000,
           snapshot_plan_name: 'Monthly Premium',

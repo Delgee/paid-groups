@@ -121,7 +121,7 @@ describe('Payment Webhook Processing Integration', () => {
       // Step 1: Initiate payment
       const payment = await paymentTransactionService.create(tenantId, {
         membership_plan_id: membershipPlanId,
-        bot_configuration_id: botConfigId,
+        project_id: botConfigId,
         telegram_user_id: '123456789',
         amount: 50000,
         snapshot_plan_name: 'Premium Plan',
@@ -180,7 +180,7 @@ describe('Payment Webhook Processing Integration', () => {
 
       const payment = await paymentTransactionService.create(tenantId, {
         membership_plan_id: membershipPlanId,
-        bot_configuration_id: botConfigId,
+        project_id: botConfigId,
         telegram_user_id: '987654321',
         amount: 50000,
         snapshot_plan_name: 'Premium Plan',
@@ -213,7 +213,7 @@ describe('Payment Webhook Processing Integration', () => {
       // Create and complete payment
       const payment = await paymentTransactionService.create(tenantId, {
         membership_plan_id: membershipPlanId,
-        bot_configuration_id: botConfigId,
+        project_id: botConfigId,
         telegram_user_id: '111222333',
         amount: 50000,
         snapshot_plan_name: 'Premium Plan',
@@ -251,7 +251,7 @@ describe('Payment Webhook Processing Integration', () => {
       // Create first payment with invoice ID
       const payment1 = await paymentTransactionService.create(tenantId, {
         membership_plan_id: membershipPlanId,
-        bot_configuration_id: botConfigId,
+        project_id: botConfigId,
         telegram_user_id: '444555666',
         amount: 50000,
         snapshot_plan_name: 'Premium Plan',
@@ -268,7 +268,7 @@ describe('Payment Webhook Processing Integration', () => {
       // Attempt to create another payment with same invoice ID should be prevented by unique constraint
       const payment2 = await paymentTransactionService.create(tenantId, {
         membership_plan_id: membershipPlanId,
-        bot_configuration_id: botConfigId,
+        project_id: botConfigId,
         telegram_user_id: '777888999',
         amount: 50000,
         snapshot_plan_name: 'Premium Plan',
@@ -287,7 +287,7 @@ describe('Payment Webhook Processing Integration', () => {
 
       const payment = await paymentTransactionService.create(tenantId, {
         membership_plan_id: membershipPlanId,
-        bot_configuration_id: botConfigId,
+        project_id: botConfigId,
         telegram_user_id: '555666777',
         amount: 50000,
         snapshot_plan_name: 'Premium Plan',
@@ -318,7 +318,7 @@ describe('Payment Webhook Processing Integration', () => {
 
       const payment = await paymentTransactionService.create(tenantId, {
         membership_plan_id: membershipPlanId,
-        bot_configuration_id: botConfigId,
+        project_id: botConfigId,
         telegram_user_id: '999888777',
         amount: 50000,
         snapshot_plan_name: 'Premium Plan',
@@ -337,7 +337,7 @@ describe('Payment Webhook Processing Integration', () => {
 
       const channelMember = await channelMemberService.create(tenantId, {
         payment_transaction_id: completed.id,
-        bot_configuration_id: botConfigId,
+        project_id: botConfigId,
         telegram_user_id: completed.telegram_user_id,
         channel_id: '-1001234567890',
         expires_at: expiresAt.toISOString(),

@@ -134,7 +134,7 @@ describe('Telegram Bot /start Command Integration', () => {
       const plans = [];
       for (let i = 1; i <= 3; i++) {
         const plan = await membershipPlanService.create(tenantId, {
-          bot_configuration_id: groupId,
+          project_id: groupId,
           name: `Plan ${i}`,
           description: `Description for plan ${i}`,
           price: 10000 * i,
@@ -198,7 +198,7 @@ describe('Telegram Bot /start Command Integration', () => {
       botConfigId = bot.id;
 
       const plan = await membershipPlanService.create(tenantId, {
-        bot_configuration_id: groupId,
+        project_id: groupId,
         name: 'Premium Plan',
         description: 'Premium membership',
         price: 50000,
@@ -245,7 +245,7 @@ describe('Telegram Bot /start Command Integration', () => {
       botConfigId = bot.id;
 
       const plan = await membershipPlanService.create(tenantId, {
-        bot_configuration_id: groupId,
+        project_id: groupId,
         name: 'Basic Plan',
         description: 'Basic membership',
         price: 25000,

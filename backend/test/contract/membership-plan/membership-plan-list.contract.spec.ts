@@ -91,7 +91,7 @@ describe('GET /v1/membership-plans (Contract Test)', () => {
     it('should filter by bot_configuration_id', async () => {
       const response = await request(app.getHttpServer())
         .get('/v1/membership-plans')
-        .query({ bot_configuration_id: botConfigurationId })
+        .query({ project_id: botConfigurationId })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 

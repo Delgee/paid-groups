@@ -72,7 +72,7 @@ describe('POST /v1/membership-plans (Contract Test)', () => {
         .post('/v1/membership-plans')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          bot_configuration_id: botConfigurationId,
+          project_id: botConfigurationId,
           name: 'Cheap Plan',
           price: 500,
           duration_days: 30,
@@ -89,7 +89,7 @@ describe('POST /v1/membership-plans (Contract Test)', () => {
         .post('/v1/membership-plans')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          bot_configuration_id: botConfigurationId,
+          project_id: botConfigurationId,
           name: 'Expensive Plan',
           price: 15000000,
           duration_days: 30,
@@ -106,7 +106,7 @@ describe('POST /v1/membership-plans (Contract Test)', () => {
         .post('/v1/membership-plans')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          bot_configuration_id: botConfigurationId,
+          project_id: botConfigurationId,
           name: 'Invalid Duration',
           price: 10000,
           duration_days: 0,
@@ -122,7 +122,7 @@ describe('POST /v1/membership-plans (Contract Test)', () => {
         .post('/v1/membership-plans')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          bot_configuration_id: botConfigurationId,
+          project_id: botConfigurationId,
           name: 'Too Long Plan',
           price: 10000,
           duration_days: 400,
@@ -134,12 +134,12 @@ describe('POST /v1/membership-plans (Contract Test)', () => {
       expect(response.body.error).toContain('365');
     });
 
-    it('should reject request with invalid bot_configuration_id format', async () => {
+    it('should reject request with invalid project_id format', async () => {
       const response = await request(app.getHttpServer())
         .post('/v1/membership-plans')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          bot_configuration_id: 'not-a-uuid',
+          project_id: 'not-a-uuid',
           name: 'Valid Plan',
           price: 50000,
           duration_days: 30,
@@ -147,7 +147,7 @@ describe('POST /v1/membership-plans (Contract Test)', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('bot_configuration_id');
+      expect(response.body.error).toContain('project_id');
     });
   });
 
@@ -172,7 +172,7 @@ describe('POST /v1/membership-plans (Contract Test)', () => {
       // Verify response shape
       expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('tenant_id', tenantId);
-      expect(response.body).toHaveProperty('bot_configuration_id', botConfigurationId);
+      expect(response.body).toHaveProperty('project_id', botConfigurationId);
       expect(response.body).toHaveProperty('name', validRequest.name);
       expect(response.body).toHaveProperty('description', validRequest.description);
       expect(response.body).toHaveProperty('price', validRequest.price);
@@ -208,20 +208,20 @@ describe('POST /v1/membership-plans (Contract Test)', () => {
   });
 
   describe('Business Rules', () => {
-    it('should reject non-existent bot_configuration_id', async () => {
+    it('should reject non-existent project_id', async () => {
       const response = await request(app.getHttpServer())
         .post('/v1/membership-plans')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          bot_configuration_id: '550e8400-e29b-41d4-a716-999999999999',
-          name: 'Plan for Non-existent Bot',
+          project_id: '550e8400-e29b-41d4-a716-999999999999',
+          name: 'Plan for Non-existent Project',
           price: 50000,
           duration_days: 30,
         })
         .expect(404);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error.code).toBe('BOT_CONFIGURATION_NOT_FOUND');
+      expect(response.body.error.code).toBe('PROJECT_NOT_FOUND');
     });
   });
 });

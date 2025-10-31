@@ -80,7 +80,7 @@ describe('Membership Plan Limit Integration', () => {
       const plans = [];
       for (let i = 1; i <= 5; i++) {
         const plan = await membershipPlanService.create(tenantId, {
-          bot_configuration_id: groupId,
+          project_id: groupId,
           name: `Plan ${i}`,
           description: `Test plan ${i}`,
           price: 10000 * i,
@@ -99,7 +99,7 @@ describe('Membership Plan Limit Integration', () => {
       // Create 5 plans
       for (let i = 1; i <= 5; i++) {
         await membershipPlanService.create(tenantId, {
-          bot_configuration_id: groupId,
+          project_id: groupId,
           name: `Plan ${i}`,
           description: `Test plan ${i}`,
           price: 10000,
@@ -110,7 +110,7 @@ describe('Membership Plan Limit Integration', () => {
       // Attempt to create 6th plan
       await expect(
         membershipPlanService.create(tenantId, {
-          bot_configuration_id: groupId,
+          project_id: groupId,
           name: 'Plan 6',
           description: 'This should fail',
           price: 10000,
@@ -126,7 +126,7 @@ describe('Membership Plan Limit Integration', () => {
       const plans = [];
       for (let i = 1; i <= 5; i++) {
         const plan = await membershipPlanService.create(tenantId, {
-          bot_configuration_id: groupId,
+          project_id: groupId,
           name: `Plan ${i}`,
           description: `Test plan ${i}`,
           price: 10000,
@@ -140,7 +140,7 @@ describe('Membership Plan Limit Integration', () => {
 
       // Should now be able to create a new plan
       const newPlan = await membershipPlanService.create(tenantId, {
-        bot_configuration_id: groupId,
+        project_id: groupId,
         name: 'Replacement Plan',
         description: 'Should work now',
         price: 15000,
@@ -157,7 +157,7 @@ describe('Membership Plan Limit Integration', () => {
 
       // Create initial plan
       const originalPlan = await membershipPlanService.create(tenantId, {
-        bot_configuration_id: groupId,
+        project_id: groupId,
         name: 'Basic Plan',
         description: 'Original pricing',
         price: 10000,

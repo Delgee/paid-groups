@@ -121,7 +121,7 @@ describe('Member Rejoin Flow Integration', () => {
       // Create active channel member
       const channelMember = await channelMemberService.create(tenantId, {
         payment_transaction_id: paymentTransactionId,
-        bot_configuration_id: uuidv4(),
+        project_id: uuidv4(),
         telegram_user_id: '123456789',
         channel_id: '-1001234567890',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -181,7 +181,7 @@ describe('Member Rejoin Flow Integration', () => {
 
       const member = await channelMemberService.create(tenantId, {
         payment_transaction_id: uuidv4(),
-        bot_configuration_id: uuidv4(),
+        project_id: uuidv4(),
         telegram_user_id: '222333444',
         channel_id: '-1001234567890',
         expires_at: expiresAt.toISOString(),
@@ -231,7 +231,7 @@ describe('Member Rejoin Flow Integration', () => {
       // Create expired member
       const expiredMember = await channelMemberService.create(tenantId, {
         payment_transaction_id: uuidv4(),
-        bot_configuration_id: uuidv4(),
+        project_id: uuidv4(),
         telegram_user_id: '555666777',
         channel_id: '-1001234567890',
         expires_at: expiredDate.toISOString(),
@@ -265,7 +265,7 @@ describe('Member Rejoin Flow Integration', () => {
 
       const member = await channelMemberService.create(tenantId, {
         payment_transaction_id: uuidv4(),
-        bot_configuration_id: uuidv4(),
+        project_id: uuidv4(),
         telegram_user_id: '888999000',
         channel_id: '-1001234567890',
         expires_at: expiredDate.toISOString(),
@@ -297,7 +297,7 @@ describe('Member Rejoin Flow Integration', () => {
       const member = await channelMemberService.create(tenantId, {
         payment_transaction_id: uuidv4(),
         telegram_user_id: '111222333',
-        bot_configuration_id: uuidv4(),
+        project_id: uuidv4(),
         channel_id: '-1001234567890',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         invite_link: 'https://t.me/+original_link',
@@ -327,7 +327,7 @@ describe('Member Rejoin Flow Integration', () => {
       const member = await channelMemberService.create(tenantId, {
         payment_transaction_id: uuidv4(),
         telegram_user_id: '444555666',
-        bot_configuration_id: uuidv4(),
+        project_id: uuidv4(),
         channel_id: '-1001234567890',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         invite_link: 'https://t.me/+track_link',
@@ -354,7 +354,7 @@ describe('Member Rejoin Flow Integration', () => {
       const member = await channelMemberService.create(tenantId, {
         payment_transaction_id: uuidv4(),
         telegram_user_id: '777888999',
-        bot_configuration_id: uuidv4(),
+        project_id: uuidv4(),
         channel_id: '-1001234567890',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         invite_link: 'https://t.me/+status_link',
@@ -384,7 +384,7 @@ describe('Member Rejoin Flow Integration', () => {
       const member = await channelMemberService.create(tenantId, {
         payment_transaction_id: uuidv4(),
         telegram_user_id: '000111222',
-        bot_configuration_id: uuidv4(),
+        project_id: uuidv4(),
         channel_id: '-1001234567890',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         invite_link: 'https://t.me/+revoked_link',
