@@ -140,4 +140,42 @@ export class MembershipPlanController {
   ): Promise<void> {
     await this.membershipPlanService.delete(tenantId, id);
   }
+
+  @Get('popular')
+  @ApiOperation({
+    summary: 'Get popular membership plans',
+    description: 'Returns plans ranked by usage (number of completed transactions)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of popular membership plans with usage counts',
+  })
+  async getPopularPlans(
+    @TenantId() tenantId: string,
+  ): Promise<{ plans: (MembershipPlan & { membership_count: number })[] }> {
+    const plans = await this.membershipPlanService.getPopularPlans(tenantId);
+    return { plans };
+  }
+
+  @Get(':id/stats')
+  @ApiOperation({
+    summary: 'Get membership plan statistics',
+    description: 'Returns statistics including total memberships, active members, and revenue',
+  })
+  @ApiParam({ name: 'id', description: 'Membership plan UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Plan statistics',
+  })
+  @ApiResponse({ status: 404, description: 'Membership plan not found' })
+  async getPlanStats(
+    @TenantId() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{
+    total_memberships: number;
+    active_memberships: number;
+    total_revenue: number;
+  }> {
+    return this.membershipPlanService.getPlanStats(tenantId, id);
+  }
 }

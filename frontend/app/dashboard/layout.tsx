@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart3,
-  Bot,
   Home,
   Users,
   CreditCard,
@@ -15,7 +14,6 @@ import {
   X,
   UserPlus,
   MessageSquare,
-  SettingsIcon,
   FolderKanban
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/auth-provider';
@@ -38,7 +36,6 @@ interface DashboardLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
-  { name: 'Bots', href: '/dashboard/bots', icon: Bot },
   { name: 'Telegram Groups', href: '/dashboard/telegram-groups', icon: MessageSquare },
   { name: 'Members', href: '/dashboard/members', icon: Users },
   { name: 'User Management', href: '/dashboard/users', icon: UserPlus },

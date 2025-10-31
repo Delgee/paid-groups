@@ -12,7 +12,7 @@ import {
 import { Tenant } from '../../tenant/entities/tenant.entity';
 import { Member } from './member.entity';
 import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
-import { MembershipPlan } from './membership-plan.entity';
+import { MembershipPlan } from '../../membership-plan/entities/membership-plan.entity';
 import { Payment } from '../../payment/entities/payment.entity';
 
 export enum MembershipStatus {
@@ -98,7 +98,7 @@ export class Membership {
   @JoinColumn({ name: 'group_id' })
   group: TelegramGroup;
 
-  @ManyToOne(() => MembershipPlan, plan => plan.memberships, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => MembershipPlan, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'plan_id' })
   plan: MembershipPlan;
 

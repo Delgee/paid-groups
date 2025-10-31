@@ -9,7 +9,7 @@ import {
 import { User } from '../../auth/entities/user.entity';
 import { Project } from '../../project/entities/project.entity';
 import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
-import { MembershipPlan } from '../../membership/entities/membership-plan.entity';
+import { MembershipPlan } from '../../membership-plan/entities/membership-plan.entity';
 import { Member } from '../../membership/entities/member.entity';
 import { Membership } from '../../membership/entities/membership.entity';
 import { Payment } from '../../payment/entities/payment.entity';
@@ -80,7 +80,8 @@ export class Tenant {
   @OneToMany(() => TelegramGroup, (group) => group.tenant)
   telegram_groups: TelegramGroup[];
 
-  @OneToMany(() => MembershipPlan, (plan) => plan.tenant)
+  // Note: MembershipPlan removed tenant relation, keeping this for backward compatibility queries
+  @OneToMany(() => MembershipPlan, () => null)
   membership_plans: MembershipPlan[];
 
   @OneToMany(() => Member, (member) => member.tenant)

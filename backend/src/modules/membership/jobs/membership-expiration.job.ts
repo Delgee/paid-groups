@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, Between } from 'typeorm';
 import { Membership, MembershipStatus } from '../entities/membership.entity';
 import { Member } from '../entities/member.entity';
-import { MembershipPlan } from '../entities/membership-plan.entity';
+import { MembershipPlan } from '../../membership-plan/entities/membership-plan.entity';
 import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 import { Project } from '../../project/entities/project.entity';
 

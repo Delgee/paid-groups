@@ -7,7 +7,7 @@ import {
   MembershipStatus,
 } from '../membership/entities/membership.entity';
 import { Member } from '../membership/entities/member.entity';
-import { MembershipPlan } from '../membership/entities/membership-plan.entity';
+import { MembershipPlan } from '../membership-plan/entities/membership-plan.entity';
 import { TelegramGroup } from '../telegram-groups/telegram-groups.entity';
 
 export interface DashboardMetrics {

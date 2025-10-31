@@ -269,4 +269,80 @@ export class MembershipPlanService {
 
     this.logger.log(`Synced ${groupIds.length} group associations for plan ${planId}`);
   }
+
+  /**
+   * Get statistics for a specific membership plan
+   */
+  async getPlanStats(
+    tenantId: string,
+    planId: string,
+  ): Promise<{
+    total_memberships: number;
+    active_memberships: number;
+    total_revenue: number;
+  }> {
+    this.logger.log(`Getting stats for plan ${planId}`);
+
+    // Verify plan exists and belongs to tenant
+    await this.findOne(tenantId, planId);
+
+    // Query payment_transactions and channel_members for stats
+    const stats = await this.membershipPlanRepository.query(
+      `
+      SELECT
+        COUNT(DISTINCT pt.id) as total_memberships,
+        COUNT(DISTINCT CASE WHEN cm.status = 'active' THEN cm.id END) as active_memberships,
+        COALESCE(SUM(CASE WHEN pt.status = 'completed' THEN pt.amount END), 0) as total_revenue
+      FROM membership_plans mp
+      LEFT JOIN payment_transactions pt ON mp.id = pt.membership_plan_id
+      LEFT JOIN channel_members cm ON pt.id = cm.payment_transaction_id
+      WHERE mp.id = $1 AND mp.tenant_id = $2
+      GROUP BY mp.id
+    `,
+      [planId, tenantId],
+    );
+
+    if (stats.length === 0) {
+      return {
+        total_memberships: 0,
+        active_memberships: 0,
+        total_revenue: 0,
+      };
+    }
+
+    return {
+      total_memberships: parseInt(stats[0].total_memberships) || 0,
+      active_memberships: parseInt(stats[0].active_memberships) || 0,
+      total_revenue: parseFloat(stats[0].total_revenue) || 0,
+    };
+  }
+
+  /**
+   * Get popular membership plans ranked by usage
+   */
+  async getPopularPlans(
+    tenantId: string,
+  ): Promise<(MembershipPlan & { membership_count: number })[]> {
+    this.logger.log(`Getting popular plans for tenant ${tenantId}`);
+
+    const plans = await this.membershipPlanRepository.query(
+      `
+      SELECT
+        mp.*,
+        COUNT(DISTINCT pt.id) as membership_count
+      FROM membership_plans mp
+      LEFT JOIN payment_transactions pt ON mp.id = pt.membership_plan_id AND pt.status = 'completed'
+      WHERE mp.tenant_id = $1 AND mp.is_active = true
+      GROUP BY mp.id
+      ORDER BY membership_count DESC, mp.price_mnt ASC
+      LIMIT 10
+    `,
+      [tenantId],
+    );
+
+    return plans.map((plan) => ({
+      ...plan,
+      membership_count: parseInt(plan.membership_count) || 0,
+    }));
+  }
 }

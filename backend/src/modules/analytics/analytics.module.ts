@@ -5,7 +5,7 @@ import { AnalyticsService } from './analytics.service';
 import { Payment } from '../payment/entities/payment.entity';
 import { Membership } from '../membership/entities/membership.entity';
 import { Member } from '../membership/entities/member.entity';
-import { MembershipPlan } from '../membership/entities/membership-plan.entity';
+import { MembershipPlan } from '../membership-plan/entities/membership-plan.entity';
 import { TelegramGroup } from '../telegram-groups/telegram-groups.entity';
 
 @Module({

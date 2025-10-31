@@ -649,7 +649,7 @@ export default function PlansPage() {
               Delete Membership Plan
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deleteConfirmPlan?.name}"?
+              Are you sure you want to delete &quot;{deleteConfirmPlan?.name}&quot;?
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
@@ -657,7 +657,7 @@ export default function PlansPage() {
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 my-4">
             <p className="text-sm text-yellow-800">
               <strong>Warning:</strong> Deleting this plan will not affect existing members,
-              but new users won't be able to subscribe to this plan.
+              but new users won&apos;t be able to subscribe to this plan.
             </p>
           </div>
 

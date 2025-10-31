@@ -6,19 +6,18 @@ import { Bot, Users, CreditCard, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api/client';
-import type { Bot as BotType } from '@/lib/api/client';
+import { projectApi, type Project } from '@/lib/api/projects';
 import { PaymentStatsCard } from '@/components/dashboard/PaymentStatsCard';
 import { RevenueChart } from '@/components/dashboard/RevenueChart';
 import { MembershipChart } from '@/components/dashboard/MembershipChart';
 
 interface DashboardStats {
-  totalBots: number;
+  totalProjects: number;
   totalGroups: number;
   totalMembers: number;
   activeMemberships: number;
   recentActivity: {
-    type: 'bot_created' | 'group_connected' | 'payment_received' | 'member_joined';
+    type: 'project_created' | 'group_connected' | 'payment_received' | 'member_joined';
     message: string;
     timestamp: string;
   }[];
@@ -27,13 +26,13 @@ interface DashboardStats {
 export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
-    totalBots: 0,
+    totalProjects: 0,
     totalGroups: 0,
     totalMembers: 0,
     activeMemberships: 0,
     recentActivity: []
   });
-  const [bots, setBots] = useState<BotType[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,34 +42,34 @@ export default function DashboardPage() {
         setIsLoading(true);
         setError(null);
 
-        // Fetch bots data
-        const botsResponse = await apiClient.getBots();
-        setBots(botsResponse.bots);
+        // Fetch projects data
+        const projectsResponse = await projectApi.getAll();
+        setProjects(projectsResponse.data);
 
-        // Calculate stats from bots data
-        const totalBots = botsResponse.bots.length;
-        let totalGroups = 0;
-        let totalMembers = 0;
-        let activeMemberships = 0;
+        // Calculate stats from projects data
+        const totalProjects = projectsResponse.data.length;
+        const totalGroups = 0;
+        const totalMembers = 0;
+        const activeMemberships = 0;
 
-        // If bots have stats, aggregate them
-        botsResponse.bots.forEach(bot => {
-          if (bot.stats) {
-            totalGroups += bot.stats.groups_count || 0;
-            totalMembers += bot.stats.members_count || 0;
-            activeMemberships += bot.stats.active_memberships || 0;
-          }
-        });
+        // TODO: Add stats aggregation when project stats are available
+        // projectsResponse.data.forEach(project => {
+        //   if (project.stats) {
+        //     totalGroups += project.stats.groups_count || 0;
+        //     totalMembers += project.stats.members_count || 0;
+        //     activeMemberships += project.stats.active_memberships || 0;
+        //   }
+        // });
 
         setStats({
-          totalBots,
+          totalProjects,
           totalGroups,
           totalMembers,
           activeMemberships,
           recentActivity: [
             {
-              type: 'bot_created',
-              message: 'New bot created successfully',
+              type: 'project_created',
+              message: 'New project created successfully',
               timestamp: new Date().toISOString(),
             }
           ]
@@ -117,9 +116,9 @@ export default function DashboardPage() {
 
   const statCards = [
     {
-      title: 'Total Bots',
-      value: stats.totalBots,
-      description: 'Active Telegram bots',
+      title: 'Total Projects',
+      value: stats.totalProjects,
+      description: 'Active projects',
       icon: Bot,
       trend: '+2 from last month',
       color: 'text-blue-600',
@@ -205,9 +204,9 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Button asChild className="w-full">
-              <Link href="/dashboard/bots/create">
+              <Link href="/dashboard/projects/create">
                 <Bot className="mr-2 h-4 w-4" />
-                Create New Bot
+                Create New Project
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
@@ -225,64 +224,64 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent Bots */}
+        {/* Recent Projects */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Bots</CardTitle>
+            <CardTitle>Recent Projects</CardTitle>
             <CardDescription>
-              Your recently created bots
+              Your recently created projects
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {bots.length === 0 ? (
+            {projects.length === 0 ? (
               <div className="text-center py-6">
                 <Bot className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No bots yet</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No projects yet</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Get started by creating your first Telegram bot.
+                  Get started by creating your first project.
                 </p>
                 <div className="mt-6">
                   <Button asChild>
-                    <Link href="/dashboard/bots/create">
+                    <Link href="/dashboard/projects/create">
                       <Bot className="mr-2 h-4 w-4" />
-                      Create Bot
+                      Create Project
                     </Link>
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                {bots.slice(0, 3).map((bot) => (
-                  <div key={bot.id} className="flex items-center justify-between">
+                {projects.slice(0, 3).map((project) => (
+                  <div key={project.id} className="flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-medium text-gray-900">
-                        {bot.bot_name}
+                        {project.display_name}
                       </h4>
                       <p className="text-sm text-gray-500">
-                        @{bot.bot_username || 'Username not available'}
+                        @{project.bot_username || 'Username not available'}
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        bot.is_active
+                        project.is_active
                           ? 'bg-green-100 text-green-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {bot.is_active ? 'Active' : 'Inactive'}
+                        {project.is_active ? 'Active' : 'Inactive'}
                       </span>
                       <Button asChild variant="ghost" size="sm">
-                        <Link href={`/dashboard/bots/${bot.id}`}>
+                        <Link href={`/dashboard/projects/${project.id}`}>
                           View
                         </Link>
                       </Button>
                     </div>
                   </div>
                 ))}
-                {bots.length > 3 && (
+                {projects.length > 3 && (
                   <div className="pt-2">
                     <Button asChild variant="outline" size="sm" className="w-full">
-                      <Link href="/dashboard/bots">
-                        View all bots ({bots.length})
+                      <Link href="/dashboard/projects">
+                        View all projects ({projects.length})
                       </Link>
                     </Button>
                   </div>

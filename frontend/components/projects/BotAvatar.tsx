@@ -28,7 +28,6 @@ const iconSizeClasses = {
 export function BotAvatar({
   avatarUrl,
   displayName,
-  username,
   size = 'md',
   className
 }: BotAvatarProps) {

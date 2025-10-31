@@ -10,7 +10,7 @@ import {
   Membership,
   MembershipStatus,
 } from '../../membership/entities/membership.entity';
-import { MembershipPlan } from '../../membership/entities/membership-plan.entity';
+import { MembershipPlan } from '../../membership-plan/entities/membership-plan.entity';
 import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 import { MessageTemplateService } from '@/modules/project/services/message-template.service';
@@ -553,11 +553,12 @@ export class PaymentService {
       if (payment.membership_id) {
         membership = await this.membershipRepository.findOne({
           where: { id: payment.membership_id },
-          relations: ['plan', 'plan.group', 'plan.group.project'],
+          relations: ['plan', 'group', 'group.project'],
         });
 
-        if (membership?.plan?.group?.project) {
-          telegramGroup = membership.plan.group;
+        // Note: MembershipPlan no longer has direct group relation, use membership.group
+        if (membership?.group?.project) {
+          telegramGroup = membership.group;
           botToken = telegramGroup.project.bot_token;
         }
       }
