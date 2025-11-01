@@ -26,6 +26,8 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
+import { TelegramIntegrationModule } from './integrations/telegram/telegram-integration.module';
+import { GlobalBotWebhookService } from './common/services/global-bot-webhook.service';
 
 @Module({
   imports: [
@@ -87,10 +89,12 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     AnalyticsModule,
     OnboardingBotModule,
     ChannelIdBotModule,
+    TelegramIntegrationModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
+    GlobalBotWebhookService,
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
