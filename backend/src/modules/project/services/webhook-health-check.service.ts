@@ -200,10 +200,14 @@ export class WebhookHealthCheckService implements OnModuleInit {
     });
 
     let fixedCount = 0;
+    let failedCount = 0;
 
     for (const project of projects) {
       try {
         if (!project.webhook_url || !project.bot_token) {
+          this.logger.debug(
+            `Skipping project ${project.id}: missing webhook_url or bot_token`,
+          );
           continue;
         }
 
@@ -229,22 +233,26 @@ export class WebhookHealthCheckService implements OnModuleInit {
 
             fixedCount++;
             this.logger.log(
-              `Fixed webhook for project ${project.id}: ${result.webhookUrl}`,
+              `✅ Fixed webhook for project ${project.id}: ${result.webhookUrl}`,
             );
           } else {
+            failedCount++;
             this.logger.warn(
-              `Failed to fix webhook for project ${project.id}: ${result.error}`,
+              `⚠️  Failed to fix webhook for project ${project.id}: ${result.error}. This may indicate an invalid bot token.`,
             );
           }
         }
       } catch (error) {
+        failedCount++;
         this.logger.error(
-          `Error fixing webhook for project ${project.id}: ${error.message}`,
+          `❌ Error fixing webhook for project ${project.id}: ${error.message}. The bot token may be invalid or the bot may have been deleted.`,
         );
       }
     }
 
-    this.logger.log(`Fixed ${fixedCount} mismatched webhooks`);
+    this.logger.log(
+      `Webhook fix completed: ${fixedCount} fixed, ${failedCount} failed`,
+    );
     return fixedCount;
   }
 

@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Telegraf } from 'telegraf';
 import { Project } from '../entities/project.entity';
-import { EncryptionService } from '../../../common/services/encryption.service';
 
 export interface HealthCheck {
   healthy: boolean;
@@ -43,7 +42,6 @@ export class ProjectHealthMonitorService {
   constructor(
     @InjectRepository(Project)
     private projectRepository: Repository<Project>,
-    private encryptionService: EncryptionService,
   ) {}
 
   /**
@@ -91,8 +89,7 @@ export class ProjectHealthMonitorService {
         throw new Error(`Project ${projectId} not found`);
       }
 
-      const decryptedToken = this.encryptionService.decrypt(project.bot_token);
-      const telegrafBot = new Telegraf(decryptedToken);
+      const telegrafBot = new Telegraf(project.bot_token);
 
       // Run all health checks in parallel
       const [respondingCheck, webhookCheck, activityCheck] =

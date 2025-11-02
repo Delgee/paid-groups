@@ -10,7 +10,6 @@ import * as crypto from 'crypto';
 import { Project } from '../entities/project.entity';
 import { TelegramUpdate } from '../project-webhook.controller';
 import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
-import { EncryptionService } from '../../../common/services/encryption.service';
 import { ProjectCommandHandlerService } from './project-command-handler.service';
 
 /**
@@ -28,27 +27,8 @@ export class ProjectWebhookProcessorService {
     private readonly projectRepository: Repository<Project>,
     private readonly dataSource: DataSource,
     private readonly telegramApiService: TelegramApiService,
-    private readonly encryptionService: EncryptionService,
     private readonly commandHandler: ProjectCommandHandlerService,
   ) {}
-
-  /**
-   * Decrypt bot token for use with Telegram API
-   * @private
-   */
-  private decryptBotToken(encryptedToken: string): string {
-    try {
-      return this.encryptionService.decrypt(encryptedToken);
-    } catch (error) {
-      this.logger.error(`Failed to decrypt bot token: ${error.message}`);
-      throw new UnauthorizedException({
-        error: {
-          code: 'INVALID_BOT_TOKEN',
-          message: 'Bot token is invalid or corrupted',
-        },
-      });
-    }
-  }
 
   /**
    * Process incoming Telegram webhook update
@@ -259,9 +239,8 @@ export class ProjectWebhookProcessorService {
       project.welcome_message ||
       `Hello ${firstName}! 👋\n\nWelcome to ${project.display_name}.\n\nUse /help to see available commands.`;
 
-    const decryptedToken = this.decryptBotToken(project.bot_token);
     await this.telegramApiService.sendMessage(
-      decryptedToken,
+      project.bot_token,
       chatId,
       welcomeText,
     );
@@ -291,9 +270,8 @@ This bot manages access to premium Telegram groups. Purchase a membership plan t
 For support, please contact the group administrators.
     `.trim();
 
-    const decryptedToken = this.decryptBotToken(project.bot_token);
     await this.telegramApiService.sendMessage(
-      decryptedToken,
+      project.bot_token,
       chatId,
       helpText,
       { parse_mode: 'Markdown' },
@@ -322,9 +300,8 @@ Status: Active
 To check your detailed membership status, please visit the dashboard.
     `.trim();
 
-    const decryptedToken = this.decryptBotToken(project.bot_token);
     await this.telegramApiService.sendMessage(
-      decryptedToken,
+      project.bot_token,
       chatId,
       statusText,
       { parse_mode: 'Markdown' },
@@ -349,9 +326,8 @@ To view available subscription plans and purchase membership, please visit our w
 Use /status to check your current membership status.
     `.trim();
 
-    const decryptedToken = this.decryptBotToken(project.bot_token);
     await this.telegramApiService.sendMessage(
-      decryptedToken,
+      project.bot_token,
       chatId,
       subscribeText,
       { parse_mode: 'Markdown' },
@@ -374,11 +350,9 @@ Use /status to check your current membership status.
     this.logger.debug(`Handling callback query: ${data} for project ${project.id}`);
 
     try {
-      const decryptedToken = this.decryptBotToken(project.bot_token);
-
       // Answer the callback query to remove loading indicator
       await this.telegramApiService.answerCallbackQuery(
-        decryptedToken,
+        project.bot_token,
         queryId,
       );
 
@@ -408,9 +382,8 @@ Use /status to check your current membership status.
     // TODO: Implement subscription flow
     const message = `To complete your subscription, please visit our payment page.\n\nPlan ID: ${planId}`;
 
-    const decryptedToken = this.decryptBotToken(project.bot_token);
     await this.telegramApiService.sendMessage(
-      decryptedToken,
+      project.bot_token,
       chatId,
       message,
     );
@@ -442,8 +415,6 @@ Use /status to check your current membership status.
       }
 
       try {
-        const decryptedToken = this.decryptBotToken(project.bot_token);
-
         // TODO: When membership module is integrated:
         // 1. Create or update member record
         // 2. Check if member has valid membership for this group
@@ -454,7 +425,7 @@ Use /status to check your current membership status.
         const welcomeText = `👋 Welcome ${newMember.first_name}!\n\nYou've joined ${message.chat.title || 'the group'}.\n\nTo access premium content, you need an active membership. Use /subscribe to view available plans.`;
 
         await this.telegramApiService.sendMessage(
-          decryptedToken,
+          project.bot_token,
           chatId,
           welcomeText,
         );

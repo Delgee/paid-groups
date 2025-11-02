@@ -39,9 +39,9 @@ export class Project {
   tenant_id: string;
 
   // Bot Configuration Fields (from BotConfiguration)
-  @ApiProperty({ description: 'Telegram bot API token (encrypted)', maxLength: 500 })
-  @Column({ type: 'varchar', length: 500, unique: true })
-  bot_token: string; // Stores encrypted token - use EncryptionService to decrypt
+  @ApiProperty({ description: 'Telegram bot API token', maxLength: 255 })
+  @Column({ type: 'varchar', length: 255, unique: true })
+  bot_token: string;
 
   @ApiProperty({ description: "Bot's @username from Telegram", maxLength: 255 })
   @Column({ type: 'varchar', length: 255 })

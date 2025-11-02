@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Project } from '../entities/project.entity';
 import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
-import { EncryptionService } from '../../../common/services/encryption.service';
 
 export interface CommandContext {
   project: Project;
@@ -30,20 +29,7 @@ export class ProjectCommandHandlerService {
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
     private readonly telegramApiService: TelegramApiService,
-    private readonly encryptionService: EncryptionService,
   ) {}
-
-  /**
-   * Decrypt project bot token for Telegram API calls
-   */
-  private decryptBotToken(encryptedToken: string): string {
-    try {
-      return this.encryptionService.decrypt(encryptedToken);
-    } catch (error) {
-      this.logger.error(`Failed to decrypt bot token: ${error.message}`);
-      throw new Error('Bot token decryption failed');
-    }
-  }
 
   /**
    * Check if user is a Telegram chat administrator
@@ -84,7 +70,7 @@ export class ProjectCommandHandlerService {
    */
   async handleBanCommand(ctx: CommandContext): Promise<void> {
     const { project, message, chatId, userId, args } = ctx;
-    const botToken = this.decryptBotToken(project.bot_token);
+    const botToken = project.bot_token;
 
     // Check if command is used in a group
     if (message.chat.type === 'private') {
@@ -154,7 +140,7 @@ export class ProjectCommandHandlerService {
    */
   async handleExtendCommand(ctx: CommandContext): Promise<void> {
     const { project, message, chatId, userId, args } = ctx;
-    const botToken = this.decryptBotToken(project.bot_token);
+    const botToken = project.bot_token;
 
     // Check if command is used in a group
     if (message.chat.type === 'private') {
@@ -234,7 +220,7 @@ export class ProjectCommandHandlerService {
    */
   async handleStatsCommand(ctx: CommandContext): Promise<void> {
     const { project, message, chatId, userId } = ctx;
-    const botToken = this.decryptBotToken(project.bot_token);
+    const botToken = project.bot_token;
 
     // Check if command is used in a group
     if (message.chat.type === 'private') {
@@ -301,7 +287,7 @@ export class ProjectCommandHandlerService {
    */
   async handleMembersCommand(ctx: CommandContext): Promise<void> {
     const { project, message, chatId, userId, args } = ctx;
-    const botToken = this.decryptBotToken(project.bot_token);
+    const botToken = project.bot_token;
 
     // Check if command is used in a group
     if (message.chat.type === 'private') {

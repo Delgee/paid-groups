@@ -17,7 +17,6 @@ import {
 } from '../dto/project-response.dto';
 import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 import { ProjectWebhookService } from './project-webhook.service';
-import { EncryptionService } from '../../../common/services/encryption.service';
 
 @Injectable()
 export class ProjectService {
@@ -29,26 +28,8 @@ export class ProjectService {
     private readonly dataSource: DataSource,
     private readonly telegramApiService: TelegramApiService,
     private readonly webhookService: ProjectWebhookService,
-    private readonly encryptionService: EncryptionService,
   ) {}
 
-  /**
-   * Decrypt bot token for use with Telegram API
-   * @private
-   */
-  private decryptBotToken(encryptedToken: string): string {
-    try {
-      return this.encryptionService.decrypt(encryptedToken);
-    } catch (error) {
-      this.logger.error(`Failed to decrypt bot token: ${error.message}`);
-      throw new BadRequestException({
-        error: {
-          code: 'INVALID_BOT_TOKEN',
-          message: 'Bot token is invalid or corrupted',
-        },
-      });
-    }
-  }
 
   /**
    * Create a new project
@@ -59,12 +40,9 @@ export class ProjectService {
   ): Promise<ProjectResponseDto> {
     this.logger.log(`Creating project for tenant ${tenantId}`);
 
-    // Encrypt bot token before checking/saving
-    const encryptedToken = this.encryptionService.encrypt(createDto.bot_token);
-
-    // Check for duplicate bot_token (encrypted version)
+    // Check for duplicate bot_token
     const existingProject = await this.projectRepository.findOne({
-      where: { bot_token: encryptedToken },
+      where: { bot_token: createDto.bot_token },
     });
 
     if (existingProject) {
@@ -78,19 +56,18 @@ export class ProjectService {
       });
     }
 
-    // Create project entity first to get the ID (with encrypted token)
+    // Create project entity first to get the ID
     const project = this.projectRepository.create({
       ...createDto,
-      bot_token: encryptedToken, // Store encrypted token
       tenant_id: tenantId,
     });
 
     const saved = await this.projectRepository.save(project);
 
-    // Auto-generate webhook configuration (use original unencrypted token)
+    // Auto-generate webhook configuration
     try {
       const webhookResult = await this.webhookService.setupWebhook(
-        createDto.bot_token, // Use original unencrypted token for API call
+        createDto.bot_token,
         tenantId,
         saved.id,
       );
@@ -219,14 +196,12 @@ export class ProjectService {
 
     const project = await this.findOneRaw(tenantId, id);
 
-    // If updating bot_token, encrypt it and check for duplicates
+    // If updating bot_token, check for duplicates
     if (updateDto.bot_token) {
-      const encryptedNewToken = this.encryptionService.encrypt(updateDto.bot_token);
-
       // Only check for duplicates if the token actually changed
-      if (encryptedNewToken !== project.bot_token) {
+      if (updateDto.bot_token !== project.bot_token) {
         const existingProject = await this.projectRepository.findOne({
-          where: { bot_token: encryptedNewToken },
+          where: { bot_token: updateDto.bot_token },
         });
 
         if (existingProject) {
@@ -239,9 +214,6 @@ export class ProjectService {
           });
         }
       }
-
-      // Replace the plain token with encrypted version
-      updateDto.bot_token = encryptedNewToken;
     }
 
     Object.assign(project, updateDto);
@@ -265,11 +237,8 @@ export class ProjectService {
    */
   private async syncBotInfoAfterUpdate(project: Project): Promise<void> {
     try {
-      // Decrypt token before verifying
-      const decryptedToken = this.decryptBotToken(project.bot_token);
-
       // Verify bot token is still valid
-      const botInfo = await this.telegramApiService.verifyBotToken(decryptedToken);
+      const botInfo = await this.telegramApiService.verifyBotToken(project.bot_token);
 
       if (!botInfo) {
         this.logger.warn(`Bot token invalid for project ${project.id}, skipping sync`);
@@ -300,11 +269,8 @@ export class ProjectService {
     ];
 
     try {
-      // Decrypt token before using with Telegram API
-      const decryptedToken = this.decryptBotToken(project.bot_token);
-
       const success = await this.telegramApiService.setMyCommands(
-        decryptedToken,
+        project.bot_token,
         commands
       );
 
@@ -342,11 +308,8 @@ export class ProjectService {
 
     const project = await this.findOneRaw(tenantId, id);
 
-    // Decrypt token before calling Telegram API
-    const decryptedToken = this.decryptBotToken(project.bot_token);
-
     // Call Telegram API to get bot info
-    const botInfo = await this.telegramApiService.verifyBotToken(decryptedToken);
+    const botInfo = await this.telegramApiService.verifyBotToken(project.bot_token);
 
     if (botInfo) {
       project.bot_username = botInfo.username;
@@ -355,7 +318,7 @@ export class ProjectService {
 
     // Fetch bot profile photo
     try {
-      const profilePhoto = await this.telegramApiService.getBotProfilePhoto(decryptedToken);
+      const profilePhoto = await this.telegramApiService.getBotProfilePhoto(project.bot_token);
 
       if (profilePhoto) {
         project.bot_avatar_file_id = profilePhoto.file_id;
@@ -428,11 +391,8 @@ export class ProjectService {
 
     const project = await this.findOneRaw(tenantId, id);
 
-    // Decrypt token before refreshing webhook
-    const decryptedToken = this.decryptBotToken(project.bot_token);
-
     const webhookResult = await this.webhookService.refreshWebhook(
-      decryptedToken,
+      project.bot_token,
       tenantId,
       id,
     );

@@ -11,7 +11,6 @@ import {
   TelegramBotHandlerService,
   BotConfiguration,
 } from '../../../integrations/telegram/telegram-bot-handler.service';
-import { EncryptionService } from '../../../common/services/encryption.service';
 
 /**
  * Project Bot Handler
@@ -31,7 +30,6 @@ export class ProjectBotHandler implements OnModuleInit {
     private readonly paymentTransactionService: PaymentTransactionService,
     @InjectQueue('membership') private membershipQueue: Queue,
     private readonly telegramBotHandler: TelegramBotHandlerService,
-    private readonly encryptionService: EncryptionService,
   ) {}
 
   async onModuleInit() {
@@ -63,32 +61,11 @@ export class ProjectBotHandler implements OnModuleInit {
     }
   }
 
-  /**
-   * Decrypt bot token for use with Telegram API
-   * @private
-   */
-  private decryptBotToken(encryptedToken: string): string {
-    try {
-      return this.encryptionService.decrypt(encryptedToken);
-    } catch (error) {
-      this.logger.error(`Failed to decrypt bot token: ${error.message}`);
-      throw new BadRequestException({
-        error: {
-          code: 'INVALID_BOT_TOKEN',
-          message: 'Bot token is invalid or corrupted',
-        },
-      });
-    }
-  }
-
   async createBotInstance(project: Project): Promise<void> {
     try {
-      // Decrypt bot token before using it with Telegram API
-      const decryptedBotToken = this.decryptBotToken(project.bot_token);
-
       const config: BotConfiguration = {
         id: project.id,
-        botToken: decryptedBotToken,
+        botToken: project.bot_token,
         botUsername: project.bot_username,
         welcomeMessage: project.welcome_message,
         tenantId: project.tenant_id,

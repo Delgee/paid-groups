@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Telegraf } from 'telegraf';
 import { Project } from '../entities/project.entity';
-import { EncryptionService } from '../../../common/services/encryption.service';
 import * as crypto from 'crypto';
 
 export interface SecurityAlert {
@@ -39,7 +38,6 @@ export class ProjectSecurityService {
   constructor(
     @InjectRepository(Project)
     private projectRepository: Repository<Project>,
-    private encryptionService: EncryptionService,
     private configService: ConfigService,
   ) {}
 
@@ -59,8 +57,7 @@ export class ProjectSecurityService {
         throw new Error(`Project ${projectId} not found`);
       }
 
-      const decryptedToken = this.encryptionService.decrypt(project.bot_token);
-      const telegrafBot = new Telegraf(decryptedToken);
+      const telegrafBot = new Telegraf(project.bot_token);
 
       // Run all security checks
       const [webhookAlert, activityAlert, identityAlert] =
