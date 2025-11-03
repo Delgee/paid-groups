@@ -375,10 +375,18 @@ export default function ProjectDetailPage() {
                           {plan.trial_days > 0 && (
                             <span className="text-green-600">{plan.trial_days} day trial</span>
                           )}
-                          {plan.telegram_groups && plan.telegram_groups.length > 0 && (
-                            <span>{plan.telegram_groups.length} group{plan.telegram_groups.length !== 1 ? 's' : ''}</span>
-                          )}
                         </div>
+                        {plan.telegram_groups && plan.telegram_groups.length > 0 && (
+                          <div className="mt-2 text-sm">
+                            <span className="text-muted-foreground">Groups: </span>
+                            {plan.telegram_groups.map((group, index) => (
+                              <span key={group.id}>
+                                <span className="text-foreground">{group.group_name}</span>
+                                {index < plan.telegram_groups!.length - 1 && <span className="text-muted-foreground">, </span>}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <Button

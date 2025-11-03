@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { TelegramGroup } from './telegram-groups';
 
 export interface MembershipPlan {
   id: string;
@@ -15,7 +16,7 @@ export interface MembershipPlan {
   max_members?: number;
   created_at: string;
   updated_at: string;
-  telegram_groups?: any[];
+  telegram_groups?: TelegramGroup[];
 }
 
 export interface CreateMembershipPlanDto {
