@@ -48,6 +48,14 @@ export interface CreateUserRequest {
   role: 'admin' | 'moderator';
 }
 
+export interface UpdateUserRequest {
+  email?: string;
+  password?: string;
+  name?: string;
+  role?: 'admin' | 'moderator';
+  is_active?: boolean;
+}
+
 export interface UserSummary {
   id: string;
   email: string;
@@ -614,6 +622,21 @@ class ApiClient {
       params: query,
     });
     return response.data;
+  }
+
+  async updateUser(
+    userId: string,
+    userData: UpdateUserRequest,
+  ): Promise<CreateUserResponse> {
+    const response = await this.instance.put<CreateUserResponse>(
+      `/users/${userId}`,
+      userData,
+    );
+    return response.data;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await this.instance.delete(`/users/${userId}`);
   }
 
   // Analytics methods

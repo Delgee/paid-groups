@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,10 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Users, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { apiClient, userQueryKeys, AllUserRoles, UserSummary } from '@/lib/api/client';
 import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
 
 interface UserListProps {
   onCreateUser?: () => void;
@@ -31,7 +41,12 @@ interface UserListProps {
 export function UserList({ onCreateUser }: UserListProps) {
   const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState<AllUserRoles | undefined>();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserSummary | null>(null);
   const limit = 20;
+  const router = useRouter();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const {
     data,
@@ -42,6 +57,19 @@ export function UserList({ onCreateUser }: UserListProps) {
     queryKey: userQueryKeys.list({ page, limit, role: roleFilter }),
     queryFn: () => apiClient.getUsers({ page, limit, role: roleFilter }),
     staleTime: 30 * 1000, // 30 seconds
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (userId: string) => apiClient.deleteUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
+      toast.success('The user has been successfully deleted');
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to delete user');
+    },
   });
 
   const getRoleBadgeVariant = (role: AllUserRoles) => {
@@ -64,6 +92,21 @@ export function UserList({ onCreateUser }: UserListProps) {
 
   const formatCreatedAt = (createdAt: string) => {
     return formatDistanceToNow(new Date(createdAt), { addSuffix: true });
+  };
+
+  const handleEdit = (userId: string) => {
+    router.push(`/dashboard/users/${userId}/edit`);
+  };
+
+  const handleDeleteClick = (user: UserSummary) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (userToDelete) {
+      deleteMutation.mutate(userToDelete.id);
+    }
   };
 
   if (error) {
@@ -141,6 +184,7 @@ export function UserList({ onCreateUser }: UserListProps) {
                     <TableHead>Last Login</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -178,6 +222,30 @@ export function UserList({ onCreateUser }: UserListProps) {
                         <Badge variant={user.is_active ? 'default' : 'secondary'}>
                           {user.is_active ? 'Active' : 'Inactive'}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {user.role !== 'owner' && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(user.id)}
+                                data-testid={`edit-user-${user.id}`}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteClick(user)}
+                                data-testid={`delete-user-${user.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -234,6 +302,43 @@ export function UserList({ onCreateUser }: UserListProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{' '}
+              <span className="font-semibold">{userToDelete?.name}</span> (
+              {userToDelete?.email})? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

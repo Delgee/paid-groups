@@ -2,8 +2,11 @@ import {
   Controller,
   Post,
   Get,
+  Put,
+  Delete,
   Body,
   Query,
+  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -12,6 +15,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UserManagementService } from './user-management.service';
 import { CreateUserRequestDto } from './dto/create-user-request.dto';
+import { UpdateUserRequestDto } from './dto/update-user-request.dto';
 import { CreateUserResponseDto } from './dto/create-user-response.dto';
 import { GetUsersResponseDto, GetUsersQueryDto } from './dto/get-users-response.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -160,5 +164,92 @@ export class UserManagementController {
   ): Promise<GetUsersResponseDto> {
     const tenantId = req.user?.tenant_id;
     return this.userManagementService.getUsers(tenantId, query);
+  }
+
+  @Put(':id')
+  @ApiOperation({
+    summary: 'Update an existing user',
+    description: 'Allows owner users to update admin or moderator users',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User updated successfully',
+    type: CreateUserResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation error',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - invalid or missing token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - cannot update owner users',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 403 },
+        message: { type: 'string', example: 'Cannot update owner users' },
+        error: { type: 'string', example: 'Forbidden' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - email already exists',
+  })
+  async updateUser(
+    @Request() req: any,
+    @Param('id') userId: string,
+    @Body(new ValidationPipe({ transform: true, whitelist: true })) updateUserDto: UpdateUserRequestDto,
+  ): Promise<CreateUserResponseDto> {
+    const tenantId = req.user?.tenant_id;
+    const ownerUserId = req.user?.id;
+    return this.userManagementService.updateUser(tenantId, ownerUserId, userId, updateUserDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete a user',
+    description: 'Allows owner users to delete admin or moderator users (soft delete)',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'User deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - invalid or missing token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - cannot delete owner users or yourself',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 403 },
+        message: { type: 'string', example: 'Cannot delete owner users' },
+        error: { type: 'string', example: 'Forbidden' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async deleteUser(
+    @Request() req: any,
+    @Param('id') userId: string,
+  ): Promise<void> {
+    const tenantId = req.user?.tenant_id;
+    const ownerUserId = req.user?.id;
+    return this.userManagementService.deleteUser(tenantId, ownerUserId, userId);
   }
 }

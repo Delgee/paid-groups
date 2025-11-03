@@ -74,10 +74,13 @@ export class MemberController {
 
   @Get()
   @ApiOperation({ summary: 'List all members for tenant' })
-  @ApiResponse({ status: 200, description: 'List of members' })
+  @ApiResponse({ status: 200, description: 'List of members with total count' })
   async findAll(@Request() req) {
     const members = await this.memberService.findAllByTenant(req.tenant_id);
-    return { members };
+    return {
+      members,
+      total: members.length
+    };
   }
 
   @Get('active')
