@@ -189,13 +189,13 @@ export class TrialExpirationJob {
     removedFromGroups: string[],
   ): Promise<void> {
     const message =
-      `⏰ <b>Trial Expired</b>\n\n` +
-      `Your trial for <b>${membershipPlan.name}</b> has expired.\n\n` +
-      `${removedFromGroups.length > 0 ? `You have been removed from:\n${removedFromGroups.map((g) => `• ${g}`).join('\n')}\n\n` : ''}` +
-      `💳 <b>Want to continue?</b>\n` +
-      `Purchase the full membership to regain access!\n\n` +
-      `Price: <b>${membershipPlan.price.toLocaleString()} MNT</b>\n` +
-      `Duration: <b>${membershipPlan.duration_days} days</b>`;
+      `⏰ <b>Туршилт дууслаа</b>\n\n` +
+      `Таны <b>${membershipPlan.name}</b>-ийн туршилт дууссан байна.\n\n` +
+      `${removedFromGroups.length > 0 ? `Таныг дараах бүлгүүдээс хассан:\n${removedFromGroups.map((g) => `• ${g}`).join('\n')}\n\n` : ''}` +
+      `💳 <b>Үргэлжлүүлэх үү?</b>\n` +
+      `Дахин нэвтрэх эрх авахын тулд бүрэн гишүүнчлэл худалдан аваарай!\n\n` +
+      `Үнэ: <b>${membershipPlan.price.toLocaleString()} MNT</b>\n` +
+      `Хугацаа: <b>${membershipPlan.duration_days} хоног</b>`;
 
     const success = await this.telegramApiService.sendMessage(
       project.bot_token,
@@ -207,7 +207,7 @@ export class TrialExpirationJob {
           inline_keyboard: [
             [
               {
-                text: '💳 Buy Membership',
+                text: '💳 Гишүүнчлэл авах',
                 callback_data: `buy_plan_${membershipPlan.id}`,
               },
             ],

@@ -77,7 +77,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '⚠️ This command can only be used in group chats.',
+        '⚠️ Энэ командыг зөвхөн бүлгийн чатад ашиглаж болно.',
       );
       return;
     }
@@ -89,7 +89,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '⚠️ You must be a group administrator to use this command.',
+        '⚠️ Энэ командыг ашиглахын тулд бүлгийн админ байх ёстой.',
       );
       return;
     }
@@ -99,7 +99,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '❌ Usage: /ban @username [reason]\n\nExample: /ban @spammer Posting ads',
+        '❌ Хэрэглээ: /ban @хэрэглэгч [шалтгаан]\n\nЖишээ: /ban @spammer Зар сурталчилгаа хийсэн',
       );
       return;
     }
@@ -113,8 +113,8 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        `⚠️ Ban command received for @${targetUsername}.\n\nReason: ${reason}\n\n` +
-        `This feature requires full membership integration to be completed.`,
+        `⚠️ @${targetUsername}-г хориглох командыг хүлээн авлаа.\n\nШалтгаан: ${reason}\n\n` +
+        `Энэ функц нь бүрэн гишүүнчлэлийн интеграци хийгдэх шаардлагатай.`,
         { parse_mode: 'Markdown' },
       );
 
@@ -126,7 +126,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        `❌ Error processing command. Please try again.`,
+        `❌ Команд боловсруулахад алдаа гарлаа. Дахин оролдоно уу.`,
       );
     }
   }
@@ -147,7 +147,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '⚠️ This command can only be used in group chats.',
+        '⚠️ Энэ командыг зөвхөн бүлгийн чатад ашиглаж болно.',
       );
       return;
     }
@@ -159,7 +159,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '⚠️ You must be a group administrator to use this command.',
+        '⚠️ Энэ командыг ашиглахын тулд бүлгийн админ байх ёстой.',
       );
       return;
     }
@@ -169,7 +169,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '❌ Usage: /extend @username <days>\n\nExample: /extend @user123 30',
+        '❌ Хэрэглээ: /extend @хэрэглэгч <хоног>\n\nЖишээ: /extend @user123 30',
       );
       return;
     }
@@ -181,7 +181,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '❌ Days must be a positive number.',
+        '❌ Хоног нь эерэг тоо байх ёстой.',
       );
       return;
     }
@@ -191,8 +191,8 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        `⚠️ Extend command received for @${targetUsername} (${days} days).\n\n` +
-        `This feature requires full membership integration to be completed.`,
+        `⚠️ @${targetUsername}-ийн хугацаа сунгах командыг хүлээн авлаа (${days} хоног).\n\n` +
+        `Энэ функц нь бүрэн гишүүнчлэлийн интеграци хийгдэх шаардлагатай.`,
         { parse_mode: 'Markdown' },
       );
 
@@ -207,7 +207,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        `❌ Error processing command. Please try again.`,
+        `❌ Команд боловсруулахад алдаа гарлаа. Дахин оролдоно уу.`,
       );
     }
   }
@@ -227,7 +227,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '⚠️ This command can only be used in group chats.',
+        '⚠️ Энэ командыг зөвхөн бүлгийн чатад ашиглаж болно.',
       );
       return;
     }
@@ -239,7 +239,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '⚠️ You must be a group administrator to use this command.',
+        '⚠️ Энэ командыг ашиглахын тулд бүлгийн админ байх ёстой.',
       );
       return;
     }
@@ -252,13 +252,13 @@ export class ProjectCommandHandlerService {
       );
 
       const statsMessage = `
-📊 <b>Group Statistics</b>
+📊 <b>Бүлгийн статистик</b>
 
-<b>Group:</b> ${chatInfo?.title || 'Unknown'}
-<b>Type:</b> ${chatInfo?.type || 'Unknown'}
-<b>Members:</b> ${chatInfo?.member_count || 'Unknown'}
+<b>Бүлэг:</b> ${chatInfo?.title || 'Тодорхойгүй'}
+<b>Төрөл:</b> ${chatInfo?.type || 'Тодорхойгүй'}
+<b>Гишүүд:</b> ${chatInfo?.member_count || 'Тодорхойгүй'}
 
-<i>Full membership statistics require membership service integration.</i>
+<i>Бүрэн гишүүнчлэлийн статистик нь гишүүнчлэлийн үйлчилгээний интеграци шаардлагатай.</i>
       `.trim();
 
       await this.telegramApiService.sendMessage(
@@ -274,7 +274,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        `❌ Error retrieving statistics. Please try again.`,
+        `❌ Статистик татахад алдаа гарлаа. Дахин оролдоно уу.`,
       );
     }
   }
@@ -294,7 +294,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '⚠️ This command can only be used in group chats.',
+        '⚠️ Энэ командыг зөвхөн бүлгийн чатад ашиглаж болно.',
       );
       return;
     }
@@ -306,7 +306,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '⚠️ You must be a group administrator to use this command.',
+        '⚠️ Энэ командыг ашиглахын тулд бүлгийн админ байх ёстой.',
       );
       return;
     }
@@ -317,7 +317,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        '❌ Invalid page number. Usage: /members [page]',
+        '❌ Хуудасны дугаар буруу байна. Хэрэглээ: /members [хуудас]',
       );
       return;
     }
@@ -330,14 +330,14 @@ export class ProjectCommandHandlerService {
       );
 
       const membersMessage = `
-👥 <b>Group Members</b>
+👥 <b>Бүлгийн гишүүд</b>
 
-<b>Group:</b> ${chatInfo?.title || 'Unknown'}
-<b>Total Members:</b> ${chatInfo?.member_count || 'Unknown'}
+<b>Бүлэг:</b> ${chatInfo?.title || 'Тодорхойгүй'}
+<b>Нийт гишүүд:</b> ${chatInfo?.member_count || 'Тодорхойгүй'}
 
-<i>Full member listing with membership details requires membership service integration.</i>
+<i>Гишүүнчлэлийн дэлгэрэнгүй мэдээлэлтэй гишүүдийн бүрэн жагсаалт нь гишүүнчлэлийн үйлчилгээний интеграци шаардлагатай.</i>
 
-<i>Page ${page} - Use /members [page] for pagination</i>
+<i>Хуудас ${page} - Хуудаслалтын тулд /members [хуудас] ашигла</i>
       `.trim();
 
       await this.telegramApiService.sendMessage(
@@ -355,7 +355,7 @@ export class ProjectCommandHandlerService {
       await this.telegramApiService.sendMessage(
         botToken,
         chatId,
-        `❌ Error retrieving members. Please try again.`,
+        `❌ Гишүүд татахад алдаа гарлаа. Дахин оролдоно уу.`,
       );
     }
   }

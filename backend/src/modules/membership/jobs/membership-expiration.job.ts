@@ -94,16 +94,16 @@ export class MembershipExpirationJob {
 
   private async sendExpirationWarnings() {
     // Send 7-day warnings
-    await this.sendWarningsForDays(7, 'Your membership expires in 7 days');
+    await this.sendWarningsForDays(7, 'Таны гишүүнчлэл 7 хоногийн дараа дуусна');
 
     // Send 3-day warnings
-    await this.sendWarningsForDays(3, 'Your membership expires in 3 days');
+    await this.sendWarningsForDays(3, 'Таны гишүүнчлэл 3 хоногийн дараа дуусна');
 
     // Send 1-day warnings
-    await this.sendWarningsForDays(1, 'Your membership expires tomorrow');
+    await this.sendWarningsForDays(1, 'Таны гишүүнчлэл маргааш дуусна');
   }
 
-  private async sendWarningsForDays(days: number, message: string) {
+  private async sendWarningsForDays(days: number, messageKey: string) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + days);
     startDate.setHours(0, 0, 0, 0);
@@ -129,7 +129,7 @@ export class MembershipExpirationJob {
 
     for (const membership of membershipsExpiring) {
       try {
-        await this.sendExpirationWarning(membership, message);
+        await this.sendExpirationWarning(membership, messageKey);
 
         // Update last warning sent timestamp
         await this.membershipRepository.update(membership.id, {
@@ -152,7 +152,7 @@ export class MembershipExpirationJob {
         return;
       }
 
-      const fullMessage = `${message}\n\nPlan: ${membership.plan.name}\nExpires: ${membership.expires_at.toLocaleDateString()}`;
+      const fullMessage = `${message}\n\nБагц: ${membership.plan.name}\nДуусах огноо: ${membership.expires_at.toLocaleDateString()}`;
 
       const success = await this.telegramApiService.sendMessage(
         bot.bot_token,

@@ -165,7 +165,7 @@ export class ProjectBotHandler implements OnModuleInit {
       );
     } catch (error) {
       this.logger.error('Error handling start command', error.stack);
-      await ctx.reply('An error occurred. Please try again later.');
+      await ctx.reply('Алдаа гарлаа. Дараа дахин оролдоно уу.');
     }
   }
 
@@ -181,7 +181,7 @@ export class ProjectBotHandler implements OnModuleInit {
 
       if (plans.length === 0) {
         await ctx.reply(
-          'No membership plans are currently available. Please check back later.',
+          'Одоогоор багц байхгүй байна. Дараа дахин шалгана уу.',
         );
         return;
       }
@@ -234,9 +234,9 @@ export class ProjectBotHandler implements OnModuleInit {
       }
 
       await ctx.reply(
-        '🎯 *Choose a Membership Plan:*\n\nSelect a plan to get started with premium access!\n\n' +
-          '💳 *Buy Now* - Full access with payment\n' +
-          '🎁 *Try Free* - Limited time trial (one-time only)',
+        '🎯 *Багц сонгох:*\n\nПремиум эрх авахын тулд багц сонгоно уу!\n\n' +
+          '💳 *Худалдан авах* - Төлбөртэй бүрэн эрх\n' +
+          '🎁 *Үнэгүй туршилт* - Хязгаарлагдмал хугацаа (ганцхан удаа)',
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard(keyboard),
@@ -248,7 +248,7 @@ export class ProjectBotHandler implements OnModuleInit {
       );
     } catch (error) {
       this.logger.error('Error handling buy command', error.stack);
-      await ctx.reply('An error occurred. Please try again later.');
+      await ctx.reply('Алдаа гарлаа. Дараа дахин оролдоно уу.');
     }
   }
 
@@ -264,14 +264,14 @@ export class ProjectBotHandler implements OnModuleInit {
       // );
 
       await ctx.reply(
-        '📊 *Your Membership Status*\n\n' +
-          'Status: Checking...\n' +
-          'Use /buy to purchase a membership plan.',
+        '📊 *Таны гишүүнчлэлийн төлөв*\n\n' +
+          'Төлөв: Шалгаж байна...\n' +
+          'Багц худалдан авахын тулд /buy командыг ашигла.',
         { parse_mode: 'Markdown' },
       );
     } catch (error) {
       this.logger.error('Error handling status command', error.stack);
-      await ctx.reply('An error occurred. Please try again later.');
+      await ctx.reply('Алдаа гарлаа. Дараа дахин оролдоно уу.');
     }
   }
 
@@ -290,7 +290,7 @@ export class ProjectBotHandler implements OnModuleInit {
 
       if (!plan.is_active) {
         await ctx.reply(
-          'This plan is no longer available. Please choose another plan.',
+          'Энэ багц боломжгүй болсон байна. Өөр багц сонгоно уу.',
         );
         return;
       }
@@ -325,21 +325,21 @@ export class ProjectBotHandler implements OnModuleInit {
 
       // Send payment link to user
       await ctx.reply(
-        `💳 *Payment for ${plan.name}*\n\n` +
-          `Price: ${plan.price.toLocaleString()} MNT\n` +
-          `Duration: ${plan.duration_days} days${groupText}\n\n` +
-          `Click the button below to complete your payment:`,
+        `💳 *${plan.name}-ийн төлбөр*\n\n` +
+          `Үнэ: ${plan.price.toLocaleString()} MNT\n` +
+          `Хугацаа: ${plan.duration_days} хоног${groupText}\n\n` +
+          `Төлбөрөө төлөхийн тулд доорх товчийг дарна уу:`,
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard([
-            [Markup.button.url('💰 Pay Now', result.payment_link)],
+            [Markup.button.url('💰 Төлбөр төлөх', result.payment_link)],
           ]),
         },
       );
     } catch (error) {
       this.logger.error('Error initiating payment', error.stack);
       await ctx.reply(
-        '❌ Failed to initiate payment. Please try again or contact support.',
+        '❌ Төлбөр эхлүүлэхэд алдаа гарлаа. Дахин оролдох эсвэл тусламжид хандана уу.',
       );
     }
   }
@@ -379,14 +379,14 @@ export class ProjectBotHandler implements OnModuleInit {
 
       if (!plan.is_active) {
         await ctx.reply(
-          '❌ This plan is no longer available. Please choose another plan.',
+          '❌ Энэ багц боломжгүй болсон байна. Өөр багц сонгоно уу.',
         );
         return;
       }
 
       if (!plan.trial_enabled) {
         await ctx.reply(
-          '❌ Trial is not available for this plan. Please purchase the full membership.',
+          '❌ Энэ багцад туршилт байхгүй байна. Бүрэн гишүүнчлэл худалдан авна уу.',
         );
         return;
       }
@@ -400,7 +400,7 @@ export class ProjectBotHandler implements OnModuleInit {
 
       if (hasUsedTrial) {
         await ctx.reply(
-          '❌ You have already used the trial for this plan. Please purchase the full membership to continue.',
+          '❌ Та энэ багцын туршилтыг аль хэдийн ашигласан байна. Үргэлжлүүлэхийн тулд бүрэн гишүүнчлэл худалдан авна уу.',
         );
         return;
       }
@@ -483,18 +483,18 @@ export class ProjectBotHandler implements OnModuleInit {
 
       // Send success message
       await ctx.reply(
-        `🎉 *Trial Activated!*\n\n` +
-          `Plan: *${plan.name}*\n` +
-          `Duration: ${trialDurationText}\n` +
-          `Expires: ${trialEndsAt.toLocaleString()}\n` +
-          `Groups: ${groupCount}\n\n` +
-          `✅ You will be added to the groups shortly.\n\n` +
-          `⚠️ *Important:* After the trial expires, you will be automatically removed from the groups unless you purchase the full membership.`,
+        `🎉 *Туршилт идэвхжлээ!*\n\n` +
+          `Багц: *${plan.name}*\n` +
+          `Хугацаа: ${trialDurationText}\n` +
+          `Дуусах огноо: ${trialEndsAt.toLocaleString()}\n` +
+          `Бүлгүүд: ${groupCount}\n\n` +
+          `✅ Таныг удахгүй бүлгүүдэд нэмнэ.\n\n` +
+          `⚠️ *Анхаар:* Туршилт дууссаны дараа бүрэн гишүүнчлэл худалдан авахгүй бол таныг бүлгүүдээс автоматаар хасна.`,
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard([
-            [Markup.button.callback('💳 Buy Full Membership', `buy_plan_${plan.id}`)],
-            [Markup.button.callback('📊 My Status', 'my_status')],
+            [Markup.button.callback('💳 Бүрэн гишүүнчлэл авах', `buy_plan_${plan.id}`)],
+            [Markup.button.callback('📊 Миний төлөв', 'my_status')],
           ]),
         },
       );
@@ -503,11 +503,11 @@ export class ProjectBotHandler implements OnModuleInit {
 
       if (error.response?.error?.code === 'TRIAL_ALREADY_USED') {
         await ctx.reply(
-          '❌ You have already used the trial for this plan. Please purchase the full membership to continue.',
+          '❌ Та энэ багцын туршилтыг аль хэдийн ашигласан байна. Үргэлжлүүлэхийн тулд бүрэн гишүүнчлэл худалдан авна уу.',
         );
       } else {
         await ctx.reply(
-          '❌ Failed to activate trial. Please try again or contact support.',
+          '❌ Туршилт идэвхжүүлэхэд алдаа гарлаа. Дахин оролдох эсвэл тусламжид хандана уу.',
         );
       }
     }

@@ -227,12 +227,12 @@ export class MembershipProcessor {
           .join('\n');
 
         const message =
-          `🎉 *Trial Membership Activated!*\n\n` +
-          `✅ Your trial for *${plan_name}* is now active.\n` +
-          `⏰ Expires: ${new Date(trial_ends_at).toLocaleString()}\n\n` +
-          `📱 *Join Your Groups:*\n${groupLinksText}\n\n` +
-          `⚠️ *Important:* These links are single-use and expire when your trial ends. ` +
-          `After the trial expires, you'll be removed from the groups unless you purchase the full membership.`;
+          `🎉 *Туршилт гишүүнчлэл идэвхжлээ!*\n\n` +
+          `✅ Таны *${plan_name}*-ийн туршилт идэвхтэй болсон.\n` +
+          `⏰ Дуусах огноо: ${new Date(trial_ends_at).toLocaleString()}\n\n` +
+          `📱 *Бүлгүүддээ нэгдэх:*\n${groupLinksText}\n\n` +
+          `⚠️ *Анхаар:* Эдгээр холбоос нь ганцхан удаа ашиглагдах бөгөөд туршилт дуусахад хүчингүй болно. ` +
+          `Туршилт дууссаны дараа бүрэн гишүүнчлэл худалдан авахгүй бол таныг бүлгүүдээс хасна.`;
 
         const sent = await this.telegramApiService.sendMessage(
           project.bot_token,
