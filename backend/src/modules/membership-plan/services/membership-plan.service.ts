@@ -45,7 +45,7 @@ export class MembershipPlanService {
     const membershipPlan = this.membershipPlanRepository.create({
       name: createDto.name,
       description: createDto.description,
-      price_mnt: createDto.price,
+      price: createDto.price,
       duration_days: createDto.duration_days,
       is_active: createDto.is_active ?? true,
       tenant_id: tenantId,
@@ -334,7 +334,7 @@ export class MembershipPlanService {
       LEFT JOIN payment_transactions pt ON mp.id = pt.membership_plan_id AND pt.status = 'completed'
       WHERE mp.tenant_id = $1 AND mp.is_active = true
       GROUP BY mp.id
-      ORDER BY membership_count DESC, mp.price_mnt ASC
+      ORDER BY membership_count DESC, mp.price ASC
       LIMIT 10
     `,
       [tenantId],

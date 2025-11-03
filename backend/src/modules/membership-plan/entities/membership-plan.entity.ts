@@ -17,7 +17,7 @@ import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { MembershipPlanGroup } from './membership-plan-group.entity';
 
 @Entity('membership_plans')
-@Check('"price_mnt" > 0')
+@Check('"price" > 0')
 @Check('"duration_days" > 0')
 export class MembershipPlan {
   @ApiProperty({ description: 'Unique identifier', format: 'uuid' })
@@ -42,7 +42,7 @@ export class MembershipPlan {
 
   @ApiProperty({ description: 'Price in MNT (Mongolian Tugrik)', minimum: 1000, maximum: 10000000 })
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  price_mnt: number;
+  price: number;
 
   @ApiProperty({ description: 'Currency code', default: 'MNT' })
   @Column({ type: 'varchar', length: 3, default: 'MNT' })

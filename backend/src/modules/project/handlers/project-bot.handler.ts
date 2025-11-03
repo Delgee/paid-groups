@@ -177,7 +177,7 @@ export class ProjectBotHandler implements OnModuleInit {
 
         return [
           Markup.button.callback(
-            `${plan.name} - ${plan.price_mnt.toLocaleString()} MNT (${plan.duration_days} days)${groupText}`,
+            `${plan.name} - ${plan.price.toLocaleString()} MNT (${plan.duration_days} days)${groupText}`,
             `buy_plan_${plan.id}`,
           ),
         ];
@@ -260,9 +260,9 @@ export class ProjectBotHandler implements OnModuleInit {
           telegram_username: ctx.from.username,
           telegram_first_name: ctx.from.first_name,
           telegram_last_name: ctx.from.last_name,
-          amount: plan.price_mnt,
+          amount: plan.price,
           snapshot_plan_name: plan.name,
-          snapshot_price: plan.price_mnt,
+          snapshot_price: plan.price,
           snapshot_duration_days: plan.duration_days,
         },
       );
@@ -274,7 +274,7 @@ export class ProjectBotHandler implements OnModuleInit {
       // Send payment link to user
       await ctx.reply(
         `💳 *Payment for ${plan.name}*\n\n` +
-          `Price: ${plan.price_mnt.toLocaleString()} MNT\n` +
+          `Price: ${plan.price.toLocaleString()} MNT\n` +
           `Duration: ${plan.duration_days} days${groupText}\n\n` +
           `Click the button below to complete your payment:`,
         {

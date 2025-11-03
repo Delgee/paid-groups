@@ -256,10 +256,10 @@ export class AnalyticsService {
     let mrr = 0;
 
     for (const membership of activeMemberships) {
-      if (membership.plan && membership.plan.price_mnt) {
+      if (membership.plan && membership.plan.price) {
         // Convert price to monthly recurring revenue based on duration
         const durationInDays = membership.plan.duration_days || 30;
-        const monthlyValue = (membership.plan.price_mnt / durationInDays) * 30;
+        const monthlyValue = (membership.plan.price / durationInDays) * 30;
         mrr += monthlyValue;
       }
     }

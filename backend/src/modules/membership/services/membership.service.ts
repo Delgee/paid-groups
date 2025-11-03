@@ -470,11 +470,11 @@ export class MembershipService {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     for (const membership of memberships) {
-      if (membership.plan && membership.plan.price_mnt) {
-        totalRevenue += membership.plan.price_mnt;
+      if (membership.plan && membership.plan.price) {
+        totalRevenue += membership.plan.price;
 
         if (membership.created_at >= thirtyDaysAgo) {
-          monthlyRevenue += membership.plan.price_mnt;
+          monthlyRevenue += membership.plan.price;
         }
       }
     }

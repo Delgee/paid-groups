@@ -289,7 +289,7 @@ Enter the price:`,
 
 <b>Plan Details:</b>
 • Name: ${plan.name}
-• Price: ${plan.price_mnt.toLocaleString()} MNT
+• Price: ${plan.price.toLocaleString()} MNT
 • Duration: ${plan.duration_days} days
 • Groups: ${updatedSession.data.selected_groups!.length}
 
