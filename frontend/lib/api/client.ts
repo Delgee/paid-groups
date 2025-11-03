@@ -532,15 +532,28 @@ class ApiClient {
     currency: string;
     duration_days: number;
     features?: string[];
+    project_id?: string;
+    telegram_group_ids?: string[];
   }): Promise<MembershipPlan> {
-    // Backend expects price_mnt (Mongolian Tugrik), not price + currency
-    const requestData = {
+    // Backend expects price (integer in MNT), not price_mnt
+    // project_id is required by backend but optional in frontend for backwards compatibility
+    const requestData: any = {
       name: data.name,
       description: data.description,
-      price_mnt: data.price,
+      price: data.price,
       duration_days: data.duration_days,
-      features: data.features,
     };
+
+    // Add optional fields only if they're provided
+    if (data.project_id) {
+      requestData.project_id = data.project_id;
+    }
+    if (data.features) {
+      requestData.features = data.features;
+    }
+    if (data.telegram_group_ids && data.telegram_group_ids.length > 0) {
+      requestData.telegram_group_ids = data.telegram_group_ids;
+    }
 
     const response = await this.instance.post<MembershipPlan>(
       '/membership-plans',

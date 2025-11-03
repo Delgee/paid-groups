@@ -10,6 +10,7 @@ import {
   IsBoolean,
   IsUUID,
   IsArray,
+  ArrayMinSize,
 } from 'class-validator';
 
 export class CreateMembershipPlanDto {
@@ -22,15 +23,17 @@ export class CreateMembershipPlanDto {
   @IsNotEmpty()
   project_id: string;
 
-  @ApiPropertyOptional({
-    description: 'Array of Telegram Group IDs that this plan grants access to',
+  @ApiProperty({
+    description: 'Array of Telegram Group IDs that this plan grants access to (at least one required)',
     type: [String],
     example: ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002'],
+    minItems: 1,
   })
   @IsArray()
+  @ArrayMinSize(1, { message: 'At least one Telegram group must be selected for this membership plan' })
   @IsUUID('4', { each: true })
-  @IsOptional()
-  telegram_group_ids?: string[];
+  @IsNotEmpty()
+  telegram_group_ids: string[];
 
   @ApiProperty({
     description: 'Plan display name',
