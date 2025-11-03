@@ -5,6 +5,10 @@ import { Repository } from 'typeorm';
 import { Project } from '../entities/project.entity';
 import { MembershipPlanService } from '../../membership-plan/services/membership-plan.service';
 import { PaymentTransactionService } from '../../payment/services/payment-transaction.service';
+import { TrialUsageService } from '../../membership/services/trial-usage.service';
+import { MemberService } from '../../membership/services/member.service';
+import { MembershipService } from '../../membership/services/membership.service';
+import { MembershipStatus } from '../../membership/entities/membership.entity';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import {
@@ -28,6 +32,9 @@ export class ProjectBotHandler implements OnModuleInit {
     private readonly projectRepository: Repository<Project>,
     private readonly membershipPlanService: MembershipPlanService,
     private readonly paymentTransactionService: PaymentTransactionService,
+    private readonly trialUsageService: TrialUsageService,
+    private readonly memberService: MemberService,
+    private readonly membershipService: MembershipService,
     @InjectQueue('membership') private membershipQueue: Queue,
     private readonly telegramBotHandler: TelegramBotHandlerService,
   ) {}
@@ -113,6 +120,18 @@ export class ProjectBotHandler implements OnModuleInit {
         },
       );
 
+      this.telegramBotHandler.registerCallbackQueryHandler(
+        project.id,
+        /^trial_plan_/,
+        async (ctx, _config, data) => {
+          const planId = data.replace('trial_plan_', '');
+          const telegramUserId = ctx.from?.id;
+          if (telegramUserId) {
+            await this.activateTrial(ctx, project, planId, telegramUserId);
+          }
+        },
+      );
+
       // Create and launch bot instance
       await this.telegramBotHandler.createBotInstance(config);
 
@@ -152,7 +171,7 @@ export class ProjectBotHandler implements OnModuleInit {
 
   async handleBuyCommand(ctx: Context, project: Project) {
     try {
-      const telegramUserId = ctx.from.id.toString();
+      const telegramUserId = ctx.from.id;
 
       // Fetch active membership plans for this project
       const plans = await this.membershipPlanService.findActiveByProject(
@@ -167,24 +186,57 @@ export class ProjectBotHandler implements OnModuleInit {
         return;
       }
 
-      // Create inline keyboard with plan options showing number of groups
-      const keyboard = plans.map((plan) => {
+      // Create inline keyboard with plan options showing number of groups and trial buttons
+      const keyboard = [];
+
+      for (const plan of plans) {
         const groupCount = plan.telegram_groups?.length || 0;
         const groupText =
           groupCount > 0
             ? ` • ${groupCount} group${groupCount > 1 ? 's' : ''}`
             : '';
 
-        return [
+        const planButtons = [];
+
+        // Buy button (always shown)
+        planButtons.push(
           Markup.button.callback(
-            `${plan.name} - ${plan.price.toLocaleString()} MNT (${plan.duration_days} days)${groupText}`,
+            `💳 Buy ${plan.name} - ${plan.price.toLocaleString()} MNT`,
             `buy_plan_${plan.id}`,
           ),
-        ];
-      });
+        );
+
+        // Trial button (only if trial is enabled and user hasn't used it)
+        if (plan.trial_enabled) {
+          const hasUsedTrial = await this.trialUsageService.hasUsedTrial(
+            project.tenant_id,
+            telegramUserId,
+            plan.id,
+          );
+
+          if (!hasUsedTrial) {
+            const trialDurationMinutes = Math.floor(plan.trial_duration_seconds / 60);
+            const trialDurationText =
+              trialDurationMinutes < 60
+                ? `${trialDurationMinutes}min`
+                : `${Math.floor(trialDurationMinutes / 60)}h`;
+
+            planButtons.push(
+              Markup.button.callback(
+                `🎁 Try Free (${trialDurationText})`,
+                `trial_plan_${plan.id}`,
+              ),
+            );
+          }
+        }
+
+        keyboard.push(planButtons);
+      }
 
       await ctx.reply(
-        '🎯 *Choose a Membership Plan:*\n\nSelect a plan to get started with premium access!',
+        '🎯 *Choose a Membership Plan:*\n\nSelect a plan to get started with premium access!\n\n' +
+          '💳 *Buy Now* - Full access with payment\n' +
+          '🎁 *Try Free* - Limited time trial (one-time only)',
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard(keyboard),
@@ -304,5 +356,159 @@ export class ProjectBotHandler implements OnModuleInit {
 
   getBotInstance(projectId: string) {
     return this.telegramBotHandler.getBotInstance(projectId);
+  }
+
+  /**
+   * Activate trial membership for a user
+   *
+   * Creates a TRIAL membership without payment and adds user to Telegram channels.
+   * Tracks trial usage to prevent reuse.
+   */
+  async activateTrial(
+    ctx: Context,
+    project: Project,
+    planId: string,
+    telegramUserId: number,
+  ) {
+    try {
+      // Get plan details with telegram_groups relation
+      const plan = await this.membershipPlanService.findOne(
+        project.tenant_id,
+        planId,
+      );
+
+      if (!plan.is_active) {
+        await ctx.reply(
+          '❌ This plan is no longer available. Please choose another plan.',
+        );
+        return;
+      }
+
+      if (!plan.trial_enabled) {
+        await ctx.reply(
+          '❌ Trial is not available for this plan. Please purchase the full membership.',
+        );
+        return;
+      }
+
+      // Check if user already used trial
+      const hasUsedTrial = await this.trialUsageService.hasUsedTrial(
+        project.tenant_id,
+        telegramUserId,
+        plan.id,
+      );
+
+      if (hasUsedTrial) {
+        await ctx.reply(
+          '❌ You have already used the trial for this plan. Please purchase the full membership to continue.',
+        );
+        return;
+      }
+
+      // Get or create member
+      let member = await this.memberService.findByTelegramUserId(
+        telegramUserId,
+        project.tenant_id,
+      );
+
+      if (!member) {
+        member = await this.memberService.create(project.tenant_id, {
+          telegram_user_id: telegramUserId,
+          telegram_username: ctx.from.username,
+          first_name: ctx.from.first_name,
+          last_name: ctx.from.last_name,
+          is_bot: ctx.from.is_bot,
+        });
+      }
+
+      // Calculate trial end time
+      const trialEndsAt = new Date(Date.now() + plan.trial_duration_seconds * 1000);
+
+      // Create trial memberships for all groups in the plan
+      const groupCount = plan.telegram_groups?.length || 0;
+      const createdMemberships = [];
+
+      for (const group of plan.telegram_groups) {
+        // Create TRIAL membership
+        const membership = await this.membershipService.create(project.tenant_id, {
+          member_id: member.id,
+          group_id: group.id,
+          plan_id: plan.id,
+          starts_at: new Date(),
+          expires_at: trialEndsAt,
+        });
+
+        // Update status to TRIAL (create method creates ACTIVE by default)
+        await this.membershipService.update(project.tenant_id, membership.id, {
+          status: MembershipStatus.TRIAL,
+        });
+        membership.status = MembershipStatus.TRIAL;
+
+        createdMemberships.push(membership);
+
+        // Create trial usage record (only once per plan, not per group)
+        if (createdMemberships.length === 1) {
+          await this.trialUsageService.createTrialUsage(
+            project.tenant_id,
+            member.id,
+            plan.id,
+            membership.id,
+            trialEndsAt,
+          );
+        }
+      }
+
+      // Queue job to add user to Telegram channels
+      await this.membershipQueue.add('activate-trial', {
+        tenant_id: project.tenant_id,
+        project_id: project.id,
+        member_id: member.id,
+        membership_ids: createdMemberships.map((m) => m.id),
+        telegram_user_id: telegramUserId,
+        plan_name: plan.name,
+        trial_ends_at: trialEndsAt.toISOString(),
+      });
+
+      // Calculate trial duration display
+      const trialDurationMinutes = Math.floor(plan.trial_duration_seconds / 60);
+      const trialDurationText =
+        trialDurationMinutes < 60
+          ? `${trialDurationMinutes} minutes`
+          : `${Math.floor(trialDurationMinutes / 60)} hours`;
+
+      this.logger.log(
+        `Trial activated for user ${telegramUserId}, plan ${planId}, project ${project.id}, expires ${trialEndsAt.toISOString()}`,
+      );
+
+      // Send success message
+      await ctx.reply(
+        `🎉 *Trial Activated!*\n\n` +
+          `Plan: *${plan.name}*\n` +
+          `Duration: ${trialDurationText}\n` +
+          `Expires: ${trialEndsAt.toLocaleString()}\n` +
+          `Groups: ${groupCount}\n\n` +
+          `✅ You will be added to the groups shortly.\n\n` +
+          `⚠️ *Important:* After the trial expires, you will be automatically removed from the groups unless you purchase the full membership.`,
+        {
+          parse_mode: 'Markdown',
+          ...Markup.inlineKeyboard([
+            [Markup.button.callback('💳 Buy Full Membership', `buy_plan_${plan.id}`)],
+            [Markup.button.callback('📊 My Status', 'my_status')],
+          ]),
+        },
+      );
+    } catch (error) {
+      this.logger.error('Error activating trial', error.stack);
+
+      if (error.response?.error?.code === 'TRIAL_ALREADY_USED') {
+        await ctx.reply(
+          '❌ You have already used the trial for this plan. Please purchase the full membership to continue.',
+        );
+      } else {
+        await ctx.reply(
+          '❌ Failed to activate trial. Please try again or contact support.',
+        );
+      }
+    }
   }
 }

@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, CreditCard, Users, Loader2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, CreditCard, Users, Loader2, Gift } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { telegramGroupsApi, TelegramGroup } from '@/lib/api/telegram-groups';
 import { membershipPlanApi, MembershipPlan } from '@/lib/api/membership-plans';
@@ -21,6 +22,8 @@ const editPlanSchema = z.object({
   description: z.string().optional(),
   price: z.number().min(1000, 'Price must be at least 1,000 MNT'),
   duration_days: z.number().min(1, 'Duration must be at least 1 day'),
+  trial_enabled: z.boolean().optional(),
+  trial_duration_seconds: z.number().min(60, 'Trial must be at least 60 seconds').max(86400, 'Trial cannot exceed 24 hours').optional(),
 });
 
 type EditPlanFormData = z.infer<typeof editPlanSchema>;
@@ -36,15 +39,19 @@ export default function EditPlanPage() {
   const [telegramGroups, setTelegramGroups] = useState<TelegramGroup[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [trialEnabled, setTrialEnabled] = useState(false);
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
     reset,
   } = useForm<EditPlanFormData>({
     resolver: zodResolver(editPlanSchema),
   });
+
+  const trialDurationSeconds = watch('trial_duration_seconds');
 
   // Fetch membership plan details
   useEffect(() => {
@@ -62,7 +69,12 @@ export default function EditPlanPage() {
           description: fetchedPlan.description || '',
           price: fetchedPlan.price,
           duration_days: fetchedPlan.duration_days,
+          trial_enabled: fetchedPlan.trial_enabled || false,
+          trial_duration_seconds: fetchedPlan.trial_duration_seconds || 300,
         });
+
+        // Set trial enabled state
+        setTrialEnabled(fetchedPlan.trial_enabled || false);
 
         // Set selected telegram groups if available
         if (fetchedPlan.telegram_groups) {
@@ -122,13 +134,17 @@ export default function EditPlanPage() {
         return;
       }
 
-      // Include telegram_group_ids in the update request
+      // Include telegram_group_ids and trial configuration in the update request
       const requestData = {
         name: data.name,
         description: data.description,
         price: data.price,
         duration_days: data.duration_days,
         telegram_group_ids: selectedGroupIds,
+        trial_enabled: trialEnabled,
+        ...(trialEnabled && {
+          trial_duration_seconds: data.trial_duration_seconds || 300,
+        }),
       };
 
       const updatedPlan = await membershipPlanApi.update(planId, requestData);
@@ -274,6 +290,64 @@ export default function EditPlanPage() {
                   7 (week), 30 (month), 365 (year)
                 </p>
               </div>
+            </div>
+
+            {/* Trial Configuration */}
+            <div className="space-y-4 border-t pt-6">
+              <div className="flex items-center gap-2">
+                <Gift className="h-5 w-5 text-muted-foreground" />
+                <Label className="text-base">Free Trial (Optional)</Label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Offer a limited-time trial to let users try before they buy
+              </p>
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="trial-enabled" className="text-base">
+                    Enable Free Trial
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Users can try this plan once before purchasing
+                  </p>
+                </div>
+                <Switch
+                  id="trial-enabled"
+                  checked={trialEnabled}
+                  onCheckedChange={setTrialEnabled}
+                />
+              </div>
+
+              {trialEnabled && (
+                <div className="space-y-2 pl-4 border-l-2 border-blue-200 ml-2">
+                  <Label htmlFor="trial_duration_seconds">Trial Duration (Seconds) *</Label>
+                  <Input
+                    id="trial_duration_seconds"
+                    type="number"
+                    placeholder="300"
+                    {...register('trial_duration_seconds', { valueAsNumber: true })}
+                    className={errors.trial_duration_seconds ? 'border-red-500' : ''}
+                  />
+                  {errors.trial_duration_seconds && (
+                    <p className="text-red-600 text-sm">{errors.trial_duration_seconds.message}</p>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <p className="text-xs text-muted-foreground">
+                      300 (5 min) • 900 (15 min) • 3600 (1 hour) • 86400 (24 hours)
+                    </p>
+                    {trialDurationSeconds && trialDurationSeconds >= 60 && (
+                      <div className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                        ≈ {trialDurationSeconds < 3600
+                          ? `${Math.floor(trialDurationSeconds / 60)} minutes`
+                          : trialDurationSeconds < 86400
+                          ? `${Math.floor(trialDurationSeconds / 3600)} hours`
+                          : `${Math.floor(trialDurationSeconds / 86400)} days`
+                        }
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Telegram Groups Selector */}

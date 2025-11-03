@@ -78,6 +78,27 @@ export class CreateMembershipPlanDto {
   duration_days: number;
 
   @ApiPropertyOptional({
+    description: 'Whether trial period is enabled for this plan',
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  trial_enabled?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Trial duration in seconds (default: 300 = 5 minutes)',
+    example: 300,
+    default: 300,
+    minimum: 60,
+    maximum: 86400,
+  })
+  @IsInt()
+  @IsOptional()
+  @Min(60, { message: 'Trial duration must be at least 60 seconds' })
+  @Max(86400, { message: 'Trial duration cannot exceed 86400 seconds (24 hours)' })
+  trial_duration_seconds?: number;
+
+  @ApiPropertyOptional({
     description: 'Plan availability status',
     default: true,
   })

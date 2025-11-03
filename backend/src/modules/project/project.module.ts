@@ -18,6 +18,7 @@ import { ProjectHealthMonitorService } from './services/project-health-monitor.s
 import { ProjectBotHandler } from './handlers/project-bot.handler';
 import { EncryptionService } from '../../common/services/encryption.service';
 import { MembershipPlanModule } from '../membership-plan/membership-plan.module';
+import { MembershipModule } from '../membership/membership.module';
 import { PaymentModule } from '../payment/payment.module';
 
 @Module({
@@ -28,6 +29,7 @@ import { PaymentModule } from '../payment/payment.module';
     BullModule.registerQueue({ name: 'membership' }),
     TelegramIntegrationModule,
     forwardRef(() => MembershipPlanModule),
+    forwardRef(() => MembershipModule),
     forwardRef(() => PaymentModule),
   ],
   controllers: [ProjectController, ProjectWebhookController],

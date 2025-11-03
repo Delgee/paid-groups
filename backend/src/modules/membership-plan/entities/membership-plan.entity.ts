@@ -52,9 +52,13 @@ export class MembershipPlan {
   @Column({ type: 'integer' })
   duration_days: number;
 
-  @ApiProperty({ description: 'Trial period in days', default: 0 })
-  @Column({ type: 'integer', default: 0 })
-  trial_days: number;
+  @ApiProperty({ description: 'Whether trial period is enabled', default: false })
+  @Column({ type: 'boolean', default: false })
+  trial_enabled: boolean;
+
+  @ApiProperty({ description: 'Trial duration in seconds (default: 300 = 5 minutes)', default: 300, minimum: 60, maximum: 86400 })
+  @Column({ type: 'integer', default: 300 })
+  trial_duration_seconds: number;
 
   @ApiProperty({ description: 'Plan features in JSON format', default: {} })
   @Column({ type: 'jsonb', default: {} })
