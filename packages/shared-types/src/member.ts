@@ -25,7 +25,7 @@ export interface MembershipPlan extends TenantScopedEntity {
   group_id: string;
   name: string;
   description?: string;
-  price_mnt: number;
+  price: number;
   duration_days: number;
   trial_days: number;
   is_bundle: boolean;
@@ -39,7 +39,7 @@ export interface CreateMembershipPlanRequest {
   group_id: string;
   name: string;
   description?: string;
-  price_mnt: number;
+  price: number;
   duration_days: number;
   trial_days?: number;
   is_bundle?: boolean;
@@ -51,7 +51,7 @@ export interface CreateMembershipPlanRequest {
 export interface UpdateMembershipPlanRequest {
   name?: string;
   description?: string;
-  price_mnt?: number;
+  price?: number;
   duration_days?: number;
   trial_days?: number;
   features?: string[];

@@ -535,7 +535,7 @@ class ApiClient {
     project_id?: string;
     telegram_group_ids?: string[];
   }): Promise<MembershipPlan> {
-    // Backend expects price (integer in MNT), not price_mnt
+    // Backend expects price (integer in MNT)
     // project_id is required by backend but optional in frontend for backwards compatibility
     const requestData: any = {
       name: data.name,
@@ -573,12 +573,8 @@ class ApiClient {
       is_active: boolean;
     }>,
   ): Promise<MembershipPlan> {
-    // Backend expects price_mnt (Mongolian Tugrik), not price
+    // Backend expects price (Mongolian Tugrik)
     const requestData: any = { ...data };
-    if (data.price !== undefined) {
-      requestData.price_mnt = data.price;
-      delete requestData.price;
-    }
 
     const response = await this.instance.put<MembershipPlan>(
       `/membership-plans/${id}`,

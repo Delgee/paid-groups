@@ -369,7 +369,7 @@ export default function ProjectDetailPage() {
                         )}
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                           <span className="font-semibold text-foreground">
-                            {plan.price_mnt.toLocaleString()} {plan.currency}
+                            {plan.price.toLocaleString()} {plan.currency}
                           </span>
                           <span>{plan.duration_days} days</span>
                           {plan.trial_days > 0 && (
