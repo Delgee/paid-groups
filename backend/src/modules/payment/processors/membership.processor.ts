@@ -1,9 +1,13 @@
 import { Processor, Process } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { ChannelMemberService } from '../services/channel-member.service';
 import { PaymentTransactionService } from '../services/payment-transaction.service';
 import { MembershipPlanService } from '../../membership-plan/services/membership-plan.service';
+import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
+import { Project } from '../../project/entities/project.entity';
 
 interface CreateMembershipJobData {
   tenantId: string;
@@ -12,6 +16,17 @@ interface CreateMembershipJobData {
   membershipPlanId: string;
   telegramUserId: string;
   expiresAt: Date;
+}
+
+interface ActivateTrialJobData {
+  tenant_id: string;
+  project_id: string;
+  member_id: string;
+  membership_plan_id: string;
+  membership_ids: string[];
+  telegram_user_id: number;
+  plan_name: string;
+  trial_ends_at: string;
 }
 
 interface RenewalReminderJobData {
@@ -37,6 +52,9 @@ export class MembershipProcessor {
     private readonly channelMemberService: ChannelMemberService,
     private readonly paymentTransactionService: PaymentTransactionService,
     private readonly membershipPlanService: MembershipPlanService,
+    private readonly telegramApiService: TelegramApiService,
+    @InjectRepository(Project)
+    private readonly projectRepository: Repository<Project>,
   ) {}
 
   @Process('create-membership')
@@ -130,6 +148,111 @@ export class MembershipProcessor {
       this.logger.log(`Renewal reminder sent for member ${channelMemberId}`);
     } catch (error) {
       this.logger.error(`Failed to send renewal reminder for member ${channelMemberId}`, error.stack);
+      throw error;
+    }
+  }
+
+  @Process('activate-trial')
+  async handleActivateTrial(job: Job<ActivateTrialJobData>): Promise<void> {
+    const { tenant_id, project_id, member_id, membership_plan_id, membership_ids, telegram_user_id, plan_name, trial_ends_at } = job.data;
+
+    this.logger.log(`Processing activate-trial job for member ${member_id}, plan: ${plan_name}`);
+
+    try {
+      // Get project (with bot_token)
+      const project = await this.projectRepository.findOne({
+        where: { id: project_id, tenant_id },
+        relations: ['telegram_groups'],
+      });
+
+      if (!project) {
+        this.logger.error(`Project not found: ${project_id}`);
+        throw new Error(`Project not found: ${project_id}`);
+      }
+
+      // Get membership plan with telegram groups
+      const membershipPlan = await this.membershipPlanService.findOne(tenant_id, membership_plan_id);
+      if (!membershipPlan) {
+        this.logger.error(`Membership plan not found: ${membership_plan_id}`);
+        return;
+      }
+
+      const telegramGroups = membershipPlan.telegram_groups || [];
+
+      if (telegramGroups.length === 0) {
+        this.logger.warn(`No telegram groups found for trial activation, member ${member_id}`);
+        return;
+      }
+
+      this.logger.log(`Generating invite links for ${telegramGroups.length} groups for user ${telegram_user_id}`);
+
+      // Generate invite links for each group
+      const inviteLinks: Array<{ groupName: string; inviteLink: string }> = [];
+
+      for (const group of telegramGroups) {
+        if (!group.telegram_chat_id) {
+          this.logger.warn(`Telegram group ${group.id} has no telegram_chat_id, skipping`);
+          continue;
+        }
+
+        try {
+          // Generate invite link that expires when trial ends
+          const trialExpiresAt = new Date(trial_ends_at);
+
+          const inviteLink = await this.telegramApiService.generateInviteLink(
+            project.bot_token,
+            group.telegram_chat_id,
+            trialExpiresAt, // Pass Date object directly
+            1, // member_limit: 1 (single-use link)
+          );
+
+          if (inviteLink) {
+            inviteLinks.push({
+              groupName: group.group_name,
+              inviteLink,
+            });
+            this.logger.log(`Generated invite link for group ${group.group_name}: ${inviteLink}`);
+          } else {
+            this.logger.error(`Failed to generate invite link for group ${group.group_name}`);
+          }
+        } catch (error) {
+          this.logger.error(`Error generating invite link for group ${group.group_name}:`, error.stack);
+        }
+      }
+
+      // Send message with invite links to user
+      if (inviteLinks.length > 0) {
+        const groupLinksText = inviteLinks
+          .map((link, index) => `${index + 1}. [${link.groupName}](${link.inviteLink})`)
+          .join('\n');
+
+        const message =
+          `🎉 *Trial Membership Activated!*\n\n` +
+          `✅ Your trial for *${plan_name}* is now active.\n` +
+          `⏰ Expires: ${new Date(trial_ends_at).toLocaleString()}\n\n` +
+          `📱 *Join Your Groups:*\n${groupLinksText}\n\n` +
+          `⚠️ *Important:* These links are single-use and expire when your trial ends. ` +
+          `After the trial expires, you'll be removed from the groups unless you purchase the full membership.`;
+
+        const sent = await this.telegramApiService.sendMessage(
+          project.bot_token,
+          telegram_user_id,
+          message,
+          { parse_mode: 'Markdown' },
+        );
+
+        if (sent) {
+          this.logger.log(`Trial activation message sent to user ${telegram_user_id}`);
+        } else {
+          this.logger.error(`Failed to send trial activation message to user ${telegram_user_id}`);
+        }
+      } else {
+        this.logger.error(`No invite links generated for trial activation, member ${member_id}`);
+      }
+
+      this.logger.log(`Successfully activated trial for member ${member_id}`);
+    } catch (error) {
+      this.logger.error(`Failed to activate trial for member ${member_id}`, error.stack);
       throw error;
     }
   }

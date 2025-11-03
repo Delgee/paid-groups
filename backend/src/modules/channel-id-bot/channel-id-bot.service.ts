@@ -76,21 +76,21 @@ export class ChannelIdBotService {
    */
   handleStartCommand(): BotResponse {
     const text = `
-<b>🤖 Welcome to Channel ID Bot!</b>
+<b>🤖 Канал ID Ботод тавтай морил!</b>
 
-This bot helps you find the ID of your Telegram channels and groups.
+Энэ бот таны Телеграм каналууд болон группуудын ID-г олоход тусална.
 
-<b>How to use:</b>
-1️⃣ Forward any message from your channel to this bot
-2️⃣ The bot will reply with the channel ID
+<b>Хэрхэн ашиглах вэ:</b>
+1️⃣ Таны каналаас ямар нэг мессежийг энэ ботруу дамжуулна уу
+2️⃣ Бот каналын ID-г хариултаар илгээнэ
 
-<b>Supported sources:</b>
-✅ Public channels
-✅ Private channels (where you're admin)
-✅ Groups and supergroups
+<b>Дэмждэг эх сурвалжууд:</b>
+✅ Нийтийн каналууд
+✅ Хувийн каналууд (та админ байвал)
+✅ Группууд болон супер группууд
 
-<b>Need help?</b>
-Send /help to see this message again.
+<b>Тусламж хэрэгтэй юу?</b>
+Энэ мессежийг дахин харахын тулд /help дарна уу.
     `.trim();
 
     return {
@@ -111,13 +111,13 @@ Send /help to see this message again.
    */
   handleUnknownInput(): BotResponse {
     const text = `
-<b>ℹ️ How to use this bot:</b>
+<b>ℹ️ Энэ ботыг хэрхэн ашиглах вэ:</b>
 
-To get a channel ID, please <b>forward a message</b> from that channel to this bot.
+Каналын ID авахын тулд тухайн каналаас <b>мессеж дамжуулна</b> уу.
 
-<i>Tip: You can't send regular text messages. Only forwarded messages are accepted.</i>
+<i>Зөвлөмж: Энгийн текст мессеж илгээж болохгүй. Зөвхөн дамжуулсан мессеж хүлээн авна.</i>
 
-Send /help for more information.
+Дэлгэрэнгүй мэдээлэл авахын тулд /help дарна уу.
     `.trim();
 
     return {
@@ -135,27 +135,27 @@ Send /help for more information.
     username?: string,
     type?: string,
   ): BotResponse {
-    let text = '<b>✅ Channel/Chat ID Found!</b>\n\n';
+    let text = '<b>✅ Канал/Чатын ID олдлоо!</b>\n\n';
 
     // Channel ID (most important info)
     text += `<b>ID:</b> <code>${chatId}</code>\n`;
 
     // Additional information if available
     if (title) {
-      text += `<b>Title:</b> ${this.escapeHtml(title)}\n`;
+      text += `<b>Гарчиг:</b> ${this.escapeHtml(title)}\n`;
     }
 
     if (username) {
-      text += `<b>Username:</b> @${username}\n`;
-      text += `<b>Link:</b> https://t.me/${username}\n`;
+      text += `<b>Хэрэглэгчийн нэр:</b> @${username}\n`;
+      text += `<b>Холбоос:</b> https://t.me/${username}\n`;
     }
 
     if (type) {
       const typeLabel = this.getTypeLabel(type);
-      text += `<b>Type:</b> ${typeLabel}\n`;
+      text += `<b>Төрөл:</b> ${typeLabel}\n`;
     }
 
-    text += '\n<i>💡 You can use this ID to connect your channel in the dashboard.</i>';
+    text += '\n<i>💡 Та энэ ID-г хяналтын самбараас каналаа холбоход ашиглаж болно.</i>';
 
     return {
       text,
@@ -168,16 +168,16 @@ Send /help for more information.
    */
   private formatNoChannelFoundResponse(): string {
     return `
-<b>⚠️ No Channel Information Found</b>
+<b>⚠️ Каналын мэдээлэл олдсонгүй</b>
 
-The forwarded message doesn't contain channel information.
+Дамжуулсан мессеж каналын мэдээлэл агуулаагүй байна.
 
-<b>Please make sure you:</b>
-1️⃣ Forward a message from a channel (not a private user)
-2️⃣ Have admin access to the channel
-3️⃣ Forward from the channel, not from a personal chat
+<b>Дараах зүйлсийг шалгана уу:</b>
+1️⃣ Мессежийг каналаас дамжуулсан эсэх (хувийн хэрэглэгчээс биш)
+2️⃣ Танд каналын админ эрх байгаа эсэх
+3️⃣ Хувийн чатаас биш, каналаас шууд дамжуулсан эсэх
 
-Send /help for more information.
+Дэлгэрэнгүй мэдээлэл авахын тулд /help дарна уу.
     `.trim();
   }
 
@@ -186,10 +186,10 @@ Send /help for more information.
    */
   private getTypeLabel(type: string): string {
     const typeMap: Record<string, string> = {
-      channel: '📢 Channel',
-      supergroup: '👥 Supergroup',
-      group: '👥 Group',
-      private: '🔒 Private',
+      channel: '📢 Канал',
+      supergroup: '👥 Супер групп',
+      group: '👥 Групп',
+      private: '🔒 Хувийн',
     };
 
     return typeMap[type] || type;

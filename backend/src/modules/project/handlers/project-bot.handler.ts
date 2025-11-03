@@ -463,6 +463,7 @@ export class ProjectBotHandler implements OnModuleInit {
         tenant_id: project.tenant_id,
         project_id: project.id,
         member_id: member.id,
+        membership_plan_id: plan.id,
         membership_ids: createdMemberships.map((m) => m.id),
         telegram_user_id: telegramUserId,
         plan_name: plan.name,

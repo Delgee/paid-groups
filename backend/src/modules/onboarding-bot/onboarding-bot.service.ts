@@ -36,7 +36,7 @@ export class OnboardingBotService {
       throw new ConflictException({
         error: {
           code: 'DUPLICATE_EMAIL',
-          message: 'Email address already exists. Please use a different email or link your existing account.',
+          message: 'Имэйл хаяг аль хэдийн бүртгэлтэй байна. Өөр имэйл ашиглах эсвэл байгаа бүртгэлтэй холбоно уу.',
           details: { field: 'email' },
         },
       });
@@ -51,7 +51,7 @@ export class OnboardingBotService {
       throw new ConflictException({
         error: {
           code: 'DUPLICATE_TELEGRAM_ACCOUNT',
-          message: 'This Telegram account is already linked.',
+          message: 'Энэ Телеграм бүртгэл аль хэдийн холбогдсон байна.',
         },
       });
     }
@@ -103,7 +103,7 @@ export class OnboardingBotService {
         user_id: savedUser.id,
         tenant_id: savedTenant.id,
         telegram_user_account_id: savedTelegramAccount.id,
-        message: 'Account created successfully! You can now create projects and manage your groups.',
+        message: 'Бүртгэл амжилттай үүслээ! Та одоо төсөл үүсгэж, группуудаа удирдаж болно.',
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -132,7 +132,7 @@ export class OnboardingBotService {
       throw new BadRequestException({
         error: {
           code: 'USER_NOT_FOUND',
-          message: 'No account found with this email address.',
+          message: 'Энэ имэйл хаягтай бүртгэл олдсонгүй.',
         },
       });
     }
@@ -143,7 +143,7 @@ export class OnboardingBotService {
       throw new BadRequestException({
         error: {
           code: 'INVALID_VERIFICATION_CODE',
-          message: 'Invalid verification code.',
+          message: 'Баталгаажуулах код буруу байна.',
         },
       });
     }
@@ -160,7 +160,7 @@ export class OnboardingBotService {
 
     return {
       user_id: user.id,
-      message: 'Account linked successfully! You can now manage your projects via Telegram.',
+      message: 'Бүртгэл амжилттай холбогдлоо! Та одоо Телеграмаар төслүүдээ удирдаж болно.',
     };
   }
 
@@ -177,7 +177,7 @@ export class OnboardingBotService {
       throw new BadRequestException({
         error: {
           code: 'NOT_REGISTERED',
-          message: 'You need to register first. Send /start to begin.',
+          message: 'Та эхлээд бүртгүүлэх хэрэгтэй. Эхлүүлэхийн тулд /start дарна уу.',
         },
       });
     }

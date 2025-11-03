@@ -26,16 +26,16 @@ export class RegistrationHandler {
       await this.sessionService.createSession(telegramUserId, telegramChatId, correlationId);
 
       return {
-        text: `Welcome back, ${existingAccount.user.name}! 👋
+        text: `Тавтай морил ${existingAccount.user.name}! 👋
 
-Your account: ${existingAccount.user.email}
+Таны бүртгэл: ${existingAccount.user.email}
 
-What would you like to do?`,
+Та юу хийх вэ?`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '🚀 Create Project', callback_data: 'create_project' }],
-            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
-            [{ text: '❓ Help', callback_data: 'help' }],
+            [{ text: '🚀 Төсөл үүсгэх', callback_data: 'create_project' }],
+            [{ text: '📊 Хяналтын самбар', callback_data: 'view_dashboard' }],
+            [{ text: '❓ Тусламж', callback_data: 'help' }],
           ],
         },
       };
@@ -45,16 +45,16 @@ What would you like to do?`,
     await this.sessionService.createSession(telegramUserId, telegramChatId, correlationId);
 
     return {
-      text: `Welcome to the Telegram Groups SaaS Platform! 👋
+      text: `Төлбөртэй Телеграм группын платформд тавтай морил! 👋
 
-I'm here to help you set up your paid Telegram groups in minutes.
+Би танд төлбөртэй Телеграм групп үүсгэхэд тусална. Хэдхэн минутын дотор бүх зүйлийг тохируулна.
 
-Choose an option:`,
+Сонголтоо хийнэ үү:`,
       keyboard: {
         inline_keyboard: [
-          [{ text: '📝 Register New Account', callback_data: 'register' }],
-          [{ text: '🔗 Link Existing Account', callback_data: 'link_account' }],
-          [{ text: '❓ Help', callback_data: 'help' }],
+          [{ text: '📝 Шинэ бүртгэл үүсгэх', callback_data: 'register' }],
+          [{ text: '🔗 Байгаа бүртгэлтэй холбох', callback_data: 'link_account' }],
+          [{ text: '❓ Тусламж', callback_data: 'help' }],
         ],
       },
     };
@@ -69,37 +69,37 @@ Choose an option:`,
     const session = await this.sessionService.getSession(telegramUserId);
 
     if (!session) {
-      return { text: 'Session expired. Please send /start to begin again.' };
+      return { text: 'Хугацаа дууссан байна. /start товчийг дарж дахин эхлүүлнэ үү.' };
     }
 
     if (callbackData === 'register') {
       await this.sessionService.advanceStep(telegramUserId, SessionStep.REGISTRATION_EMAIL);
       return {
-        text: `Great! Let's create your account. 📝
+        text: `Маш сайн! Таны бүртгэл үүсгэе. 📝
 
-What's your email address?
-(This will be used for login and notifications)`,
+Таны имэйл хаяг хэд вэ?
+(Энэ нь нэвтрэх болон мэдэгдэл хүлээн авахад ашиглагдана)`,
       };
     }
 
     if (callbackData === 'link_account') {
-      return { text: 'Account linking feature is coming soon! 🚧' };
+      return { text: 'Бүртгэл холбох функц удахгүй ирнэ! 🚧' };
     }
 
     if (callbackData === 'create_project') {
       return {
-        text: `🚀 Let's create your first project!
+        text: `🚀 Таны анхны төслийг үүсгэе!
 
-A project helps you organize your paid Telegram groups. You can have multiple projects for different audiences.
+Төсөл нь таны төлбөртэй Телеграм группуудыг зохион байгуулахад тусална. Та өөр өөр үзэгчдэд зориулж олон төсөл үүсгэж болно.
 
-<b>Project creation is coming soon!</b>
+<b>Төсөл үүсгэх функц удахгүй нэмэгдэнэ!</b>
 
-In the meantime, explore these options:`,
+Одоогоор эдгээр сонголтуудыг үзнэ үү:`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
-            [{ text: '⚙️ Configure Bot', callback_data: 'configure_bot' }],
-            [{ text: '❓ Get Help', callback_data: 'help' }],
+            [{ text: '📊 Хяналтын самбар', callback_data: 'view_dashboard' }],
+            [{ text: '⚙️ Бот тохируулах', callback_data: 'configure_bot' }],
+            [{ text: '❓ Тусламж авах', callback_data: 'help' }],
           ],
         },
       };
@@ -107,22 +107,22 @@ In the meantime, explore these options:`,
 
     if (callbackData === 'view_dashboard') {
       return {
-        text: `📊 <b>Dashboard Access</b>
+        text: `📊 <b>Хяналтын самбар</b>
 
-Your web dashboard is available at:
+Таны веб хяналтын самбар энд байна:
 🌐 https://your-domain.com/dashboard
 
-<b>Login with your registered email to access:</b>
-✓ Telegram group management
-✓ Real-time analytics
-✓ Payment settings
-✓ Subscription monitoring
+<b>Бүртгэлтэй имэйлээрээ нэвтэрч дараах зүйлсийг хийнэ үү:</b>
+✓ Телеграм групп удирдах
+✓ Бодит цагийн тайлан
+✓ Төлбөрийн тохиргоо
+✓ Элсэлтийн хяналт
 
-What would you like to do?`,
+Та юу хийх вэ?`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '🚀 Create Project', callback_data: 'create_project' }],
-            [{ text: '❓ Get Help', callback_data: 'help' }],
+            [{ text: '🚀 Төсөл үүсгэх', callback_data: 'create_project' }],
+            [{ text: '❓ Тусламж авах', callback_data: 'help' }],
           ],
         },
       };
@@ -130,21 +130,21 @@ What would you like to do?`,
 
     if (callbackData === 'configure_bot') {
       return {
-        text: `⚙️ <b>Bot Configuration</b>
+        text: `⚙️ <b>Ботын тохиргоо</b>
 
-Your bot is ready to use! You can configure it from the web dashboard.
+Таны бот ашиглахад бэлэн боллоо! Та үүнийг веб хяналтын самбараас тохируулж болно.
 
-<b>Configuration options include:</b>
-✓ Welcome messages
-✓ Payment settings
-✓ Group permissions
-✓ Automated responses
+<b>Тохиргооны сонголтууд:</b>
+✓ Угтах мессеж
+✓ Төлбөрийн тохиргоо
+✓ Группын эрх
+✓ Автомат хариулт
 
-Choose an option:`,
+Сонголтоо хийнэ үү:`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
-            [{ text: '❓ Get Help', callback_data: 'help' }],
+            [{ text: '📊 Хяналтын самбар', callback_data: 'view_dashboard' }],
+            [{ text: '❓ Тусламж авах', callback_data: 'help' }],
           ],
         },
       };
@@ -152,30 +152,30 @@ Choose an option:`,
 
     if (callbackData === 'help') {
       return {
-        text: `❓ <b>Help & Support</b>
+        text: `❓ <b>Тусламж ба дэмжлэг</b>
 
-<b>Available Commands:</b>
-/start - Main menu
-/help - Show this help
-/cancel - Cancel operation
+<b>Боломжтой командууд:</b>
+/start - Үндсэн цэс
+/help - Энэ тусламжийг харах
+/cancel - Үйлдлийг цуцлах
 
-<b>Platform Features:</b>
-✓ Create paid Telegram groups
-✓ Automated payment processing
-✓ Member management
-✓ Analytics & reporting
+<b>Платформын боломжууд:</b>
+✓ Төлбөртэй Телеграм групп үүсгэх
+✓ Автомат төлбөр боловсруулах
+✓ Гишүүд удирдах
+✓ Тайлан ба статистик
 
-Choose an option or contact support:`,
+Сонголтоо хийх эсвэл тусламж авах:`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '🚀 Create Project', callback_data: 'create_project' }],
-            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
+            [{ text: '🚀 Төсөл үүсгэх', callback_data: 'create_project' }],
+            [{ text: '📊 Хяналтын самбар', callback_data: 'view_dashboard' }],
           ],
         },
       };
     }
 
-    return { text: 'Unknown option. Please send /start to begin.' };
+    return { text: 'Тодорхойгүй сонголт. /start товчийг дарж эхлүүлнэ үү.' };
   }
 
   async handleRegistrationFlow(
@@ -187,45 +187,45 @@ Choose an option or contact support:`,
     const session = await this.sessionService.getSession(telegramUserId);
 
     if (!session) {
-      return { text: 'Session expired. Please send /start to begin again.' };
+      return { text: 'Хугацаа дууссан байна. /start товчийг дарж дахин эхлүүлнэ үү.' };
     }
 
     switch (session.current_step) {
       case SessionStep.IDLE:
-        return { text: 'Please send /start to begin registration.' };
+        return { text: '/start товчийг дарж бүртгэл эхлүүлнэ үү.' };
 
       case SessionStep.REGISTRATION_EMAIL:
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(message)) {
           return {
-            text: '❌ Invalid email format.\n\nPlease provide a valid email address (e.g., john@example.com)',
+            text: '❌ Имэйл хаягийн формат буруу байна.\n\nЗөв имэйл хаяг оруулна уу (жишээ нь: john@example.com)',
           };
         }
         await this.sessionService.advanceStep(telegramUserId, SessionStep.REGISTRATION_NAME, {
           email: message,
         });
         return {
-          text: `✅ Email received: ${message}\n\nWhat's your full name?`,
+          text: `✅ Имэйл хүлээн авлаа: ${message}\n\nТаны бүтэн нэр хэн бэ?`,
         };
 
       case SessionStep.REGISTRATION_NAME:
         if (message.length < 2) {
           return {
-            text: '❌ Name must be at least 2 characters long.\n\nPlease provide your full name:',
+            text: '❌ Нэр хамгийн багадаа 2 үсэгтэй байх ёстой.\n\nТаны бүтэн нэрийг оруулна уу:',
           };
         }
         await this.sessionService.advanceStep(telegramUserId, SessionStep.REGISTRATION_COMPANY, {
           name: message,
         });
         return {
-          text: `Nice to meet you, ${message}! 👤\n\nWhat's your company or project name?\n(This will be displayed to your members)`,
+          text: `Танилцаж байгаадаа баяртай байна, ${message}! 👤\n\nТаны компани эсвэл төслийн нэр юу вэ?\n(Энэ нэр таны гишүүдэд харагдана)`,
         };
 
       case SessionStep.REGISTRATION_COMPANY:
         if (message.length < 2) {
           return {
-            text: '❌ Company name must be at least 2 characters long.\n\nPlease provide your company or project name:',
+            text: '❌ Компанийн нэр хамгийн багадаа 2 үсэгтэй байх ёстой.\n\nКомпани эсвэл төслийн нэрийг оруулна уу:',
           };
         }
 
@@ -250,19 +250,19 @@ Choose an option or contact support:`,
           await this.sessionService.createSession(telegramUserId, telegramChatId, correlationId);
 
           return {
-            text: `🎉 Account created successfully!
+            text: `🎉 Бүртгэл амжилттай үүслээ!
 
-Your account details:
-• Email: ${updatedSession.data.email}
-• Name: ${updatedSession.data.name}
-• Company: ${message}
+Таны бүртгэлийн мэдээлэл:
+• Имэйл: ${updatedSession.data.email}
+• Нэр: ${updatedSession.data.name}
+• Компани: ${message}
 
-What would you like to do next?`,
+Дараа нь юу хийх вэ?`,
             keyboard: {
               inline_keyboard: [
-                [{ text: '🚀 Create First Project', callback_data: 'create_project' }],
-                [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
-                [{ text: '❓ Get Help', callback_data: 'help' }],
+                [{ text: '🚀 Эхний төсөл үүсгэх', callback_data: 'create_project' }],
+                [{ text: '📊 Хяналтын самбар', callback_data: 'view_dashboard' }],
+                [{ text: '❓ Тусламж авах', callback_data: 'help' }],
               ],
             },
           };
@@ -272,8 +272,8 @@ What would you like to do next?`,
               text: `⚠️ ${error.response.error.message}`,
               keyboard: {
                 inline_keyboard: [
-                  [{ text: '🔗 Link to Existing Account', callback_data: 'link_account' }],
-                  [{ text: '📧 Use Different Email', callback_data: 'register' }],
+                  [{ text: '🔗 Байгаа бүртгэлтэй холбох', callback_data: 'link_account' }],
+                  [{ text: '📧 Өөр имэйл ашиглах', callback_data: 'register' }],
                 ],
               },
             };
@@ -282,7 +282,7 @@ What would you like to do next?`,
         }
 
       default:
-        return { text: 'Something went wrong. Please send /start to begin again.' };
+        return { text: 'Алдаа гарлаа. /start товчийг дарж дахин эхлүүлнэ үү.' };
     }
   }
 }

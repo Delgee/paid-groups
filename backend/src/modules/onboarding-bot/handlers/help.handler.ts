@@ -3,17 +3,17 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class HelpHandler {
   getHelpMessage(): string {
-    return `📚 Available Commands:
+    return `📚 Боломжтой командууд:
 
-/start - Register new account or get started
-/newproject - Create a new project with bot configuration
-/addgroup - Connect a Telegram group to your project
-/createplan - Create a membership plan for your groups
-/status - View your account overview and statistics
-/link - Link this Telegram account to existing web account
-/cancel - Cancel current operation
-/help - Show this help message
+/start - Шинэ бүртгэл үүсгэх эсвэл эхлүүлэх
+/newproject - Шинэ төсөл үүсгэх, ботын тохиргоотой
+/addgroup - Телеграм группыг төсөлдөө холбох
+/createplan - Группдаа гишүүнчлэлийн төлөвлөгөө үүсгэх
+/status - Бүртгэл болон статистикаа харах
+/link - Телеграм бүртгэлээ вэб бүртгэлтэй холбох
+/cancel - Үйлдлийг цуцлах
+/help - Энэ тусламжийг харуулах
 
-Need assistance? Visit our web dashboard or contact support.`;
+Тусламж хэрэгтэй юу? Манай веб хяналтын самбарт зочилж эсвэл дэмжлэгтэй холбогдоно уу.`;
   }
 }

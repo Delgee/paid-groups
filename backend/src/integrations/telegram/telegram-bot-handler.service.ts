@@ -96,6 +96,7 @@ export class TelegramBotHandlerService implements OnModuleInit, OnModuleDestroy 
   async createBotInstance(config: BotConfiguration): Promise<void> {
     try {
       // Verify bot token first
+      console.log('Verifying bot token for bot', config.id, config.botToken);
       const botInfo = await this.telegramApiService.verifyBotToken(config.botToken);
       if (!botInfo) {
         throw new Error(`Invalid bot token for bot ${config.id}`);
@@ -124,7 +125,7 @@ export class TelegramBotHandlerService implements OnModuleInit, OnModuleDestroy 
               await handler(ctx, config);
             } catch (error) {
               this.logger.error(`Error handling command /${command}:`, error.stack);
-              await ctx.reply('An error occurred. Please try again later.');
+              await ctx.reply('Алдаа гарлаа. Дараа дахин оролдоно уу.');
             }
           });
         }
@@ -223,19 +224,19 @@ export class TelegramBotHandlerService implements OnModuleInit, OnModuleDestroy 
    */
   private async handleDefaultStart(ctx: Context, config: BotConfiguration): Promise<void> {
     try {
-      const userName = ctx.from?.first_name || 'there';
+      const userName = ctx.from?.first_name || 'Та';
       const welcomeMessage = config.welcomeMessage?.replace('{name}', userName) ||
-        `Welcome ${userName}! 👋`;
+        `Тавтай морил ${userName}! 👋`;
 
       await ctx.reply(
         welcomeMessage,
         Markup.inlineKeyboard([
-          [Markup.button.callback('ℹ️ Help', 'help')],
+          [Markup.button.callback('ℹ️ Тусламж', 'help')],
         ])
       );
     } catch (error) {
       this.logger.error('Error handling default start command:', error.stack);
-      await ctx.reply('An error occurred. Please try again later.');
+      await ctx.reply('Алдаа гарлаа. Дараа дахин оролдоно уу.');
     }
   }
 
@@ -270,10 +271,10 @@ export class TelegramBotHandlerService implements OnModuleInit, OnModuleDestroy 
       }
 
       // Default handler if no match
-      await ctx.reply('Unknown action. Please try again.');
+      await ctx.reply('Тодорхойгүй үйлдэл. Дахин оролдоно уу.');
     } catch (error) {
       this.logger.error('Error handling callback query:', error.stack);
-      await ctx.reply('An error occurred. Please try again later.');
+      await ctx.reply('Алдаа гарлаа. Дараа дахин оролдоно уу.');
     }
   }
 

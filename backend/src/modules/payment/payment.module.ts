@@ -6,14 +6,16 @@ import { PaymentTransactionService } from './services/payment-transaction.servic
 import { ChannelMemberService } from './services/channel-member.service';
 import { PaymentTransaction } from './entities/payment-transaction.entity';
 import { ChannelMember } from './entities/channel-member.entity';
+import { Project } from '../project/entities/project.entity';
 import { MembershipPlanModule } from '../membership-plan/membership-plan.module';
 import { MetricsModule } from '../../common/metrics/metrics.module';
+import { TelegramIntegrationModule } from '../../integrations/telegram/telegram-integration.module';
 import { MembershipProcessor } from './processors/membership.processor';
 import { MembershipSchedulerService } from './tasks/membership-scheduler.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PaymentTransaction, ChannelMember]),
+    TypeOrmModule.forFeature([PaymentTransaction, ChannelMember, Project]),
     BullModule.registerQueue({
       name: 'membership',
       defaultJobOptions: {
@@ -23,6 +25,7 @@ import { MembershipSchedulerService } from './tasks/membership-scheduler.service
     }),
     MembershipPlanModule,
     MetricsModule,
+    TelegramIntegrationModule,
   ],
   controllers: [PaymentController],
   providers: [

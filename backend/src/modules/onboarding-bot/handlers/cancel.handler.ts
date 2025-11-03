@@ -8,11 +8,11 @@ export class CancelHandler {
   async handleCancel(telegramUserId: number): Promise<string> {
     await this.sessionService.clearSession(telegramUserId);
 
-    return `❌ Operation cancelled.
+    return `❌ Үйлдэл цуцлагдлаа.
 
-Your progress has been cleared. What would you like to do?
-• Send /start to register
-• Send /link to link existing account
-• Send /help for more options`;
+Таны явц цэвэрлэгдсэн байна. Та юу хийх вэ?
+• /start дарж бүртгүүлэх
+• /link дарж байгаа бүртгэлтэй холбох
+• /help дарж бусад сонголтуудыг харах`;
   }
 }
