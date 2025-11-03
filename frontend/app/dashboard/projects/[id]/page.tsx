@@ -16,7 +16,8 @@ import {
 } from '@/components/ui/dialog';
 import { Project, projectApi } from '@/lib/api/projects';
 import { TelegramGroup, telegramGroupsApi } from '@/lib/api/telegram-groups';
-import { ArrowLeftIcon, SettingsIcon, RefreshCwIcon, PlusIcon, UsersIcon, LayersIcon, TrashIcon } from 'lucide-react';
+import { MembershipPlan, membershipPlanApi } from '@/lib/api/membership-plans';
+import { ArrowLeftIcon, SettingsIcon, RefreshCwIcon, PlusIcon, UsersIcon, LayersIcon, TrashIcon, Edit2Icon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { BotAvatar } from '@/components/projects/BotAvatar';
 
@@ -28,8 +29,10 @@ export default function ProjectDetailPage() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [telegramGroups, setTelegramGroups] = useState<TelegramGroup[]>([]);
+  const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const [loadingPlans, setLoadingPlans] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<TelegramGroup | null>(null);
@@ -38,6 +41,7 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     loadProject();
     loadTelegramGroups();
+    loadMembershipPlans();
   }, [projectId]);
 
   const loadProject = async () => {
@@ -67,6 +71,21 @@ export default function ProjectDetailPage() {
       // Don't show error toast, just log it
     } finally {
       setLoadingGroups(false);
+    }
+  };
+
+  const loadMembershipPlans = async () => {
+    try {
+      setLoadingPlans(true);
+      const plans = await membershipPlanApi.getAll({
+        project_id: projectId,
+      });
+      setMembershipPlans(plans);
+    } catch (error) {
+      console.error('Failed to load membership plans:', error);
+      // Don't show error toast, just log it
+    } finally {
+      setLoadingPlans(false);
     }
   };
 
@@ -323,9 +342,58 @@ export default function ProjectDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No membership plans yet. Create a plan to start accepting payments.
-              </p>
+              {loadingPlans ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCwIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : membershipPlans.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No membership plans yet. Create a plan to start accepting payments.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {membershipPlans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{plan.name}</h4>
+                          <Badge variant={plan.is_active ? 'default' : 'secondary'}>
+                            {plan.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                        {plan.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
+                        )}
+                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <span className="font-semibold text-foreground">
+                            {plan.price_mnt.toLocaleString()} {plan.currency}
+                          </span>
+                          <span>{plan.duration_days} days</span>
+                          {plan.trial_days > 0 && (
+                            <span className="text-green-600">{plan.trial_days} day trial</span>
+                          )}
+                          {plan.telegram_groups && plan.telegram_groups.length > 0 && (
+                            <span>{plan.telegram_groups.length} group{plan.telegram_groups.length !== 1 ? 's' : ''}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/dashboard/plans/${plan.id}/edit`)}
+                        >
+                          <Edit2Icon className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

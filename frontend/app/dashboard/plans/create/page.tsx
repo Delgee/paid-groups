@@ -12,15 +12,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, CreditCard, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api/client';
 import { telegramGroupsApi, TelegramGroup } from '@/lib/api/telegram-groups';
+import { membershipPlanApi } from '@/lib/api/membership-plans';
 import { toast } from 'sonner';
 
 const createPlanSchema = z.object({
   name: z.string().min(1, 'Plan name is required').max(100, 'Name too long'),
   description: z.string().optional(),
-  price: z.number().min(0, 'Price must be positive'),
-  currency: z.string().default('MNT'),
+  price: z.number().min(1000, 'Price must be at least 1,000 MNT'),
   duration_days: z.number().min(1, 'Duration must be at least 1 day'),
   project_id: z.string().uuid('Invalid project ID').optional(),
 });
@@ -45,7 +44,6 @@ export default function CreatePlanPage() {
   } = useForm<CreatePlanFormData>({
     resolver: zodResolver(createPlanSchema),
     defaultValues: {
-      currency: 'MNT',
       duration_days: 30,
       project_id: projectIdFromUrl || undefined,
     },
@@ -86,21 +84,32 @@ export default function CreatePlanPage() {
     try {
       setIsCreating(true);
 
+      // Validate that project_id is provided
+      const projectId = projectIdFromUrl || data.project_id;
+      if (!projectId) {
+        toast.error('Project ID is required');
+        setIsCreating(false);
+        return;
+      }
+
       // Validate that at least one telegram group is selected when project_id is provided
-      if (projectIdFromUrl && selectedGroupIds.length === 0) {
+      if (selectedGroupIds.length === 0) {
         toast.error('Please select at least one Telegram group for this membership plan');
         setIsCreating(false);
         return;
       }
 
-      // Include project_id and telegram_group_ids in the request if available
+      // Include project_id and telegram_group_ids in the request
       const requestData = {
-        ...data,
-        ...(projectIdFromUrl && { project_id: projectIdFromUrl }),
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        duration_days: data.duration_days,
+        project_id: projectId,
         ...(selectedGroupIds.length > 0 && { telegram_group_ids: selectedGroupIds }),
       };
 
-      const newPlan = await apiClient.createMembershipPlan(requestData);
+      const newPlan = await membershipPlanApi.create(requestData);
 
       toast.success(`Membership plan "${newPlan.name}" created successfully!`);
 
@@ -199,7 +208,7 @@ export default function CreatePlanPage() {
                   <p className="text-red-600 text-sm">{errors.price.message}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Amount in Mongolian Tugrik
+                  Amount in Mongolian Tugrik (minimum 1,000)
                 </p>
               </div>
 

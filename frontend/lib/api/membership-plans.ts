@@ -3,25 +3,29 @@ import { apiClient } from './client';
 export interface MembershipPlan {
   id: string;
   tenant_id: string;
-  bot_configuration_id: string;
+  project_id: string;
   name: string;
   description?: string;
   price: number;
+  currency: string;
   duration_days: number;
+  trial_days: number;
+  features: Record<string, any>;
   is_active: boolean;
-  sort_order: number;
+  max_members?: number;
   created_at: string;
   updated_at: string;
+  telegram_groups?: any[];
 }
 
 export interface CreateMembershipPlanDto {
-  bot_configuration_id: string;
+  project_id: string;
   name: string;
   description?: string;
   price: number;
   duration_days: number;
+  telegram_group_ids?: string[];
   is_active?: boolean;
-  sort_order?: number;
 }
 
 export interface UpdateMembershipPlanDto {
@@ -29,32 +33,28 @@ export interface UpdateMembershipPlanDto {
   description?: string;
   price?: number;
   duration_days?: number;
+  telegram_group_ids?: string[];
   is_active?: boolean;
-  sort_order?: number;
 }
 
 export const membershipPlanApi = {
   getAll: async (params?: {
-    bot_configuration_id?: string;
+    project_id?: string;
     is_active?: boolean;
   }): Promise<MembershipPlan[]> => {
-    const response = await apiClient.get('/membership-plans', { params });
-    return response.data;
+    return apiClient.get<MembershipPlan[]>('/membership-plans', { params });
   },
 
   getById: async (id: string): Promise<MembershipPlan> => {
-    const response = await apiClient.get(`/membership-plans/${id}`);
-    return response.data;
+    return apiClient.get<MembershipPlan>(`/membership-plans/${id}`);
   },
 
   create: async (data: CreateMembershipPlanDto): Promise<MembershipPlan> => {
-    const response = await apiClient.post('/membership-plans', data);
-    return response.data;
+    return apiClient.post<MembershipPlan>('/membership-plans', data);
   },
 
   update: async (id: string, data: UpdateMembershipPlanDto): Promise<MembershipPlan> => {
-    const response = await apiClient.put(`/membership-plans/${id}`, data);
-    return response.data;
+    return apiClient.put<MembershipPlan>(`/membership-plans/${id}`, data);
   },
 
   delete: async (id: string): Promise<void> => {
