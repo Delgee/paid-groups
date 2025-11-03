@@ -7,6 +7,7 @@ import { Member } from '../entities/member.entity';
 import { MembershipPlan } from '../../membership-plan/entities/membership-plan.entity';
 import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 import { Project } from '../../project/entities/project.entity';
+import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 
 @Injectable()
 export class MembershipExpirationJob {
@@ -21,6 +22,8 @@ export class MembershipExpirationJob {
     private planRepository: Repository<MembershipPlan>,
     @InjectRepository(Project)
     private projectRepository: Repository<Project>,
+    @InjectRepository(TelegramGroup)
+    private telegramGroupRepository: Repository<TelegramGroup>,
     private telegramApiService: TelegramApiService,
   ) {}
 
@@ -197,19 +200,31 @@ export class MembershipExpirationJob {
         return;
       }
 
+      // Get the Telegram group's chat_id (not the UUID group_id!)
+      const telegramGroup = await this.telegramGroupRepository.findOne({
+        where: { id: membership.group_id },
+      });
+
+      if (!telegramGroup || !telegramGroup.telegram_chat_id) {
+        this.logger.warn(
+          `Telegram group ${membership.group_id} not found or missing telegram_chat_id`,
+        );
+        return;
+      }
+
       const success = await this.telegramApiService.kickChatMember(
         bot.bot_token,
-        parseInt(membership.group_id),
+        telegramGroup.telegram_chat_id,
         member.telegram_user_id,
       );
 
       if (success) {
         this.logger.log(
-          `Expired member ${member.telegram_user_id} removed from group ${membership.group_id}`,
+          `Expired member ${member.telegram_user_id} removed from group ${telegramGroup.group_name} (chat_id: ${telegramGroup.telegram_chat_id})`,
         );
       } else {
         this.logger.error(
-          `Failed to remove expired member ${member.telegram_user_id} from group ${membership.group_id}`,
+          `Failed to remove expired member ${member.telegram_user_id} from group ${telegramGroup.group_name} (chat_id: ${telegramGroup.telegram_chat_id})`,
         );
       }
     } catch (error) {

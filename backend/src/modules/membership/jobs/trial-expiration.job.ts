@@ -36,10 +36,10 @@ export class TrialExpirationJob {
   ) {}
 
   /**
-   * Check for expired trials every 5 minutes
+   * Check for expired trials every minute
    * Short interval ensures users are removed from channels quickly after trial expires
    */
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_MINUTE)
   async handleTrialExpiration() {
     this.logger.log('Starting trial expiration check...');
 

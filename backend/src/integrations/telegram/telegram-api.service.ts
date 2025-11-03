@@ -264,17 +264,38 @@ export class TelegramApiService {
     chatId: string | number,
     userId: number
   ): Promise<boolean> {
+    const startTime = Date.now();
     try {
-      const bot = this.getBotInstance(botToken);
-      await bot.telegram.banChatMember(chatId, userId);
+      await this.executeWithRateLimit(botToken, async () => {
+        const bot = this.getBotInstance(botToken);
+        await bot.telegram.banChatMember(chatId, userId);
 
-      // Immediately unban to allow them to rejoin later if needed
-      await bot.telegram.unbanChatMember(chatId, userId);
+        // Immediately unban to allow them to rejoin later if needed
+        await bot.telegram.unbanChatMember(chatId, userId);
+      });
 
-      this.logger.log(`User ${userId} removed from chat ${chatId}`);
+      // Invalidate cache after removing member
+      await this.invalidateChatCache(chatId);
+
+      const duration = Date.now() - startTime;
+      this.logger.telegram('KickChatMember', {
+        chatId,
+        userId,
+        duration,
+        success: true,
+      });
+
       return true;
     } catch (error) {
-      this.logger.error(`Failed to remove user ${userId} from chat ${chatId}: ${error.message}`);
+      const duration = Date.now() - startTime;
+      this.logger.telegram('KickChatMember', {
+        chatId,
+        userId,
+        error: error.message,
+        duration,
+        success: false,
+      }, 'error');
+
       return false;
     }
   }
