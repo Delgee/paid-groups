@@ -44,6 +44,15 @@ export class ProjectResponseDto {
   @ApiProperty({ description: 'Message templates' })
   message_templates: Record<string, any>;
 
+  @ApiProperty({ description: 'Bank code for payment account', nullable: true })
+  account_bank_code?: string;
+
+  @ApiProperty({ description: 'Bank account number', nullable: true })
+  account_number?: string;
+
+  @ApiProperty({ description: 'Account holder name', nullable: true })
+  account_name?: string;
+
   @ApiProperty({ description: 'Created at timestamp' })
   created_at: Date;
 
@@ -66,6 +75,9 @@ export class ProjectResponseDto {
     dto.webhook_url = project.webhook_url;
     dto.settings = project.settings;
     dto.message_templates = project.message_templates;
+    dto.account_bank_code = project.account_bank_code;
+    dto.account_number = project.account_number;
+    dto.account_name = project.account_name;
     dto.created_at = project.created_at;
     dto.updated_at = project.updated_at;
     return dto;

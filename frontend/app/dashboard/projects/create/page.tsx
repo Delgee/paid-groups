@@ -10,9 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { projectApi } from '@/lib/api/projects';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeftIcon } from 'lucide-react';
+import { MONGOLIAN_BANKS } from '@/lib/constants/banks';
 
 const formSchema = z.object({
   bot_token: z.string()
@@ -28,6 +30,9 @@ const formSchema = z.object({
   welcome_message: z.string()
     .min(10, 'Welcome message must be at least 10 characters')
     .max(4096, 'Welcome message cannot exceed 4096 characters'),
+  account_bank_code: z.string().optional(),
+  account_number: z.string().max(50, 'Account number cannot exceed 50 characters').optional(),
+  account_name: z.string().max(255, 'Account name cannot exceed 255 characters').optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -47,6 +52,9 @@ export default function CreateProjectPage() {
       display_name: '',
       description: '',
       welcome_message: '',
+      account_bank_code: '',
+      account_number: '',
+      account_name: '',
     },
   });
 
@@ -294,6 +302,75 @@ export default function CreateProjectPage() {
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="text-lg font-medium">Bank Account Information (Optional)</h3>
+                <p className="text-sm text-muted-foreground">
+                  Configure bank account details for QPay payment integration
+                </p>
+
+                <FormField
+                  control={form.control}
+                  name="account_bank_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bank</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a bank" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {MONGOLIAN_BANKS.map((bank) => (
+                            <SelectItem key={bank.code} value={bank.code}>
+                              {bank.name} ({bank.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Select the bank for payment processing
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="account_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Account Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="490000869" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Bank account number for receiving payments
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="account_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Account Holder Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="test account2" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Name of the account holder as registered with the bank
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div className="flex gap-4">
                 <Button

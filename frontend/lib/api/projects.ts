@@ -13,6 +13,9 @@ export interface Project {
   bot_avatar_file_id?: string;
   bot_avatar_url?: string;
   webhook_url?: string;
+  account_bank_code?: string;
+  account_number?: string;
+  account_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +35,9 @@ export interface CreateProjectDto {
   description?: string;
   welcome_message: string;
   is_active?: boolean;
+  account_bank_code?: string;
+  account_number?: string;
+  account_name?: string;
 }
 
 export interface UpdateProjectDto {
@@ -41,6 +47,9 @@ export interface UpdateProjectDto {
   description?: string;
   welcome_message?: string;
   is_active?: boolean;
+  account_bank_code?: string;
+  account_number?: string;
+  account_name?: string;
 }
 
 export const projectApi = {
