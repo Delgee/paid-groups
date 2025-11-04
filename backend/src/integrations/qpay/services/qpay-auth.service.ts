@@ -77,7 +77,7 @@ export class QPayAuthService {
       const cacheExpiry = (tokenResponse.expires_in - 300) * 1000; // Convert to ms
       await this.cacheManager.set(
         this.TOKEN_CACHE_KEY,
-        tokenResponse.token,
+        tokenResponse.access_token,
         cacheExpiry,
       );
       await this.cacheManager.set(
@@ -91,7 +91,7 @@ export class QPayAuthService {
         duration: Date.now() - startTime,
       });
 
-      return tokenResponse.token;
+      return tokenResponse.access_token;
     } catch (error) {
       this.logger.error('Failed to get QPay access token', '', {
         error: error.message,
@@ -110,6 +110,7 @@ export class QPayAuthService {
     try {
       this.logger.debug('Requesting new QPay access token', {
         username: this.credentials.username,
+        password: this.credentials.password,
         terminalId: this.credentials.terminal_id,
       });
 
@@ -204,7 +205,7 @@ export class QPayAuthService {
       const cacheExpiry = (response.data.expires_in - 300) * 1000; // Convert to ms
       await this.cacheManager.set(
         this.TOKEN_CACHE_KEY,
-        response.data.token,
+        response.data.access_token,
         cacheExpiry,
       );
       await this.cacheManager.set(
@@ -218,7 +219,7 @@ export class QPayAuthService {
         duration: Date.now() - startTime,
       });
 
-      return response.data.token;
+      return response.data.access_token;
     } catch (error) {
       this.logger.error('Failed to refresh QPay access token', '', {
         error: error.message,

@@ -130,7 +130,7 @@ export class QPayMerchantResponseDto {
     description: 'QPay merchant ID (UUID)',
     example: '78fd75dc-7d1f-4cb4-8c08-765a8d4fa499',
   })
-  merchant_id: string;
+  id: string;
 
   @ApiProperty({
     description: 'Merchant status',

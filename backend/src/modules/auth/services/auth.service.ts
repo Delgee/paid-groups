@@ -96,7 +96,7 @@ export class AuthService {
         });
 
       this.logger.log(
-        `QPay merchant created successfully: ${merchantResponse.merchant_id}`,
+        `QPay merchant created successfully: ${merchantResponse.id}`,
       );
     } catch (error) {
       // QPay merchant creation failed - don't create tenant
@@ -114,7 +114,7 @@ export class AuthService {
       company_name: companyName,
       subscription_tier: SubscriptionTier.FREE,
       subscription_status: SubscriptionStatus.ACTIVE,
-      qpay_merchant_id: merchantResponse.merchant_id, // Set immediately
+      qpay_merchant_id: merchantResponse.id, // Set immediately
     });
     const savedTenant = await this.tenantRepository.save(tenant);
 

@@ -4,7 +4,7 @@
  */
 
 export interface QPayTokenResponse {
-  token: string;
+  access_token: string;
   refresh_token: string;
   expires_in: number;
 }
@@ -118,7 +118,7 @@ export interface QPayMerchantPerson {
 }
 
 export interface QPayMerchantResponse {
-  merchant_id: string;
+  id: string;
   status: 'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED';
   created_at: string;
 }

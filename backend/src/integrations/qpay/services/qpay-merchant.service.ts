@@ -22,7 +22,7 @@ export class QPayMerchantService {
   // Default values for Mongolian location codes
   private readonly DEFAULT_CITY_CODE = '11000'; // Ulaanbaatar
   private readonly DEFAULT_DISTRICT_CODE = '12000'; // Bayanzurkh district
-  private readonly DEFAULT_MCC_CODE = '5816'; // Digital goods/services
+  private readonly DEFAULT_MCC_CODE = '5812'; // Digital goods/services
 
   constructor(
     private readonly qpayAuth: QPayAuthService,
@@ -69,7 +69,7 @@ export class QPayMerchantService {
       const result = await this.createMerchantPerson(merchantDto);
 
       this.logger.info('QPay merchant created successfully', {
-        merchant_id: result.merchant_id,
+        merchant_id: result.id,
         company_name: dto.company_name,
         duration: Date.now() - startTime,
       });
@@ -124,13 +124,13 @@ export class QPayMerchantService {
       );
 
       this.logger.info('QPay person merchant created', {
-        merchant_id: response.data.merchant_id,
+        merchant_id: response.data.id,
         status: response.data.status,
         duration: Date.now() - startTime,
       });
 
       return {
-        merchant_id: response.data.merchant_id,
+        id: response.data.id,
         status: response.data.status,
         created_at: response.data.created_at,
       };
