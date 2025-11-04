@@ -5,6 +5,7 @@ import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { TelegramApiService } from '../../integrations/telegram/telegram-api.service';
+import { QPayAuthService } from '../../integrations/qpay/services/qpay-auth.service';
 import { firstValueFrom } from 'rxjs';
 import { Project } from '../project/entities/project.entity';
 
@@ -36,6 +37,7 @@ export class HealthService {
     private projectRepository: Repository<Project>,
     private httpService: HttpService,
     private telegramApiService: TelegramApiService,
+    private qpayAuthService: QPayAuthService,
     @Inject(CACHE_MANAGER)
     private cacheManager: Cache,
   ) {}
@@ -189,35 +191,40 @@ export class HealthService {
     const startTime = Date.now();
 
     try {
-      const qpayUrl = process.env.QPAY_API_URL || 'https://merchant.qpay.mn/v2';
+      // Use the actual QPay authentication service to verify credentials
+      const isHealthy = await this.qpayAuthService.healthCheck();
 
-      // Make a simple request to check QPay API availability
-      const response = await firstValueFrom(
-        this.httpService.get(`${qpayUrl}/auth/token`, {
-          timeout: 5000,
-          validateStatus: () => true, // Accept any status code
-        }),
-      );
+      if (isHealthy) {
+        return {
+          name: 'qpay',
+          status: 'healthy',
+          message: 'QPay authentication successful',
+          duration_ms: Date.now() - startTime,
+          details: {
+            base_url: process.env.QPAY_BASE_URL,
+            environment: process.env.QPAY_ENV || 'development',
+            terminal_id: process.env.QPAY_TERMINAL_ID,
+          },
+        };
+      }
 
-      const isHealthy = response.status < 500;
-
-      return {
-        name: 'qpay',
-        status: isHealthy ? 'healthy' : 'unhealthy',
-        message: isHealthy
-          ? 'QPay API is reachable'
-          : 'QPay API is not responding',
-        duration_ms: Date.now() - startTime,
-        details: {
-          status_code: response.status,
-          url: qpayUrl,
-        },
-      };
-    } catch (error) {
       return {
         name: 'qpay',
         status: 'unhealthy',
-        message: 'QPay API check failed',
+        message: 'QPay authentication failed - check credentials',
+        duration_ms: Date.now() - startTime,
+        details: {
+          base_url: process.env.QPAY_BASE_URL,
+          hint: 'Verify QPAY_USERNAME, QPAY_PASSWORD, and QPAY_TERMINAL_ID in .env',
+        },
+      };
+    } catch (error) {
+      this.logger.error('QPay health check error:', error.stack);
+
+      return {
+        name: 'qpay',
+        status: 'unhealthy',
+        message: 'QPay health check failed',
         duration_ms: Date.now() - startTime,
         details: { error: error.message },
       };
