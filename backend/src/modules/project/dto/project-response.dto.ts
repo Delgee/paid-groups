@@ -44,14 +44,14 @@ export class ProjectResponseDto {
   @ApiProperty({ description: 'Message templates' })
   message_templates: Record<string, any>;
 
-  @ApiProperty({ description: 'Bank code for payment account', nullable: true })
-  account_bank_code?: string;
+  @ApiProperty({ description: 'Bank code for payment account' })
+  account_bank_code: string;
 
-  @ApiProperty({ description: 'Bank account number', nullable: true })
-  account_number?: string;
+  @ApiProperty({ description: 'Bank account number' })
+  account_number: string;
 
-  @ApiProperty({ description: 'Account holder name', nullable: true })
-  account_name?: string;
+  @ApiProperty({ description: 'Account holder name' })
+  account_name: string;
 
   @ApiProperty({ description: 'Created at timestamp' })
   created_at: Date;

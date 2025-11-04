@@ -30,9 +30,9 @@ const formSchema = z.object({
   welcome_message: z.string()
     .min(10, 'Welcome message must be at least 10 characters')
     .max(4096, 'Welcome message cannot exceed 4096 characters'),
-  account_bank_code: z.string().optional(),
-  account_number: z.string().max(50, 'Account number cannot exceed 50 characters').optional(),
-  account_name: z.string().max(255, 'Account name cannot exceed 255 characters').optional(),
+  account_bank_code: z.string().min(1, 'Bank is required'),
+  account_number: z.string().min(1, 'Account number is required').max(50, 'Account number cannot exceed 50 characters'),
+  account_name: z.string().min(1, 'Account holder name is required').max(255, 'Account name cannot exceed 255 characters'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -304,7 +304,7 @@ export default function CreateProjectPage() {
               />
 
               <div className="space-y-4 pt-4 border-t">
-                <h3 className="text-lg font-medium">Bank Account Information (Optional)</h3>
+                <h3 className="text-lg font-medium">Bank Account Information</h3>
                 <p className="text-sm text-muted-foreground">
                   Configure bank account details for QPay payment integration
                 </p>
@@ -314,7 +314,7 @@ export default function CreateProjectPage() {
                   name="account_bank_code"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bank</FormLabel>
+                      <FormLabel>Bank *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -342,7 +342,7 @@ export default function CreateProjectPage() {
                   name="account_number"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Account Number</FormLabel>
+                      <FormLabel>Account Number *</FormLabel>
                       <FormControl>
                         <Input placeholder="490000869" {...field} />
                       </FormControl>
@@ -359,7 +359,7 @@ export default function CreateProjectPage() {
                   name="account_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Account Holder Name</FormLabel>
+                      <FormLabel>Account Holder Name *</FormLabel>
                       <FormControl>
                         <Input placeholder="test account2" {...field} />
                       </FormControl>

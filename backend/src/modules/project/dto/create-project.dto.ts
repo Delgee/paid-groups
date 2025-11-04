@@ -109,36 +109,36 @@ export class CreateProjectDto {
   @IsOptional()
   message_templates?: Record<string, any>;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Bank code for payment account (6-digit)',
     example: '040000',
     maxLength: 6,
   })
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   @MaxLength(6)
   @Matches(/^\d{6}$/, {
     message: 'account_bank_code must be a 6-digit bank code',
   })
-  account_bank_code?: string;
+  account_bank_code: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Bank account number',
     example: '490000869',
     maxLength: 50,
   })
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   @MaxLength(50)
-  account_number?: string;
+  account_number: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Account holder name',
     example: 'test account2',
     maxLength: 255,
   })
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   @MaxLength(255)
-  account_name?: string;
+  account_name: string;
 }

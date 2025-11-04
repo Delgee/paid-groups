@@ -76,17 +76,17 @@ export class Project {
   bot_avatar_url?: string;
 
   // Bank Account Fields (for QPay integration)
-  @ApiPropertyOptional({ description: 'Bank code for payment account (6-digit)', maxLength: 6 })
-  @Column({ type: 'varchar', length: 6, nullable: true })
-  account_bank_code?: string;
+  @ApiProperty({ description: 'Bank code for payment account (6-digit)', maxLength: 6 })
+  @Column({ type: 'varchar', length: 6 })
+  account_bank_code: string;
 
-  @ApiPropertyOptional({ description: 'Bank account number', maxLength: 50 })
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  account_number?: string;
+  @ApiProperty({ description: 'Bank account number', maxLength: 50 })
+  @Column({ type: 'varchar', length: 50 })
+  account_number: string;
 
-  @ApiPropertyOptional({ description: 'Account holder name', maxLength: 255 })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  account_name?: string;
+  @ApiProperty({ description: 'Account holder name', maxLength: 255 })
+  @Column({ type: 'varchar', length: 255 })
+  account_name: string;
 
   // Bot Infrastructure Fields (from TelegramBot)
   @ApiPropertyOptional({ description: 'Webhook URL for bot updates', maxLength: 500 })

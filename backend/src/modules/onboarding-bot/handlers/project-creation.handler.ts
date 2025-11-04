@@ -184,6 +184,10 @@ Please check your token and try again, or get a new one from @BotFather:`,
               display_name: updatedSession.data.project_name!,
               description: updatedSession.data.project_description || '',
               welcome_message: `Welcome! I'm ${updatedSession.data.project_name}. Choose a membership plan to get started.`,
+              // TODO: Collect bank account information in onboarding flow
+              account_bank_code: '000000',
+              account_number: 'PLACEHOLDER',
+              account_name: 'PLACEHOLDER',
             },
           );
 
