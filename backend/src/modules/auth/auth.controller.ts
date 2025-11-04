@@ -9,24 +9,61 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsString, MinLength, Matches, IsOptional, Length } from 'class-validator';
 import { AuthService, RegisterDto, LoginDto, RefreshTokenDto } from './services/auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 class RegisterRequestDto implements RegisterDto {
+  @ApiProperty({
+    description: 'User email address',
+    example: 'user@example.com',
+  })
   @IsEmail()
   email: string;
 
+  @ApiProperty({
+    description: 'Password (minimum 8 characters)',
+    example: 'SecurePass123',
+  })
   @IsString()
   @MinLength(8)
   password: string;
 
+  @ApiProperty({
+    description: 'Full name of the user',
+    example: 'Batjargal Oldokh',
+  })
   @IsString()
   name: string;
 
+  @ApiProperty({
+    description: 'Phone number (8 digits)',
+    example: '99112210',
+  })
   @IsString()
-  company_name: string;
+  @Matches(/^\d{8}$/, {
+    message: 'Phone must be exactly 8 digits',
+  })
+  phone: string;
+
+  @ApiProperty({
+    description: 'Personal registration number (РД, 10 characters)',
+    example: 'АМ05321712',
+  })
+  @IsString()
+  @Length(10, 10, {
+    message: 'Registration number must be exactly 10 characters',
+  })
+  register_number: string;
+
+  @ApiPropertyOptional({
+    description: 'Company/business name (optional, auto-generated if not provided)',
+    example: 'Premium Telegram Groups',
+  })
+  @IsString()
+  @IsOptional()
+  company_name?: string;
 }
 
 class LoginRequestDto implements LoginDto {

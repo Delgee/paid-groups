@@ -16,7 +16,9 @@ const registerSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters')
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  company_name: z.string().min(2, 'Company name must be at least 2 characters'),
+  phone: z.string().regex(/^\d{8}$/, 'Phone must be exactly 8 digits'),
+  register_number: z.string().length(10, 'Registration number must be exactly 10 characters'),
+  company_name: z.string().min(2, 'Company name must be at least 2 characters').optional(),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -85,12 +87,52 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="company_name">Company Name</Label>
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="99112210"
+              maxLength={8}
+              required
+              {...register('phone')}
+              className={errors.phone ? 'border-red-500' : ''}
+            />
+            {errors.phone && (
+              <p className="text-red-600 text-sm">{errors.phone.message}</p>
+            )}
+            <p className="text-xs text-gray-500">
+              8 digits (e.g., 99112210)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="register_number">Registration Number (РД)</Label>
+            <Input
+              id="register_number"
+              type="text"
+              placeholder="АМ05321712"
+              maxLength={10}
+              required
+              {...register('register_number')}
+              className={errors.register_number ? 'border-red-500' : ''}
+            />
+            {errors.register_number && (
+              <p className="text-red-600 text-sm">{errors.register_number.message}</p>
+            )}
+            <p className="text-xs text-gray-500">
+              10 characters (e.g., АМ05321712)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="company_name">
+              Company Name <span className="text-gray-500 font-normal">(Optional)</span>
+            </Label>
             <Input
               id="company_name"
               type="text"
               autoComplete="organization"
-              required
+              placeholder="Will be auto-generated if not provided"
               {...register('company_name')}
               className={errors.company_name ? 'border-red-500' : ''}
             />

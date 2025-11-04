@@ -8,6 +8,7 @@ import { AuthService } from './services/auth.service';
 import { User } from './entities/user.entity';
 import { Tenant } from '../tenant/entities/tenant.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { QPayIntegrationModule } from '../../integrations/qpay/qpay-integration.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
       inject: [ConfigService],
     }),
+    QPayIntegrationModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

@@ -38,7 +38,9 @@ export interface RegisterData {
   email: string;
   password: string;
   name: string;
-  company_name: string;
+  phone: string;
+  register_number: string;
+  company_name?: string;
 }
 
 export interface CreateUserRequest {

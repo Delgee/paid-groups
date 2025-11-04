@@ -65,6 +65,9 @@ export class Tenant {
   @Column({ type: 'jsonb', default: {} })
   settings: Record<string, any>;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  qpay_merchant_id: string | null;
+
   @CreateDateColumn()
   created_at: Date;
 

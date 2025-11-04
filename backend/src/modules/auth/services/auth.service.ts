@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -15,12 +16,15 @@ import {
   SubscriptionStatus,
 } from '../../tenant/entities/tenant.entity';
 import { JwtPayload, ExtendedJwtPayload } from '../../../common/types';
+import { QPayMerchantService } from '../../../integrations/qpay/services/qpay-merchant.service';
 
 export interface RegisterDto {
   email: string;
   password: string;
   name: string;
-  company_name: string;
+  phone: string;
+  register_number: string;
+  company_name?: string;
 }
 
 export interface LoginDto {
@@ -52,6 +56,8 @@ export interface AuthResponse {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -59,6 +65,7 @@ export class AuthService {
     private tenantRepository: Repository<Tenant>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private qpayMerchantService: QPayMerchantService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
@@ -70,12 +77,44 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
 
-    // Create tenant first
+    // Auto-generate company name if not provided
+    const companyName = registerDto.company_name || `${registerDto.name}'s Business`;
+
+    // Create QPay merchant FIRST - if this fails, registration fails
+    this.logger.log(`Creating QPay merchant before tenant creation`);
+
+    let merchantResponse;
+    try {
+      merchantResponse =
+        await this.qpayMerchantService.createMerchantFromTenant({
+          register_number: registerDto.register_number,
+          owner_name: registerDto.name,
+          company_name: companyName,
+          email: registerDto.email.toLowerCase(),
+          phone: registerDto.phone,
+          address: 'Ulaanbaatar, Mongolia', // Default address
+        });
+
+      this.logger.log(
+        `QPay merchant created successfully: ${merchantResponse.merchant_id}`,
+      );
+    } catch (error) {
+      // QPay merchant creation failed - don't create tenant
+      this.logger.error(
+        `QPay merchant creation failed, aborting registration: ${error.message}`,
+        error.stack,
+      );
+      // Re-throw the error so user sees QPay validation error
+      throw error;
+    }
+
+    // Create tenant AFTER successful QPay merchant creation
     const tenant = this.tenantRepository.create({
-      name: registerDto.company_name,
-      company_name: registerDto.company_name,
+      name: companyName,
+      company_name: companyName,
       subscription_tier: SubscriptionTier.FREE,
       subscription_status: SubscriptionStatus.ACTIVE,
+      qpay_merchant_id: merchantResponse.merchant_id, // Set immediately
     });
     const savedTenant = await this.tenantRepository.save(tenant);
 
