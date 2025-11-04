@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { QPayAuthService } from './services/qpay-auth.service';
 import { QPayMerchantService } from './services/qpay-merchant.service';
+import { QPayInvoiceService } from './services/qpay-invoice.service';
 import { LoggerModule } from '../../common/logger/logger.module';
 
 /**
@@ -19,7 +20,7 @@ import { LoggerModule } from '../../common/logger/logger.module';
  */
 @Module({
   imports: [ConfigModule, CacheModule.register(), LoggerModule],
-  providers: [QPayAuthService, QPayMerchantService],
-  exports: [QPayAuthService, QPayMerchantService],
+  providers: [QPayAuthService, QPayMerchantService, QPayInvoiceService],
+  exports: [QPayAuthService, QPayMerchantService, QPayInvoiceService],
 })
 export class QPayIntegrationModule {}

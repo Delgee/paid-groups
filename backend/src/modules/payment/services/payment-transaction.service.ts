@@ -11,6 +11,9 @@ import { CreatePaymentTransactionDto } from '../dto/create-payment-transaction.d
 import { UpdatePaymentTransactionDto } from '../dto/update-payment-transaction.dto';
 import { MembershipPlanService } from '../../membership-plan/services/membership-plan.service';
 import { MetricsService } from '../../../common/metrics/metrics.service';
+import { QPayInvoiceService } from '../../../integrations/qpay/services/qpay-invoice.service';
+import { TenantService } from '../../tenant/services/tenant.service';
+import { ProjectService } from '../../project/services/project.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -22,6 +25,9 @@ export class PaymentTransactionService {
     private readonly paymentTransactionRepository: Repository<PaymentTransaction>,
     private readonly membershipPlanService: MembershipPlanService,
     private readonly metricsService: MetricsService,
+    private readonly qpayInvoiceService: QPayInvoiceService,
+    private readonly tenantService: TenantService,
+    private readonly projectService: ProjectService,
   ) {}
 
   async create(
@@ -63,33 +69,119 @@ export class PaymentTransactionService {
   async initiatePayment(
     tenantId: string,
     createDto: CreatePaymentTransactionDto,
-  ): Promise<{ transaction: PaymentTransaction; payment_link: string }> {
+  ): Promise<{
+    transaction: PaymentTransaction;
+    payment_link: string;
+    qr_image?: string;
+    payment_urls?: Array<{ name: string; link: string; logo: string; description: string }>;
+  }> {
     const correlationId = uuidv4();
     this.logger.log(`Initiating payment with correlation ID: ${correlationId}`);
 
     // Create payment transaction
     const transaction = await this.create(tenantId, createDto);
 
-    // Generate QPay invoice
-    // TODO: Integrate with QPay API
-    const qpayInvoiceId = `INV_${Date.now()}_${transaction.id.slice(0, 8)}`;
-    const paymentLink = `https://payment.qpay.mn/invoice/${qpayInvoiceId}`;
+    try {
+      // Get tenant details for QPay merchant ID
+      const tenant = await this.tenantService.findById(tenantId);
 
-    // Update transaction with QPay details
-    transaction.qpay_invoice_id = qpayInvoiceId;
-    transaction.payment_link = paymentLink;
+      if (!tenant.qpay_merchant_id) {
+        throw new UnprocessableEntityException({
+          error: {
+            code: 'MERCHANT_NOT_CONFIGURED',
+            message: 'Payment gateway not configured. Please contact support.',
+            details: {
+              correlationId,
+              transactionId: transaction.id,
+            },
+          },
+        });
+      }
 
-    const updated = await this.paymentTransactionRepository.save(transaction);
+      // Get project details for bank account information
+      const project = await this.projectService.findOne(
+        tenantId,
+        createDto.project_id,
+      );
 
-    this.logger.log(`Payment link generated: ${paymentLink}`, {
-      correlationId,
-      transactionId: transaction.id,
-    });
+      if (!project.account_bank_code || !project.account_number || !project.account_name) {
+        throw new UnprocessableEntityException({
+          error: {
+            code: 'BANK_ACCOUNT_NOT_CONFIGURED',
+            message: 'Bank account not configured for this project. Please contact support.',
+            details: {
+              correlationId,
+              transactionId: transaction.id,
+            },
+          },
+        });
+      }
 
-    return {
-      transaction: updated,
-      payment_link: paymentLink,
-    };
+      // Create QPay invoice
+      const invoiceResponse = await this.qpayInvoiceService.createInvoice({
+        merchantId: tenant.qpay_merchant_id,
+        amount: transaction.amount,
+        description: `${transaction.snapshot_plan_name} - ${transaction.telegram_first_name || 'User'}`,
+        customerName: transaction.telegram_username || transaction.telegram_first_name,
+        bankAccount: {
+          accountBankCode: project.account_bank_code,
+          accountNumber: project.account_number,
+          accountName: project.account_name,
+        },
+        transactionId: transaction.id,
+      });
+
+      // Extract payment link from QPay response
+      const qpayPaymentLink = invoiceResponse.urls.find(
+        (url) => url.name === 'qpay',
+      )?.link;
+
+      if (!qpayPaymentLink) {
+        throw new UnprocessableEntityException({
+          error: {
+            code: 'PAYMENT_LINK_NOT_GENERATED',
+            message: 'Failed to generate payment link. Please try again.',
+            details: {
+              correlationId,
+              transactionId: transaction.id,
+            },
+          },
+        });
+      }
+
+      // Update transaction with QPay details
+      transaction.qpay_invoice_id = invoiceResponse.invoice_id;
+      transaction.payment_link = qpayPaymentLink;
+
+      const updated = await this.paymentTransactionRepository.save(transaction);
+
+      this.logger.log(`QPay invoice created successfully`, {
+        correlationId,
+        transactionId: transaction.id,
+        invoiceId: invoiceResponse.invoice_id,
+        paymentLink: qpayPaymentLink,
+      });
+
+      return {
+        transaction: updated,
+        payment_link: qpayPaymentLink,
+        qr_image: invoiceResponse.qr_image, // Base64 encoded QR code image
+        payment_urls: invoiceResponse.urls, // Array of mobile app deeplinks
+      };
+    } catch (error) {
+      // Mark transaction as failed
+      transaction.status = PaymentStatus.FAILED;
+      await this.paymentTransactionRepository.save(transaction);
+
+      this.logger.error('Failed to create QPay invoice', '', {
+        correlationId,
+        transactionId: transaction.id,
+        error: error.message,
+      });
+
+      // Re-throw the error to be handled by the caller
+      throw error;
+    }
   }
 
   async findOne(tenantId: string, id: string): Promise<PaymentTransaction> {

@@ -405,9 +405,22 @@ export function TelegramGroupForm({
                       />
                     </FormControl>
                     <FormMessage data-testid="telegram-chat-id-error" />
-                    <p className="text-sm text-muted-foreground">
-                      The numeric ID of your Telegram group/channel (must start with -)
-                    </p>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        The numeric ID of your Telegram group/channel (must start with -)
+                      </p>
+                      <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-900">
+                        <p className="font-medium mb-1">How to get your channel's Chat ID:</p>
+                        <ol className="list-decimal ml-4 space-y-1">
+                          <li>Forward any message from your channel to your bot</li>
+                          <li>The bot will respond with the Chat ID of that channel</li>
+                          <li>Copy the Chat ID (e.g., -1001234567890) and paste it here</li>
+                        </ol>
+                        <p className="mt-2 text-xs text-blue-700">
+                          Note: Make sure your bot is added as an admin to the channel first
+                        </p>
+                      </div>
+                    </div>
                   </FormItem>
                 )}
               />

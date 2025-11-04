@@ -323,17 +323,68 @@ export class ProjectBotHandler implements OnModuleInit {
         `Payment initiated for user ${telegramUserId}, transaction ${result.transaction.id}, project ${project.id}`,
       );
 
-      // Send payment link to user
+      // Send QR code image if available
+      if (result.qr_image) {
+        try {
+          // Convert base64 to buffer
+          const qrBuffer = Buffer.from(result.qr_image, 'base64');
+
+          await ctx.replyWithPhoto(
+            { source: qrBuffer },
+            {
+              caption:
+                `💳 *${plan.name}-ийн төлбөр*\n\n` +
+                `Үнэ: ${plan.price.toLocaleString()} MNT\n` +
+                `Хугацаа: ${plan.duration_days} хоног${groupText}\n\n` +
+                `📱 QR кодыг уншуулж эсвэл доорх товчоор төлбөр төлнө үү:`,
+              parse_mode: 'Markdown',
+            },
+          );
+        } catch (qrError) {
+          this.logger.error('Failed to send QR code image', qrError.stack);
+        }
+      }
+
+      // Build payment buttons from URLs
+      const paymentButtons = [];
+
+      if (result.payment_urls && result.payment_urls.length > 0) {
+        // Add top 6 most popular payment apps as buttons
+        const popularApps = [
+          'qPay wallet',
+          'Khan bank',
+          'Social Pay',
+          'Most money',
+          'Xac bank',
+          'Trade and Development bank'
+        ];
+
+        for (const appName of popularApps) {
+          const app = result.payment_urls.find(url => url.name === appName);
+          if (app) {
+            paymentButtons.push([
+              Markup.button.url(
+                `${app.description || app.name}`,
+                app.link
+              )
+            ]);
+          }
+        }
+      }
+
+      // Add web payment link as fallback
+      paymentButtons.push([
+        Markup.button.url('🌐 Веб хуудсаар төлөх', result.payment_link)
+      ]);
+
+      // Send payment options message
       await ctx.reply(
-        `💳 *${plan.name}-ийн төлбөр*\n\n` +
-          `Үнэ: ${plan.price.toLocaleString()} MNT\n` +
-          `Хугацаа: ${plan.duration_days} хоног${groupText}\n\n` +
-          `Төлбөрөө төлөхийн тулд доорх товчийг дарна уу:`,
+        `🏦 *Төлбөрийн хэрэгсэл сонгох:*\n\n` +
+          `Та доорх аппуудаас аль нэгийг сонгон төлбөрөө төлнө үү:\n\n` +
+          `⏱ Төлбөрийн хугацаа: 30 минут`,
         {
           parse_mode: 'Markdown',
-          ...Markup.inlineKeyboard([
-            [Markup.button.url('💰 Төлбөр төлөх', result.payment_link)],
-          ]),
+          ...Markup.inlineKeyboard(paymentButtons),
         },
       );
     } catch (error) {
