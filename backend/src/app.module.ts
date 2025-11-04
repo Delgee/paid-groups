@@ -27,6 +27,7 @@ import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { TelegramIntegrationModule } from './integrations/telegram/telegram-integration.module';
+import { QPayIntegrationModule } from './integrations/qpay/qpay-integration.module';
 import { GlobalBotWebhookService } from './common/services/global-bot-webhook.service';
 
 @Module({
@@ -90,6 +91,7 @@ import { GlobalBotWebhookService } from './common/services/global-bot-webhook.se
     OnboardingBotModule,
     ChannelIdBotModule,
     TelegramIntegrationModule,
+    QPayIntegrationModule,
   ],
   controllers: [AppController],
   providers: [
