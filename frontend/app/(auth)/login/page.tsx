@@ -12,8 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Зөв имэйл хаяг оруулна уу'),
+  password: z.string().min(6, 'Нууц үг дор хаяж 6 тэмдэгттэй байх ёстой'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -39,7 +39,7 @@ export default function LoginPage() {
       // If login succeeds, navigate manually since we're bypassing the auth provider
       window.location.href = '/dashboard';
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unable to connect to server. Please try again.';
+      const errorMessage = err instanceof Error ? err.message : 'Серверт холбогдож чадсангүй. Дахин оролдоно уу.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -49,9 +49,9 @@ export default function LoginPage() {
   return (
     <Card className="w-full">
       <CardHeader className="text-center">
-        <CardTitle>Sign in to your account</CardTitle>
+        <CardTitle>Нэвтрэх</CardTitle>
         <CardDescription>
-          Enter your email and password to access your dashboard
+          Хяналтын самбарт нэвтрэхийн тулд имэйл болон нууц үгээ оруулна уу
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -63,7 +63,7 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
+            <Label htmlFor="email">Имэйл хаяг</Label>
             <Input
               id="email"
               type="email"
@@ -79,7 +79,7 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Нууц үг</Label>
             <Input
               id="password"
               type="password"
@@ -103,21 +103,21 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Signing in...
+                Нэвтэрч байна...
               </>
             ) : (
-              'Sign in'
+              'Нэвтрэх'
             )}
           </Button>
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Don&apos;t have an account?{' '}
-              <Link 
-                href="/register" 
+              Бүртгэлгүй юу?{' '}
+              <Link
+                href="/register"
                 className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
               >
-                Sign up here
+                Бүртгүүлэх
               </Link>
             </p>
           </div>

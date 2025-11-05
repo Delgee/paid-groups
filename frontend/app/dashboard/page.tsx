@@ -77,7 +77,7 @@ export default function DashboardPage() {
 
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
-        setError('Failed to load dashboard data');
+        setError('Хяналтын самбарын өгөгдлийг ачаалж чадсангүй');
       } finally {
         setIsLoading(false);
       }
@@ -108,7 +108,7 @@ export default function DashboardPage() {
           {error}
         </div>
         <Button onClick={() => window.location.reload()}>
-          Try Again
+          Дахин оролдох
         </Button>
       </div>
     );
@@ -116,38 +116,38 @@ export default function DashboardPage() {
 
   const statCards = [
     {
-      title: 'Total Projects',
+      title: 'Нийт төсөл',
       value: stats.totalProjects,
-      description: 'Active projects',
+      description: 'Идэвхитэй төслүүд',
       icon: Bot,
-      trend: '+2 from last month',
+      trend: 'Өмнөх сараас +2',
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      title: 'Connected Groups',
+      title: 'Холбогдсон группүүд',
       value: stats.totalGroups,
-      description: 'Telegram groups managed',
+      description: 'Удирдаж буй группүүд',
       icon: Users,
-      trend: '+5 from last month',
+      trend: 'Өмнөх сараас +5',
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
     {
-      title: 'Total Members',
+      title: 'Нийт гишүүд',
       value: stats.totalMembers,
-      description: 'Across all groups',
+      description: 'Бүх группүүдийн',
       icon: TrendingUp,
-      trend: '+12% from last month',
+      trend: 'Өмнөх сараас +12%',
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
     },
     {
-      title: 'Active Memberships',
+      title: 'Идэвхитэй гишүүнчлэл',
       value: stats.activeMemberships,
-      description: 'Paid memberships',
+      description: 'Төлбөртэй гишүүнчлэл',
       icon: CreditCard,
-      trend: '+8% from last month',
+      trend: 'Өмнөх сараас +8%',
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
     },
@@ -158,10 +158,10 @@ export default function DashboardPage() {
       {/* Welcome Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
-          Welcome back, {user?.name}!
+          Сайн байна уу, {user?.name}!
         </h1>
         <p className="mt-2 text-lg text-gray-600">
-          Here&apos;s what&apos;s happening with your Telegram groups today.
+          Өнөөдрийн Telegram группүүдийн үйл ажиллагаа
         </p>
       </div>
 
@@ -197,28 +197,28 @@ export default function DashboardPage() {
         {/* Quick Actions Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>Түргэн үйлдэл</CardTitle>
             <CardDescription>
-              Get started with common tasks
+              Түгээмэл үйлдлүүдийг хийх
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button asChild className="w-full">
               <Link href="/dashboard/projects/create">
                 <Bot className="mr-2 h-4 w-4" />
-                Create New Project
+                Шинэ төсөл үүсгэх
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
               <Link href="/dashboard/members">
                 <Users className="mr-2 h-4 w-4" />
-                View Members
+                Гишүүдийг харах
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
               <Link href="/dashboard/plans">
                 <CreditCard className="mr-2 h-4 w-4" />
-                Manage Plans
+                Багцууд удирдах
               </Link>
             </Button>
           </CardContent>
@@ -227,24 +227,24 @@ export default function DashboardPage() {
         {/* Recent Projects */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Projects</CardTitle>
+            <CardTitle>Сүүлийн төслүүд</CardTitle>
             <CardDescription>
-              Your recently created projects
+              Таны сүүлд үүсгэсэн төслүүд
             </CardDescription>
           </CardHeader>
           <CardContent>
             {projects.length === 0 ? (
               <div className="text-center py-6">
                 <Bot className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No projects yet</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Төсөл байхгүй байна</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Get started by creating your first project.
+                  Эхний төслөө үүсгээд эхлээрэй.
                 </p>
                 <div className="mt-6">
                   <Button asChild>
                     <Link href="/dashboard/projects/create">
                       <Bot className="mr-2 h-4 w-4" />
-                      Create Project
+                      Төсөл үүсгэх
                     </Link>
                   </Button>
                 </div>
@@ -267,11 +267,11 @@ export default function DashboardPage() {
                           ? 'bg-green-100 text-green-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {project.is_active ? 'Active' : 'Inactive'}
+                        {project.is_active ? 'Идэвхитэй' : 'Идэвхгүй'}
                       </span>
                       <Button asChild variant="ghost" size="sm">
                         <Link href={`/dashboard/projects/${project.id}`}>
-                          View
+                          Харах
                         </Link>
                       </Button>
                     </div>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                   <div className="pt-2">
                     <Button asChild variant="outline" size="sm" className="w-full">
                       <Link href="/dashboard/projects">
-                        View all projects ({projects.length})
+                        Бүх төслүүдийг харах ({projects.length})
                       </Link>
                     </Button>
                   </div>
@@ -294,7 +294,7 @@ export default function DashboardPage() {
 
       {/* Payment Statistics */}
       <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Analytics</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Төлбөрийн тайлан</h2>
         <PaymentStatsCard
           stats={{
             totalRevenue: stats.activeMemberships * 35000, // Mock calculation

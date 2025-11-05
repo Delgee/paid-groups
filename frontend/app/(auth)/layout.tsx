@@ -25,10 +25,10 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">
-            Telegram Groups SaaS
+            Telegram Групп Удирдлага
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Manage your paid Telegram groups with ease
+            Төлбөртэй Telegram группүүдээ хялбараар удирдаарай
           </p>
         </div>
         {/* Show loading overlay if loading, otherwise show children */}
@@ -38,7 +38,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           </div>
         ) : isAuthenticated ? (
           <div className="flex items-center justify-center py-12">
-            <p className="text-sm text-gray-600">Redirecting...</p>
+            <p className="text-sm text-gray-600">Шилжүүлж байна...</p>
           </div>
         ) : (
           children
