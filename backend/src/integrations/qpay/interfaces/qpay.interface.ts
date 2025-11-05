@@ -43,7 +43,9 @@ export interface QPayInvoiceUrl {
 }
 
 export interface QPayInvoiceResponse {
-  invoice_id: string;
+  id: string;
+  invoice_status: 'OPEN' | 'CLOSED',
+  invoice_status_date: string;
   qr_code: string;
   qr_image: string;
 }
@@ -66,12 +68,9 @@ export interface QPayPaymentCheckRequest {
 }
 
 export interface QPayPaymentCheckResponse {
-  invoice_id: string;
-  payment_status: 'PAID' | 'UNPAID';
-  payment_amount?: number;
-  payment_currency?: string;
-  payment_date?: string;
-  transaction_id?: string;
+  id: string;
+  invoice_status: "OPEN" | "CLOSED";
+  invoice_status_date: string;
 }
 
 export interface QPayWebhookPayload {

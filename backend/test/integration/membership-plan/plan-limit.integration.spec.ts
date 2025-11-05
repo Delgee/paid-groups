@@ -85,6 +85,7 @@ describe('Membership Plan Limit Integration', () => {
           description: `Test plan ${i}`,
           price: 10000 * i,
           duration_days: 30,
+          telegram_group_ids: [groupId],
         });
         plans.push(plan);
         expect(plan.id).toBeDefined();
@@ -104,6 +105,7 @@ describe('Membership Plan Limit Integration', () => {
           description: `Test plan ${i}`,
           price: 10000,
           duration_days: 30,
+          telegram_group_ids: [groupId],
         });
       }
 
@@ -115,6 +117,7 @@ describe('Membership Plan Limit Integration', () => {
           description: 'This should fail',
           price: 10000,
           duration_days: 30,
+          telegram_group_ids: [groupId],
         })
       ).rejects.toThrow(ConflictException);
     });
@@ -131,6 +134,7 @@ describe('Membership Plan Limit Integration', () => {
           description: `Test plan ${i}`,
           price: 10000,
           duration_days: 30,
+          telegram_group_ids: [groupId],
         });
         plans.push(plan);
       }
@@ -145,6 +149,7 @@ describe('Membership Plan Limit Integration', () => {
         description: 'Should work now',
         price: 15000,
         duration_days: 60,
+        telegram_group_ids: [groupId],
       });
 
       expect(newPlan.id).toBeDefined();
@@ -162,6 +167,7 @@ describe('Membership Plan Limit Integration', () => {
         description: 'Original pricing',
         price: 10000,
         duration_days: 30,
+        telegram_group_ids: [groupId],
       });
 
       // Simulate existing member purchase (create payment transaction with snapshot)
@@ -189,7 +195,7 @@ describe('Membership Plan Limit Integration', () => {
         price: 15000, // Increased price
       });
 
-      expect(updatedPlan.price_mnt).toBe(15000);
+      expect(updatedPlan.price).toBe(15000);
 
       // Verify existing member payment still has original price
       const [payment] = await dataSource.query(

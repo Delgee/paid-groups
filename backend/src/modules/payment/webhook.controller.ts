@@ -128,11 +128,11 @@ export class WebhookController {
     this.logger.log(`QPay payment status received`, {
       transactionId: transaction.id,
       invoiceId: transaction.qpay_invoice_id,
-      paymentStatus: paymentStatus.payment_status,
+      paymentStatus: paymentStatus.invoice_status,
     });
 
     // Process payment if PAID
-    if (paymentStatus.payment_status === 'PAID') {
+    if (paymentStatus.invoice_status === 'CLOSED') {
       await this.handlePaymentCompleted(transaction, paymentStatus);
       this.logger.log(`Successfully processed payment for transaction ${transaction.id}`);
       return { success: true, message: 'Payment processed successfully' };
@@ -140,13 +140,13 @@ export class WebhookController {
 
     // Payment not yet completed
     this.logger.log(`Payment not yet completed for transaction ${transaction.id}`, {
-      paymentStatus: paymentStatus.payment_status,
+      paymentStatus: paymentStatus.invoice_status,
     });
 
     return {
       success: true,
       message: 'Payment not yet completed',
-      status: paymentStatus.payment_status,
+      status: paymentStatus.invoice_status,
     };
   }
 

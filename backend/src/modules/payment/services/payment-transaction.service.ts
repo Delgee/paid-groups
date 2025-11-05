@@ -138,7 +138,7 @@ export class PaymentTransactionService {
         const qpayPaymentLink = `${QPAY_PAYMENT_URL}${invoiceResponse.qr_code}`;
 
       // Update transaction with QPay details
-      transaction.qpay_invoice_id = invoiceResponse.invoice_id;
+      transaction.qpay_invoice_id = invoiceResponse.id;
       transaction.payment_link = qpayPaymentLink;
 
       const updated = await this.paymentTransactionRepository.save(transaction);
@@ -146,7 +146,7 @@ export class PaymentTransactionService {
       this.logger.log(`QPay invoice created successfully`, {
         correlationId,
         transactionId: transaction.id,
-        invoiceId: invoiceResponse.invoice_id,
+        invoiceId: invoiceResponse.id,
         paymentLink: qpayPaymentLink,
       });
 

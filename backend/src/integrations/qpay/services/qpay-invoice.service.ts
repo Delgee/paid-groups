@@ -117,7 +117,7 @@ export class QPayInvoiceService {
 
       this.logger.info('QPay invoice created successfully', {
         correlationId,
-        invoiceId: response.data.invoice_id,
+        invoiceId: response.data.id,
         duration,
       });
 
@@ -287,7 +287,7 @@ export class QPayInvoiceService {
 
       this.logger.info('QPay payment status checked', {
         invoiceId,
-        paymentStatus: response.data.payment_status,
+        invoiceStatus: response.data.invoice_status,
         duration,
       });
 

@@ -132,6 +132,16 @@ export class ProjectBotHandler implements OnModuleInit {
         },
       );
 
+      // Register demo payment handler (development only)
+      this.telegramBotHandler.registerCallbackQueryHandler(
+        project.id,
+        /^demo_pay:/,
+        async (ctx, _config, data) => {
+          const transactionId = data.replace('demo_pay:', '');
+          await this.handleDemoPayment(ctx, project, transactionId);
+        },
+      );
+
       // Create and launch bot instance
       await this.telegramBotHandler.createBotInstance(config);
 
@@ -326,7 +336,20 @@ export class ProjectBotHandler implements OnModuleInit {
         `Payment initiated for user ${telegramUserId}, transaction ${result.transaction.id}, project ${project.id}`,
       );
 
-      // Send QR code image with payment button
+      // Build payment buttons
+      const paymentButtons: Array<Array<ReturnType<typeof Markup.button.url> | ReturnType<typeof Markup.button.callback>>> = [
+        [Markup.button.url('💳 Төлбөр төлөх', result.payment_link)]
+      ];
+
+      // Add demo payment button in development mode
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      if (isDevelopment) {
+        paymentButtons.push([
+          Markup.button.callback('🧪 Demo Payment (Dev Only)', `demo_pay:${result.transaction.id}`)
+        ]);
+      }
+
+      // Send QR code image with payment buttons
       if (result.qr_image) {
         try {
           // Convert base64 to buffer
@@ -339,25 +362,23 @@ export class ProjectBotHandler implements OnModuleInit {
                 `💳 *${plan.name}-ийн төлбөр*\n\n` +
                 `Үнэ: ${priceInt.toLocaleString()} MNT\n` +
                 `Хугацаа: ${plan.duration_days} хоног${groupText}\n\n` +
-                `📱 QR кодыг уншуулж эсвэл доорх товчоор төлбөр төлнө үү:\n`,
+                `📱 QR кодыг уншуулж эсвэл доорх товчоор төлбөр төлнө үү:` +
+                (isDevelopment ? `\n\n⚠️ *Хөгжүүлэлтийн горим:* Demo payment товч идэвхтэй` : ''),
               parse_mode: 'Markdown',
-              ...Markup.inlineKeyboard([
-                [Markup.button.url('💳 Банкны апп аар төлөх', result.payment_link)]
-              ]),
+              ...Markup.inlineKeyboard(paymentButtons),
             },
           );
         } catch (qrError) {
           this.logger.error('Failed to send QR code image', qrError.stack);
           // Fallback: send payment link as text
           await ctx.reply(
-            `💳 *Банкны апп аар төлөх*\n\n` +
+            `💳 *Төлбөр төлөх*\n\n` +
               `Үнэ: ${priceInt.toLocaleString()} MNT\n` +
-              `Хугацаа: ${plan.duration_days} хоног${groupText}\n`,
+              `Хугацаа: ${plan.duration_days} хоног${groupText}` +
+              (isDevelopment ? `\n\n⚠️ *Хөгжүүлэлтийн горим:* Demo payment товч идэвхтэй` : ''),
             {
               parse_mode: 'Markdown',
-              ...Markup.inlineKeyboard([
-                [Markup.button.url('💳 Банкны апп аар төлөх', result.payment_link)]
-              ]),
+              ...Markup.inlineKeyboard(paymentButtons),
             },
           );
         }
@@ -367,12 +388,11 @@ export class ProjectBotHandler implements OnModuleInit {
           `💳 *${plan.name}-ийн төлбөр*\n\n` +
             `Үнэ: ${priceInt.toLocaleString()} MNT\n` +
             `Хугацаа: ${plan.duration_days} хоног${groupText}\n\n` +
-            `📱 QR кодыг уншуулж эсвэл доорх товчоор төлбөр төлнө үү:\n`,
+            `📱 Доорх товчоор төлбөр төлнө үү:` +
+            (isDevelopment ? `\n\n⚠️ *Хөгжүүлэлтийн горим:* Demo payment товч идэвхтэй` : ''),
           {
             parse_mode: 'Markdown',
-            ...Markup.inlineKeyboard([
-              [Markup.button.url('💳 Төлбөр төлөх', result.payment_link)]
-            ]),
+            ...Markup.inlineKeyboard(paymentButtons),
           },
         );
       }
@@ -380,6 +400,81 @@ export class ProjectBotHandler implements OnModuleInit {
       this.logger.error('Error initiating payment', error.stack);
       await ctx.reply(
         '❌ Төлбөр эхлүүлэхэд алдаа гарлаа. Дахин оролдох эсвэл тусламжид хандана уу.',
+      );
+    }
+  }
+
+  /**
+   * Handle demo payment simulation (development only)
+   * Simulates successful payment completion without actual payment
+   */
+  async handleDemoPayment(ctx: Context, project: Project, transactionId: string) {
+    try {
+      // Only allow in development mode
+      if (process.env.NODE_ENV !== 'development') {
+        await ctx.answerCbQuery('Demo payment is only available in development mode');
+        return;
+      }
+
+      await ctx.answerCbQuery('⏳ Processing demo payment...');
+
+      this.logger.log(`Demo payment triggered for transaction ${transactionId}`);
+
+      // Find the payment transaction
+      const transaction = await this.paymentTransactionService.findOne(
+        project.tenant_id,
+        transactionId,
+      );
+
+      if (!transaction) {
+        await ctx.reply('❌ Төлбөрийн гүйлгээ олдсонгүй.');
+        return;
+      }
+
+      // Check if already completed
+      if (transaction.status === 'completed') {
+        await ctx.reply('✅ Энэ төлбөр аль хэдийн төлөгдсөн байна.');
+        return;
+      }
+
+      // Mark transaction as completed
+      await this.paymentTransactionService.markAsCompleted(
+        project.tenant_id,
+        transactionId,
+        {
+          qpay_transaction_id: 'DEMO_' + Date.now(),
+          qpay_payment_method: 'demo',
+        },
+      );
+
+      this.logger.log(`Demo payment completed for transaction ${transactionId}`);
+
+      // Queue membership activation job
+      await this.membershipQueue.add('activate-membership', {
+        tenant_id: transaction.tenant_id,
+        project_id: transaction.project_id,
+        membership_plan_id: transaction.membership_plan_id,
+        telegram_user_id: transaction.telegram_user_id,
+        telegram_username: transaction.telegram_username,
+        telegram_first_name: transaction.telegram_first_name,
+        telegram_last_name: transaction.telegram_last_name,
+        transaction_id: transaction.id,
+        payment_amount: transaction.amount,
+        duration_days: transaction.snapshot_duration_days,
+      });
+
+      this.logger.log(`Membership activation job queued for transaction ${transactionId}`);
+
+      await ctx.reply(
+        `✅ *Demo төлбөр амжилттай!*\n\n` +
+          `🧪 Энэ бол тест төлбөр байна.\n` +
+          `Таны гишүүнчлэл удахгүй идэвхжинэ.`,
+        { parse_mode: 'Markdown' },
+      );
+    } catch (error) {
+      this.logger.error('Error processing demo payment', error.stack);
+      await ctx.reply(
+        '❌ Demo төлбөр хийхэд алдаа гарлаа.',
       );
     }
   }
