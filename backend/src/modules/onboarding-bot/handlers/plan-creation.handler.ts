@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OnboardingSessionService } from '../onboarding-session.service';
 import { TelegramUserAccountService } from '../telegram-user-account.service';
 import { SessionStep } from '../interfaces/onboarding-session.interface';
@@ -9,6 +9,8 @@ import { MembershipPlanService } from '../../membership-plan/services/membership
 
 @Injectable()
 export class PlanCreationHandler {
+  private readonly logger = new Logger(PlanCreationHandler.name);
+
   constructor(
     private readonly sessionService: OnboardingSessionService,
     private readonly telegramUserAccountService: TelegramUserAccountService,
@@ -280,6 +282,20 @@ Enter the price:`,
             telegram_group_ids: updatedSession.data.selected_groups!,
             is_active: true,
           });
+
+          // Ensure webhook is properly configured for the project
+          try {
+            await this.projectService.ensureWebhookConfigured(
+              account.user.tenant_id,
+              updatedSession.data.selected_project_id!,
+            );
+          } catch (webhookError) {
+            // Log but don't fail plan creation if webhook setup fails
+            // User can manually refresh webhook later if needed
+            this.logger.warn(
+              `Failed to ensure webhook configured for project ${updatedSession.data.selected_project_id}: ${webhookError.message}`,
+            );
+          }
 
           // Clear session
           await this.sessionService.clearSession(telegramUserId);
