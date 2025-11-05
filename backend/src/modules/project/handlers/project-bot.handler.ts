@@ -303,6 +303,9 @@ export class ProjectBotHandler implements OnModuleInit {
           : '';
 
       // Create payment transaction with project_id
+      // Convert decimal price to integer (TypeORM returns decimal as string)
+      const priceInt = Math.round(Number(plan.price));
+
       const result = await this.paymentTransactionService.initiatePayment(
         project.tenant_id,
         {
@@ -312,9 +315,9 @@ export class ProjectBotHandler implements OnModuleInit {
           telegram_username: ctx.from.username,
           telegram_first_name: ctx.from.first_name,
           telegram_last_name: ctx.from.last_name,
-          amount: plan.price,
+          amount: priceInt,
           snapshot_plan_name: plan.name,
-          snapshot_price: plan.price,
+          snapshot_price: priceInt,
           snapshot_duration_days: plan.duration_days,
         },
       );
@@ -323,7 +326,7 @@ export class ProjectBotHandler implements OnModuleInit {
         `Payment initiated for user ${telegramUserId}, transaction ${result.transaction.id}, project ${project.id}`,
       );
 
-      // Send QR code image if available
+      // Send QR code image with payment button
       if (result.qr_image) {
         try {
           // Convert base64 to buffer
@@ -334,59 +337,45 @@ export class ProjectBotHandler implements OnModuleInit {
             {
               caption:
                 `💳 *${plan.name}-ийн төлбөр*\n\n` +
-                `Үнэ: ${plan.price.toLocaleString()} MNT\n` +
+                `Үнэ: ${priceInt.toLocaleString()} MNT\n` +
                 `Хугацаа: ${plan.duration_days} хоног${groupText}\n\n` +
-                `📱 QR кодыг уншуулж эсвэл доорх товчоор төлбөр төлнө үү:`,
+                `📱 QR кодыг уншуулж эсвэл доорх товчоор төлбөр төлнө үү:\n`,
               parse_mode: 'Markdown',
+              ...Markup.inlineKeyboard([
+                [Markup.button.url('💳 Банкны апп аар төлөх', result.payment_link)]
+              ]),
             },
           );
         } catch (qrError) {
           this.logger.error('Failed to send QR code image', qrError.stack);
+          // Fallback: send payment link as text
+          await ctx.reply(
+            `💳 *Банкны апп аар төлөх*\n\n` +
+              `Үнэ: ${priceInt.toLocaleString()} MNT\n` +
+              `Хугацаа: ${plan.duration_days} хоног${groupText}\n`,
+            {
+              parse_mode: 'Markdown',
+              ...Markup.inlineKeyboard([
+                [Markup.button.url('💳 Банкны апп аар төлөх', result.payment_link)]
+              ]),
+            },
+          );
         }
+      } else {
+        // No QR image, send payment link only
+        await ctx.reply(
+          `💳 *${plan.name}-ийн төлбөр*\n\n` +
+            `Үнэ: ${priceInt.toLocaleString()} MNT\n` +
+            `Хугацаа: ${plan.duration_days} хоног${groupText}\n\n` +
+            `📱 QR кодыг уншуулж эсвэл доорх товчоор төлбөр төлнө үү:\n`,
+          {
+            parse_mode: 'Markdown',
+            ...Markup.inlineKeyboard([
+              [Markup.button.url('💳 Төлбөр төлөх', result.payment_link)]
+            ]),
+          },
+        );
       }
-
-      // Build payment buttons from URLs
-      const paymentButtons = [];
-
-      if (result.payment_urls && result.payment_urls.length > 0) {
-        // Add top 6 most popular payment apps as buttons
-        const popularApps = [
-          'qPay wallet',
-          'Khan bank',
-          'Social Pay',
-          'Most money',
-          'Xac bank',
-          'Trade and Development bank'
-        ];
-
-        for (const appName of popularApps) {
-          const app = result.payment_urls.find(url => url.name === appName);
-          if (app) {
-            paymentButtons.push([
-              Markup.button.url(
-                `${app.description || app.name}`,
-                app.link
-              )
-            ]);
-          }
-        }
-      }
-
-      // Add web payment link as fallback
-      paymentButtons.push([
-        Markup.button.url('🌐 Веб хуудсаар төлөх', result.payment_link)
-      ]);
-
-      // Send payment options message
-      await ctx.reply(
-        `🏦 *Төлбөрийн хэрэгсэл сонгох:*\n\n` +
-          `Та доорх аппуудаас аль нэгийг сонгон төлбөрөө төлнө үү:\n\n` +
-          `⏱ Төлбөрийн хугацаа: 30 минут`,
-        {
-          parse_mode: 'Markdown',
-          ...Markup.inlineKeyboard(paymentButtons),
-        },
-      );
     } catch (error) {
       this.logger.error('Error initiating payment', error.stack);
       await ctx.reply(

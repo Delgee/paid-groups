@@ -44,9 +44,8 @@ export interface QPayInvoiceUrl {
 
 export interface QPayInvoiceResponse {
   invoice_id: string;
-  qr_text: string;
+  qr_code: string;
   qr_image: string;
-  urls: QPayInvoiceUrl[];
 }
 
 export interface QPayInvoiceDetails {

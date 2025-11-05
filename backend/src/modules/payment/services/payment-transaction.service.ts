@@ -16,6 +16,8 @@ import { TenantService } from '../../tenant/services/tenant.service';
 import { ProjectService } from '../../project/services/project.service';
 import { v4 as uuidv4 } from 'uuid';
 
+const QPAY_PAYMENT_URL = 'https://qpay.mn/q?q=';
+
 @Injectable()
 export class PaymentTransactionService {
   private readonly logger = new Logger(PaymentTransactionService.name);
@@ -132,22 +134,8 @@ export class PaymentTransactionService {
       });
 
       // Extract payment link from QPay response
-      const qpayPaymentLink = invoiceResponse.urls.find(
-        (url) => url.name === 'qpay',
-      )?.link;
-
-      if (!qpayPaymentLink) {
-        throw new UnprocessableEntityException({
-          error: {
-            code: 'PAYMENT_LINK_NOT_GENERATED',
-            message: 'Failed to generate payment link. Please try again.',
-            details: {
-              correlationId,
-              transactionId: transaction.id,
-            },
-          },
-        });
-      }
+      // Try to find the main QPay payment URL (could be 'qPay wallet', 'qpay', or first URL as fallback)
+        const qpayPaymentLink = `${QPAY_PAYMENT_URL}${invoiceResponse.qr_code}`;
 
       // Update transaction with QPay details
       transaction.qpay_invoice_id = invoiceResponse.invoice_id;
@@ -166,7 +154,6 @@ export class PaymentTransactionService {
         transaction: updated,
         payment_link: qpayPaymentLink,
         qr_image: invoiceResponse.qr_image, // Base64 encoded QR code image
-        payment_urls: invoiceResponse.urls, // Array of mobile app deeplinks
       };
     } catch (error) {
       // Mark transaction as failed
