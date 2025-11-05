@@ -75,13 +75,13 @@ export class ProjectCreationHandler {
     const navButtons = [];
     if (page > 0) {
       navButtons.push({
-        text: '⬅️ Previous',
+        text: '⬅️ Өмнөх',
         callback_data: `bank:page:${page - 1}`,
       });
     }
     if (page < totalPages - 1) {
       navButtons.push({
-        text: 'Next ➡️',
+        text: 'Дараах ➡️',
         callback_data: `bank:page:${page + 1}`,
       });
     }
@@ -107,9 +107,9 @@ export class ProjectCreationHandler {
 
     if (!account || !account.user) {
       return {
-        text: `⚠️ You need to register first before creating a project.
+        text: `⚠️ Төсөл үүсгэхээс өмнө эхлээд бүртгүүлэх хэрэгтэй.
 
-Please send /start to register your account.`,
+Бүртгэл үүсгэхийн тулд /start команд илгээнэ үү.`,
       };
     }
 
@@ -134,16 +134,16 @@ Please send /start to register your account.`,
     }
 
     return {
-      text: `🚀 <b>Create New Project</b>
+      text: `🚀 <b>Шинэ төсөл үүсгэх</b>
 
-Let's set up your Telegram bot project!
+Telegram ботын төслийг тохируулъя!
 
-<b>Step 1 of 8:</b> What would you like to name your project?
+<b>Алхам 1/8:</b> Төслийн нэрийг юу гэж өгөх вэ?
 
-Examples:
-• "Premium Fitness Channel"
-• "Crypto Trading Signals"
-• "Language Learning Community"`,
+Жишээ нь:
+• "Төлбөртэй фитнесс сувag"
+• "Крипто арилжааны дохио"
+• "Хэл сурах нийгэмлэг"`,
     };
   }
 
@@ -157,7 +157,7 @@ Examples:
 
     if (!session) {
       return {
-        text: 'Session expired. Please send /newproject to start again.',
+        text: 'Хугацаа дууссан байна. Дахин эхлүүлэхийн тулд /newproject команд илгээнэ үү.',
       };
     }
 
@@ -170,13 +170,13 @@ Examples:
       case SessionStep.PROJECT_NAME:
         if (message.length < 3) {
           return {
-            text: '❌ Project name must be at least 3 characters long.\n\nPlease provide a valid project name:',
+            text: '❌ Төслийн нэр дор хаяж 3 үсэгтэй байх ёстой.\n\nЗөв төслийн нэр оруулна уу:',
           };
         }
 
         if (message.length > 100) {
           return {
-            text: '❌ Project name must be less than 100 characters.\n\nPlease provide a shorter name:',
+            text: '❌ Төслийн нэр 100 тэмдэгтээс бага байх ёстой.\n\nБогино нэр оруулна уу:',
           };
         }
 
@@ -189,15 +189,16 @@ Examples:
         );
 
         return {
-          text: `✅ Project name: <b>${message}</b>
+          text: `✅ Төслийн нэр: <b>${message}</b>
 
-<b>Step 2 of 8:</b> Provide a brief description for your project (optional).
+<b>Алхам 2/8:</b> Төслийн товч тайлбар оруулна уу (заавал биш).
 
-You can skip this step by typing "skip".`,
+Энэ алхмыг алгасахын тулд "алгасах" гэж бичнэ үү.`,
         };
 
       case SessionStep.PROJECT_DESCRIPTION:
-        const description = message.toLowerCase() === 'skip' ? '' : message;
+        const lowerMessage = message.toLowerCase();
+        const description = (lowerMessage === 'skip' || lowerMessage === 'алгасах') ? '' : message;
 
         await this.sessionService.advanceStep(
           telegramUserId,
@@ -208,15 +209,15 @@ You can skip this step by typing "skip".`,
         );
 
         return {
-          text: `<b>Step 3 of 8:</b> Enter your Telegram Bot Token
+          text: `<b>Алхам 3/8:</b> Telegram ботын токеноо оруулна уу
 
-To get a bot token:
-1. Open @BotFather in Telegram
-2. Send /newbot
-3. Follow the instructions to create your bot
-4. Copy the bot token (format: 123456789:ABC-DEF...)
+Ботын токен авах:
+1. Telegram дээрх @BotFather-г нээнэ үү
+2. /newbot команд илгээнэ үү
+3. Ботоо үүсгэх заавар дагана уу
+4. Ботын токеныг хуулна уу (формат: 123456789:ABC-DEF...)
 
-Send me the token:`,
+Токеноо илгээнэ үү:`,
         };
 
       case SessionStep.BOT_TOKEN:
