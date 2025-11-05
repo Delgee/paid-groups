@@ -29,16 +29,6 @@ export class CreatePaymentTransactionDto {
   @IsNotEmpty()
   project_id: string;
 
-  // Legacy field for backward compatibility
-  @ApiPropertyOptional({
-    description: 'DEPRECATED: Use project_id instead. Bot configuration ID for backward compatibility.',
-    format: 'uuid',
-    deprecated: true,
-  })
-  @IsUUID()
-  @IsOptional()
-  bot_configuration_id?: string;
-
   @ApiProperty({
     description: "Payer's Telegram user ID",
     example: '123456789',

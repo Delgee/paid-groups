@@ -73,13 +73,22 @@ export class MemberController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all members for tenant' })
-  @ApiResponse({ status: 200, description: 'List of members with total count' })
+  @ApiOperation({ summary: 'List all members for tenant with optional filters' })
+  @ApiResponse({ status: 200, description: 'List of members with total count and relations' })
   async findAll(@Request() req) {
     const members = await this.memberService.findAllByTenant(req.tenant_id);
+
+    // Load memberships with relations for each member
+    const membersWithMemberships = await Promise.all(
+      members.map(async (member) => {
+        const memberWithRelations = await this.memberService.findById(req.tenant_id, member.id);
+        return memberWithRelations;
+      })
+    );
+
     return {
-      members,
-      total: members.length
+      members: membersWithMemberships,
+      total: membersWithMemberships.length
     };
   }
 

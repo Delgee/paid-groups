@@ -49,11 +49,11 @@ function Badge({ children, variant = 'default' }: { children: React.ReactNode; v
 
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
-  const [memberships, setMemberships] = useState<Membership[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [groupFilter, setGroupFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalMembers, setTotalMembers] = useState(0);
 
@@ -65,19 +65,16 @@ export default function MembersPage() {
         setIsLoading(true);
         setError(null);
 
-        const [membersResponse, membershipsResponse] = await Promise.all([
-          apiClient.getMembers({
-            limit: membersPerPage,
-            offset: (currentPage - 1) * membersPerPage,
-            search: searchQuery || undefined,
-            status: statusFilter === 'all' ? undefined : statusFilter,
-          }),
-          apiClient.getMemberships()
-        ]);
+        const membersResponse = await apiClient.getMembers({
+          limit: membersPerPage,
+          offset: (currentPage - 1) * membersPerPage,
+          search: searchQuery || undefined,
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          group_id: groupFilter === 'all' ? undefined : groupFilter,
+        });
 
         setMembers(membersResponse.members);
         setTotalMembers(membersResponse.total);
-        setMemberships(membershipsResponse.memberships);
       } catch (err: any) {
         console.error('Failed to fetch members data:', err);
         setError('Failed to load members data');
@@ -87,22 +84,26 @@ export default function MembersPage() {
     };
 
     fetchMembersData();
-  }, [currentPage, searchQuery, statusFilter]);
+  }, [currentPage, searchQuery, statusFilter, groupFilter]);
 
-  const getMemberMemberships = (memberId: string) => {
-    return memberships.filter(m => m.member_id === memberId);
-  };
-
-  const getActiveMemberships = (memberId: string) => {
-    return getMemberMemberships(memberId).filter(m => m.status === 'active');
+  const getActiveMemberships = (member: Member) => {
+    return member.memberships?.filter(m => m.status === 'active') || [];
   };
 
   const getMemberStatus = (member: Member) => {
-    const activeMemberships = getActiveMemberships(member.id);
-    if (!member.is_active) return 'inactive';
+    const activeMemberships = getActiveMemberships(member);
     if (activeMemberships.length > 0) return 'active';
-    return 'free';
+    return 'inactive';
   };
+
+  // Get unique groups from all members for filter
+  const allGroups = Array.from(
+    new Map(
+      members.flatMap(m => m.memberships || [])
+        .filter(ms => ms.group)
+        .map(ms => [ms.group!.id, ms.group!])
+    ).values()
+  );
 
   const getMemberStatusBadge = (member: Member) => {
     const status = getMemberStatus(member);
@@ -111,8 +112,6 @@ export default function MembersPage() {
         return <Badge variant="success">Active Member</Badge>;
       case 'inactive':
         return <Badge variant="danger">Inactive</Badge>;
-      case 'free':
-        return <Badge variant="warning">Free Access</Badge>;
       default:
         return <Badge>Unknown</Badge>;
     }
@@ -193,24 +192,24 @@ export default function MembersPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Free Members</CardTitle>
+            <CardTitle className="text-sm font-medium">Inactive</CardTitle>
             <UserX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {members.filter(m => getMemberStatus(m) === 'free').length}
+              {members.filter(m => getMemberStatus(m) === 'inactive').length}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactive</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Groups</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {members.filter(m => !m.is_active).length}
+              {allGroups.length}
             </div>
           </CardContent>
         </Card>
@@ -227,7 +226,7 @@ export default function MembersPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search members..."
+                  placeholder="Search members by name, username, or Telegram ID..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -244,10 +243,19 @@ export default function MembersPage() {
                 <SelectItem value="inactive">Inactive Only</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" />
-              More Filters
-            </Button>
+            <Select value={groupFilter} onValueChange={setGroupFilter}>
+              <SelectTrigger className="w-56">
+                <SelectValue placeholder="Filter by group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Groups</SelectItem>
+                {allGroups.map(group => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.group_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -275,13 +283,15 @@ export default function MembersPage() {
           ) : (
             <div className="space-y-4">
               {members.map((member) => {
-                const memberMemberships = getMemberMemberships(member.id);
-                const activeMemberships = getActiveMemberships(member.id);
-                
+                const activeMemberships = getActiveMemberships(member);
+                const memberGroups = Array.from(
+                  new Set(member.memberships?.filter(m => m.group).map(m => m.group!.group_name) || [])
+                );
+
                 return (
                   <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
                         <span className="text-blue-600 font-medium">
                           {member.first_name.charAt(0).toUpperCase()}
                         </span>
@@ -297,25 +307,37 @@ export default function MembersPage() {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 mt-1">
+                        <div className="flex items-center gap-4 mt-1 flex-wrap">
                           <p className="text-xs text-gray-500">
                             ID: {member.telegram_user_id}
                           </p>
                           <p className="text-xs text-gray-500">
                             Joined: {new Date(member.created_at).toLocaleDateString()}
                           </p>
-                          {memberMemberships.length > 0 && (
+                          {activeMemberships.length > 0 && (
                             <p className="text-xs text-gray-500">
-                              {activeMemberships.length} active memberships
+                              {activeMemberships.length} active membership{activeMemberships.length > 1 ? 's' : ''}
                             </p>
                           )}
                         </div>
+                        {memberGroups.length > 0 && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs text-gray-500">Groups:</span>
+                            <div className="flex gap-1 flex-wrap">
+                              {memberGroups.map((groupName, idx) => (
+                                <Badge key={idx} variant="default">
+                                  {groupName}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    
-                    <div className="flex items-center space-x-3">
+
+                    <div className="flex items-center space-x-3 shrink-0">
                       {getMemberStatusBadge(member)}
-                      
+
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">

@@ -64,7 +64,7 @@ export class MemberService {
   async findById(tenantId: string, memberId: string): Promise<Member> {
     const member = await this.memberRepository.findOne({
       where: { id: memberId, tenant_id: tenantId },
-      relations: ['memberships'],
+      relations: ['memberships', 'memberships.group', 'memberships.plan'],
     });
 
     if (!member) {

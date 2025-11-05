@@ -163,7 +163,7 @@ export interface Member {
   last_name?: string;
   phone_number?: string;
   is_bot: boolean;
-  is_active: boolean;
+  is_premium?: boolean;
   tenant_id: string;
   created_at: string;
   updated_at: string;

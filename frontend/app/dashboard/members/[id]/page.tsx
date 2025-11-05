@@ -135,6 +135,9 @@ export default function MemberDetailPage() {
   const activeMemberships = memberships.filter(m => m.status === 'active');
   // const expiredMemberships = memberships.filter(m => m.status === 'expired');
 
+  // Calculate member's active status based on memberships
+  const isActive = activeMemberships.length > 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -167,7 +170,16 @@ export default function MemberDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (member.username) {
+                window.open(`https://t.me/${member.username}`, '_blank');
+              } else {
+                window.open(`tg://user?id=${member.telegram_user_id}`, '_blank');
+              }
+            }}
+          >
             <MessageCircle className="h-4 w-4 mr-2" />
             Send Message
           </Button>
@@ -191,11 +203,11 @@ export default function MemberDetailPage() {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <Badge variant={member.is_active ? 'success' : 'danger'}>
-              {member.is_active ? 'Active' : 'Inactive'}
+            <Badge variant={isActive ? 'success' : 'danger'}>
+              {isActive ? 'Active' : 'Inactive'}
             </Badge>
             <p className="text-xs text-muted-foreground mt-1">
-              Account status
+              {isActive ? 'Has active memberships' : 'No active memberships'}
             </p>
           </CardContent>
         </Card>
@@ -288,8 +300,8 @@ export default function MemberDetailPage() {
               <div>
                 <label className="text-sm font-medium text-gray-500">Status</label>
                 <div className="mt-1">
-                  <Badge variant={member.is_active ? 'success' : 'danger'}>
-                    {member.is_active ? 'Active' : 'Inactive'}
+                  <Badge variant={isActive ? 'success' : 'danger'}>
+                    {isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
               </div>
