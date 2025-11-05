@@ -11,7 +11,7 @@ export interface PaymentTransaction {
   id: string;
   tenant_id: string;
   membership_plan_id: string;
-  bot_configuration_id: string;
+  project_id: string;
   telegram_user_id: string;
   telegram_username?: string;
   telegram_first_name?: string;
@@ -32,9 +32,24 @@ export interface PaymentTransaction {
   updated_at: string;
 }
 
+export interface PaymentStats {
+  total: number;
+  completed: number;
+  pending: number;
+  failed: number;
+  totalRevenue: number;
+}
+
+export interface PaymentFilters {
+  project_id?: string;
+  membership_plan_id?: string;
+  telegram_user_id?: string;
+  status?: PaymentStatus;
+}
+
 export interface CreatePaymentTransactionDto {
   membership_plan_id: string;
-  bot_configuration_id: string;
+  project_id: string;
   telegram_user_id: string;
   telegram_username?: string;
   telegram_first_name?: string;
@@ -46,25 +61,41 @@ export interface CreatePaymentTransactionDto {
 }
 
 export const paymentApi = {
-  getAll: async (params?: {
-    bot_configuration_id?: string;
-    membership_plan_id?: string;
-    telegram_user_id?: string;
-    status?: PaymentStatus;
-  }): Promise<PaymentTransaction[]> => {
-    const response = await apiClient.get('/payments', { params });
-    return response.data;
+  getAll: async (params?: PaymentFilters): Promise<PaymentTransaction[]> => {
+    return apiClient.get<PaymentTransaction[]>('/payments', { params });
   },
 
   getById: async (id: string): Promise<PaymentTransaction> => {
-    const response = await apiClient.get(`/payments/${id}`);
-    return response.data;
+    return apiClient.get<PaymentTransaction>(`/payments/${id}`);
   },
 
   initiate: async (
     data: CreatePaymentTransactionDto
   ): Promise<{ transaction: PaymentTransaction; payment_link: string }> => {
-    const response = await apiClient.post('/payments/initiate', data);
-    return response.data;
+    return apiClient.post<{ transaction: PaymentTransaction; payment_link: string }>(
+      '/payments/initiate',
+      data
+    );
   },
+
+  // Calculate stats from payments array (since backend doesn't expose this endpoint yet)
+  calculateStats: (payments: PaymentTransaction[]): PaymentStats => {
+    return {
+      total: payments.length,
+      completed: payments.filter((p) => p.status === PaymentStatus.COMPLETED).length,
+      pending: payments.filter((p) => p.status === PaymentStatus.PENDING).length,
+      failed: payments.filter((p) => p.status === PaymentStatus.FAILED).length,
+      totalRevenue: payments
+        .filter((p) => p.status === PaymentStatus.COMPLETED)
+        .reduce((sum, p) => sum + p.amount, 0),
+    };
+  },
+};
+
+// React Query keys
+export const paymentQueryKeys = {
+  all: ['payments'] as const,
+  lists: () => [...paymentQueryKeys.all, 'list'] as const,
+  list: (filters?: PaymentFilters) => [...paymentQueryKeys.lists(), filters] as const,
+  detail: (id: string) => [...paymentQueryKeys.all, 'detail', id] as const,
 };

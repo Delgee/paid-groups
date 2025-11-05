@@ -14,7 +14,8 @@ import {
   X,
   UserPlus,
   MessageSquare,
-  FolderKanban
+  FolderKanban,
+  Wallet
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -40,6 +41,7 @@ const navigation = [
   { name: 'Members', href: '/dashboard/members', icon: Users },
   { name: 'User Management', href: '/dashboard/users', icon: UserPlus },
   { name: 'Plans', href: '/dashboard/plans', icon: CreditCard },
+  { name: 'Payments', href: '/dashboard/payments', icon: Wallet },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];

@@ -410,7 +410,7 @@ export function TelegramGroupForm({
                         The numeric ID of your Telegram group/channel (must start with -)
                       </p>
                       <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-900">
-                        <p className="font-medium mb-1">How to get your channel's Chat ID:</p>
+                        <p className="font-medium mb-1">How to get your channel&apos;s Chat ID:</p>
                         <ol className="list-decimal ml-4 space-y-1">
                           <li>Forward any message from your channel to your bot</li>
                           <li>The bot will respond with the Chat ID of that channel</li>
