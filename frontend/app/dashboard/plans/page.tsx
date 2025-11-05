@@ -12,8 +12,8 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { apiClient } from '@/lib/api/client';
-import type { MembershipPlan } from '@/lib/api/client';
+import { membershipPlanApi, type MembershipPlan } from '@/lib/api/membership-plans';
+import { projectApi, type Project } from '@/lib/api/projects';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -33,7 +33,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useForm } from 'react-hook-form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -57,15 +58,15 @@ const createPlanSchema = z.object({
   name: z.string().min(1, 'Plan name is required').max(100, 'Name too long'),
   description: z.string().optional(),
   price: z.number().min(0, 'Price must be positive'),
-  currency: z.string().default('MNT'),
   duration_days: z.number().min(1, 'Duration must be at least 1 day'),
-  features: z.array(z.string()).optional(),
+  project_id: z.string().min(1, 'Project is required'),
 });
 
 type CreatePlanFormData = z.infer<typeof createPlanSchema>;
 
 export default function PlansPage() {
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -81,37 +82,41 @@ export default function PlansPage() {
     handleSubmit,
     formState: { errors },
     reset,
+    control,
   } = useForm<CreatePlanFormData>({
     resolver: zodResolver(createPlanSchema),
     defaultValues: {
-      currency: 'MNT',
       duration_days: 30,
     }
   });
 
   useEffect(() => {
-    const fetchPlans = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await apiClient.getMembershipPlans();
-        setPlans(response.plans);
+        const [plansData, projectsData] = await Promise.all([
+          membershipPlanApi.getAll(),
+          projectApi.getAll(),
+        ]);
+        setPlans(plansData);
+        setProjects(projectsData.data);
       } catch (err: any) {
-        console.error('Failed to fetch plans:', err);
+        console.error('Failed to fetch data:', err);
         setError('Failed to load membership plans');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchPlans();
+    fetchData();
   }, []);
 
   const onSubmit = async (data: CreatePlanFormData) => {
     try {
       setIsCreating(true);
       setError(null);
-      const newPlan = await apiClient.createMembershipPlan(data);
+      const newPlan = await membershipPlanApi.create(data);
       setPlans(prev => [newPlan, ...prev]);
       setIsCreateModalOpen(false);
       reset();
@@ -132,7 +137,7 @@ export default function PlansPage() {
 
   const handleTogglePlan = async (plan: MembershipPlan) => {
     try {
-      const updatedPlan = await apiClient.updateMembershipPlan(plan.id, {
+      const updatedPlan = await membershipPlanApi.update(plan.id, {
         is_active: !plan.is_active
       });
       setPlans(prev => prev.map(p => p.id === plan.id ? updatedPlan : p));
@@ -147,8 +152,8 @@ export default function PlansPage() {
       name: plan.name,
       description: plan.description || '',
       price: plan.price,
-      currency: 'MNT',
       duration_days: plan.duration_days,
+      project_id: plan.project_id,
     });
     setIsEditModalOpen(true);
   };
@@ -158,7 +163,7 @@ export default function PlansPage() {
 
     try {
       setIsUpdating(true);
-      const updatedPlan = await apiClient.updateMembershipPlan(editingPlan.id, data);
+      const updatedPlan = await membershipPlanApi.update(editingPlan.id, data);
       setPlans(prev => prev.map(p => p.id === editingPlan.id ? updatedPlan : p));
       setIsEditModalOpen(false);
       setEditingPlan(null);
@@ -175,7 +180,7 @@ export default function PlansPage() {
 
     try {
       setIsDeleting(true);
-      await apiClient.deleteMembershipPlan(deleteConfirmPlan.id);
+      await membershipPlanApi.delete(deleteConfirmPlan.id);
       setPlans(prev => prev.filter(p => p.id !== deleteConfirmPlan.id));
       setDeleteConfirmPlan(null);
     } catch (err: any) {
@@ -445,6 +450,34 @@ export default function PlansPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="project_id">Project</Label>
+              <Controller
+                name="project_id"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className={errors.project_id ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select a project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.display_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.project_id && (
+                <p className="text-red-600 text-sm">{errors.project_id.message}</p>
+              )}
+              <p className="text-xs text-gray-500">
+                Select the project this plan belongs to
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="name">Plan Name</Label>
               <Input
                 id="name"
@@ -547,6 +580,34 @@ export default function PlansPage() {
           </DialogHeader>
 
           <form onSubmit={handleSubmit(handleUpdatePlan)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-project_id">Project</Label>
+              <Controller
+                name="project_id"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className={errors.project_id ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select a project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.display_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.project_id && (
+                <p className="text-red-600 text-sm">{errors.project_id.message}</p>
+              )}
+              <p className="text-xs text-gray-500">
+                Select the project this plan belongs to
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="edit-name">Plan Name</Label>
               <Input

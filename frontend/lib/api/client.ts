@@ -690,6 +690,19 @@ class ApiClient {
     return response.data;
   }
 
+  async getPaymentStats(): Promise<{
+    totalRevenue: number;
+    totalPayments: number;
+    completedPayments: number;
+    pendingPayments: number;
+    failedPayments: number;
+    averagePayment: number;
+    revenueGrowth: number;
+  }> {
+    const response = await this.instance.get('/analytics/payments');
+    return response.data;
+  }
+
   // Generic HTTP methods for extensibility
   async get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.instance.get<T>(url, config);

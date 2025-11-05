@@ -12,6 +12,7 @@ import {
   DashboardMetrics,
   RevenueMetrics,
   MembershipMetrics,
+  PaymentStats,
 } from './analytics.service';
 
 @ApiTags('Analytics')
@@ -66,5 +67,20 @@ export class AnalyticsController {
   ): Promise<MembershipMetrics> {
     const tenantId = req.user.tenant_id;
     return this.analyticsService.getMembershipMetrics(tenantId);
+  }
+
+  @Get('payments')
+  @ApiOperation({
+    summary: 'Get payment statistics including totals, success rates, and growth',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment statistics retrieved successfully',
+  })
+  async getPaymentStats(
+    @Request() req: AuthenticatedRequest,
+  ): Promise<PaymentStats> {
+    const tenantId = req.user.tenant_id;
+    return this.analyticsService.getPaymentStats(tenantId);
   }
 }

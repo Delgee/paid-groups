@@ -14,13 +14,26 @@ interface PaymentStats {
 }
 
 interface PaymentStatsCardProps {
-  stats: PaymentStats;
+  stats?: PaymentStats;
   currency?: string;
 }
 
 export function PaymentStatsCard({ stats, currency = 'MNT' }: PaymentStatsCardProps) {
-  const successRate = stats.totalPayments > 0
-    ? ((stats.completedPayments / stats.totalPayments) * 100).toFixed(1)
+  // Provide default values if stats is undefined
+  const defaultStats: PaymentStats = {
+    totalRevenue: 0,
+    totalPayments: 0,
+    completedPayments: 0,
+    pendingPayments: 0,
+    failedPayments: 0,
+    averagePayment: 0,
+    revenueGrowth: 0,
+  };
+
+  const paymentStats = stats || defaultStats;
+
+  const successRate = paymentStats.totalPayments > 0
+    ? ((paymentStats.completedPayments / paymentStats.totalPayments) * 100).toFixed(1)
     : 0;
 
   const formatCurrency = (amount: number) => {
@@ -41,18 +54,18 @@ export function PaymentStatsCard({ stats, currency = 'MNT' }: PaymentStatsCardPr
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {formatCurrency(stats.totalRevenue)} {currency}
+            {formatCurrency(paymentStats.totalRevenue)} {currency}
           </div>
           <div className="flex items-center text-xs text-muted-foreground mt-1">
-            {stats.revenueGrowth >= 0 ? (
+            {paymentStats.revenueGrowth >= 0 ? (
               <>
                 <TrendingUp className="mr-1 h-3 w-3 text-green-500" />
-                <span className="text-green-500">+{stats.revenueGrowth}%</span>
+                <span className="text-green-500">+{paymentStats.revenueGrowth}%</span>
               </>
             ) : (
               <>
                 <TrendingDown className="mr-1 h-3 w-3 text-red-500" />
-                <span className="text-red-500">{stats.revenueGrowth}%</span>
+                <span className="text-red-500">{paymentStats.revenueGrowth}%</span>
               </>
             )}
             <span className="ml-1">from last month</span>
@@ -67,9 +80,9 @@ export function PaymentStatsCard({ stats, currency = 'MNT' }: PaymentStatsCardPr
           <CreditCard className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.totalPayments}</div>
+          <div className="text-2xl font-bold">{paymentStats.totalPayments}</div>
           <p className="text-xs text-muted-foreground mt-1">
-            {stats.completedPayments} completed
+            {paymentStats.completedPayments} completed
           </p>
         </CardContent>
       </Card>
@@ -83,7 +96,7 @@ export function PaymentStatsCard({ stats, currency = 'MNT' }: PaymentStatsCardPr
         <CardContent>
           <div className="text-2xl font-bold">{successRate}%</div>
           <p className="text-xs text-muted-foreground mt-1">
-            {stats.pendingPayments} pending
+            {paymentStats.pendingPayments} pending
           </p>
         </CardContent>
       </Card>
@@ -95,9 +108,9 @@ export function PaymentStatsCard({ stats, currency = 'MNT' }: PaymentStatsCardPr
           <AlertCircle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-500">{stats.failedPayments}</div>
+          <div className="text-2xl font-bold text-red-500">{paymentStats.failedPayments}</div>
           <p className="text-xs text-muted-foreground mt-1">
-            Avg: {formatCurrency(stats.averagePayment)} {currency}
+            Avg: {formatCurrency(paymentStats.averagePayment)} {currency}
           </p>
         </CardContent>
       </Card>

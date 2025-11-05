@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThan } from 'typeorm';
-import { Payment } from '../payment/entities/payment.entity';
+import { Payment, PaymentStatus } from '../payment/entities/payment.entity';
 import {
   Membership,
   MembershipStatus,
@@ -51,7 +51,15 @@ export interface MembershipMetrics {
   average_lifetime_value: number;
 }
 
-// TODO: Implement actual calculations
+export interface PaymentStats {
+  totalRevenue: number;
+  totalPayments: number;
+  completedPayments: number;
+  pendingPayments: number;
+  failedPayments: number;
+  averagePayment: number;
+  revenueGrowth: number;
+}
 
 @Injectable()
 export class AnalyticsService {
@@ -241,6 +249,109 @@ export class AnalyticsService {
   }
 
   /**
+   * Get payment statistics
+   */
+  async getPaymentStats(tenantId: string): Promise<PaymentStats> {
+    const now = new Date();
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    // Total revenue (all completed payments)
+    const totalRevenueResult = await this.paymentRepository
+      .createQueryBuilder('payment')
+      .select('SUM(payment.amount_mnt)', 'total')
+      .where('payment.tenant_id = :tenantId', { tenantId })
+      .andWhere('payment.status = :status', { status: 'completed' })
+      .getRawOne();
+
+    const totalRevenue = parseFloat(totalRevenueResult?.total || '0');
+
+    // Total payments count
+    const totalPayments = await this.paymentRepository.count({
+      where: { tenant_id: tenantId },
+    });
+
+    // Completed payments
+    const completedPayments = await this.paymentRepository.count({
+      where: {
+        tenant_id: tenantId,
+        status: PaymentStatus.COMPLETED,
+      },
+    });
+
+    // Pending payments
+    const pendingPayments = await this.paymentRepository.count({
+      where: {
+        tenant_id: tenantId,
+        status: PaymentStatus.PENDING,
+      },
+    });
+
+    // Failed payments
+    const failedPayments = await this.paymentRepository.count({
+      where: {
+        tenant_id: tenantId,
+        status: PaymentStatus.FAILED,
+      },
+    });
+
+    // Average payment amount
+    const averagePaymentResult = await this.paymentRepository
+      .createQueryBuilder('payment')
+      .select('AVG(payment.amount_mnt)', 'average')
+      .where('payment.tenant_id = :tenantId', { tenantId })
+      .andWhere('payment.status = :status', { status: 'completed' })
+      .getRawOne();
+
+    const averagePayment = parseFloat(averagePaymentResult?.average || '0');
+
+    // Current month revenue
+    const currentMonthRevenueResult = await this.paymentRepository
+      .createQueryBuilder('payment')
+      .select('SUM(payment.amount_mnt)', 'total')
+      .where('payment.tenant_id = :tenantId', { tenantId })
+      .andWhere('payment.status = :status', { status: 'completed' })
+      .andWhere('payment.paid_at >= :currentMonth', { currentMonth })
+      .getRawOne();
+
+    const currentMonthRevenue = parseFloat(
+      currentMonthRevenueResult?.total || '0',
+    );
+
+    // Previous month revenue
+    const previousMonthRevenueResult = await this.paymentRepository
+      .createQueryBuilder('payment')
+      .select('SUM(payment.amount_mnt)', 'total')
+      .where('payment.tenant_id = :tenantId', { tenantId })
+      .andWhere('payment.status = :status', { status: 'completed' })
+      .andWhere('payment.paid_at >= :previousMonth', { previousMonth })
+      .andWhere('payment.paid_at <= :previousMonthEnd', { previousMonthEnd })
+      .getRawOne();
+
+    const previousMonthRevenue = parseFloat(
+      previousMonthRevenueResult?.total || '0',
+    );
+
+    // Revenue growth percentage
+    const revenueGrowth =
+      previousMonthRevenue > 0
+        ? ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) *
+          100
+        : 0;
+
+    return {
+      totalRevenue,
+      totalPayments,
+      completedPayments,
+      pendingPayments,
+      failedPayments,
+      averagePayment,
+      revenueGrowth,
+    };
+  }
+
+  /**
    * Calculate Monthly Recurring Revenue
    */
   private async calculateMRR(tenantId: string): Promise<number> {
@@ -379,8 +490,7 @@ export class AnalyticsService {
     const results = await this.paymentRepository
       .createQueryBuilder('payment')
       .leftJoin('payment.membership', 'membership')
-      .leftJoin('membership.plan', 'plan')
-      .leftJoin('plan.group', 'group')
+      .leftJoin('membership.group', 'group')
       .select('group.id', 'group_id')
       .addSelect('group.group_name', 'group_name')
       .addSelect('COUNT(DISTINCT membership.member_id)', 'member_count')
