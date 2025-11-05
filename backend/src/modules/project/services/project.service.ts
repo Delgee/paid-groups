@@ -380,6 +380,73 @@ export class ProjectService {
   }
 
   /**
+   * Ensure webhook is properly configured for a project
+   * Sets up webhook if missing or misconfigured
+   */
+  async ensureWebhookConfigured(
+    tenantId: string,
+    id: string,
+  ): Promise<{ success: boolean; message: string; webhookUrl?: string }> {
+    this.logger.log(`Ensuring webhook is configured for project ${id}`);
+
+    const project = await this.findOneRaw(tenantId, id);
+
+    // Check if webhook is already configured
+    if (project.webhook_url && project.webhook_secret) {
+      // Verify it's correctly set with Telegram
+      const verification = await this.webhookService.verifyWebhook(
+        project.bot_token,
+        project.webhook_url,
+      );
+
+      if (verification.isValid) {
+        this.logger.log(`Webhook already configured for project ${id}`);
+        return {
+          success: true,
+          message: 'Webhook is already properly configured',
+          webhookUrl: project.webhook_url,
+        };
+      }
+
+      this.logger.warn(
+        `Webhook misconfigured for project ${id}, refreshing...`,
+      );
+    }
+
+    // Setup or refresh webhook
+    const webhookResult = await this.webhookService.setupWebhook(
+      project.bot_token,
+      tenantId,
+      id,
+      project.webhook_secret, // Reuse existing secret if available
+    );
+
+    if (webhookResult.success) {
+      // Update project with webhook details
+      project.webhook_url = webhookResult.webhookUrl;
+      project.webhook_secret = webhookResult.webhookSecret;
+      await this.projectRepository.save(project);
+
+      this.logger.log(`Webhook configured for project ${id}`);
+
+      return {
+        success: true,
+        message: 'Webhook configured successfully',
+        webhookUrl: webhookResult.webhookUrl,
+      };
+    } else {
+      this.logger.error(
+        `Failed to configure webhook for project ${id}: ${webhookResult.error}`,
+      );
+
+      return {
+        success: false,
+        message: `Failed to configure webhook: ${webhookResult.error}`,
+      };
+    }
+  }
+
+  /**
    * Refresh webhook configuration for a project
    * Generates new webhook secret and re-registers with Telegram
    */

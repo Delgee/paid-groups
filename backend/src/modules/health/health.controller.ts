@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { HealthService } from './health.service';
+import { QueueStatusDto } from './dto/queue-stats.dto';
 
 @ApiTags('Health')
 @Controller('health')
@@ -45,5 +46,16 @@ export class HealthController {
   @ApiResponse({ status: 503, description: 'Telegram connectivity is unhealthy' })
   async getTelegramHealth() {
     return this.healthService.getTelegramHealth();
+  }
+
+  @Get('queue')
+  @ApiOperation({ summary: 'Get worker queue status and statistics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Queue status retrieved successfully',
+    type: QueueStatusDto,
+  })
+  async getQueueStatus(): Promise<QueueStatusDto> {
+    return this.healthService.getQueueStatus();
   }
 }

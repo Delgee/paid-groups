@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { 
-  Users, 
-  Search, 
-  Filter, 
+import {
+  Users,
+  Search,
   Download,
   UserCheck,
   UserX,
@@ -13,7 +12,7 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
-import type { Member, Membership } from '@/lib/api/client';
+import type { Member } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

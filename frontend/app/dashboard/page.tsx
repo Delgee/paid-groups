@@ -7,32 +7,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { projectApi, type Project } from '@/lib/api/projects';
+import { analyticsApi, type DashboardMetrics, type RevenueMetrics, type MembershipMetrics, type PaymentStats } from '@/lib/api/analytics';
 import { PaymentStatsCard } from '@/components/dashboard/PaymentStatsCard';
 import { RevenueChart } from '@/components/dashboard/RevenueChart';
 import { MembershipChart } from '@/components/dashboard/MembershipChart';
-
-interface DashboardStats {
-  totalProjects: number;
-  totalGroups: number;
-  totalMembers: number;
-  activeMemberships: number;
-  recentActivity: {
-    type: 'project_created' | 'group_connected' | 'payment_received' | 'member_joined';
-    message: string;
-    timestamp: string;
-  }[];
-}
+import { HealthChecks } from '@/components/dashboard/HealthChecks';
+import { QueueStatus } from '@/components/dashboard/QueueStatus';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalProjects: 0,
-    totalGroups: 0,
-    totalMembers: 0,
-    activeMemberships: 0,
-    recentActivity: []
-  });
   const [projects, setProjects] = useState<Project[]>([]);
+  const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
+  const [revenueMetrics, setRevenueMetrics] = useState<RevenueMetrics | null>(null);
+  const [membershipMetrics, setMembershipMetrics] = useState<MembershipMetrics | null>(null);
+  const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,38 +30,26 @@ export default function DashboardPage() {
         setIsLoading(true);
         setError(null);
 
-        // Fetch projects data
-        const projectsResponse = await projectApi.getAll();
+        // Fetch all dashboard data in parallel
+        const [
+          projectsResponse,
+          dashboardMetricsData,
+          revenueMetricsData,
+          membershipMetricsData,
+          paymentStatsData,
+        ] = await Promise.all([
+          projectApi.getAll(),
+          analyticsApi.getDashboardMetrics().catch(() => null),
+          analyticsApi.getRevenueMetrics(30).catch(() => null),
+          analyticsApi.getMembershipMetrics().catch(() => null),
+          analyticsApi.getPaymentStats().catch(() => null),
+        ]);
+
         setProjects(projectsResponse.data);
-
-        // Calculate stats from projects data
-        const totalProjects = projectsResponse.data.length;
-        const totalGroups = 0;
-        const totalMembers = 0;
-        const activeMemberships = 0;
-
-        // TODO: Add stats aggregation when project stats are available
-        // projectsResponse.data.forEach(project => {
-        //   if (project.stats) {
-        //     totalGroups += project.stats.groups_count || 0;
-        //     totalMembers += project.stats.members_count || 0;
-        //     activeMemberships += project.stats.active_memberships || 0;
-        //   }
-        // });
-
-        setStats({
-          totalProjects,
-          totalGroups,
-          totalMembers,
-          activeMemberships,
-          recentActivity: [
-            {
-              type: 'project_created',
-              message: 'New project created successfully',
-              timestamp: new Date().toISOString(),
-            }
-          ]
-        });
+        setDashboardMetrics(dashboardMetricsData);
+        setRevenueMetrics(revenueMetricsData);
+        setMembershipMetrics(membershipMetricsData);
+        setPaymentStats(paymentStatsData);
 
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
@@ -117,37 +93,37 @@ export default function DashboardPage() {
   const statCards = [
     {
       title: 'Нийт төсөл',
-      value: stats.totalProjects,
+      value: projects.length,
       description: 'Идэвхитэй төслүүд',
       icon: Bot,
-      trend: 'Өмнөх сараас +2',
+      trend: `${projects.filter(p => p.is_active).length} идэвхитэй`,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      title: 'Холбогдсон группүүд',
-      value: stats.totalGroups,
-      description: 'Удирдаж буй группүүд',
+      title: 'Шилдэг группүүд',
+      value: dashboardMetrics?.top_performing_groups.length || 0,
+      description: 'Гүйцэтгэлтэй группүүд',
       icon: Users,
-      trend: 'Өмнөх сараас +5',
+      trend: `${dashboardMetrics?.active_members || 0} идэвхитэй гишүүн`,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
     {
-      title: 'Нийт гишүүд',
-      value: stats.totalMembers,
-      description: 'Бүх группүүдийн',
+      title: 'Сарын орлого',
+      value: `${((dashboardMetrics?.monthly_revenue || 0) / 1000).toFixed(0)}K`,
+      description: 'Энэ сарын төгрөг',
       icon: TrendingUp,
-      trend: 'Өмнөх сараас +12%',
+      trend: `${(revenueMetrics?.growth_percentage || 0).toFixed(1)}% өсөлт`,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
     },
     {
       title: 'Идэвхитэй гишүүнчлэл',
-      value: stats.activeMemberships,
+      value: membershipMetrics?.active_memberships || 0,
       description: 'Төлбөртэй гишүүнчлэл',
       icon: CreditCard,
-      trend: 'Өмнөх сараас +8%',
+      trend: `${membershipMetrics?.trial_memberships || 0} турших`,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
     },
@@ -293,43 +269,46 @@ export default function DashboardPage() {
       </div>
 
       {/* Payment Statistics */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Төлбөрийн тайлан</h2>
-        <PaymentStatsCard
-          stats={{
-            totalRevenue: stats.activeMemberships * 35000, // Mock calculation
-            totalPayments: stats.activeMemberships + 10,
-            completedPayments: stats.activeMemberships,
-            pendingPayments: 5,
-            failedPayments: 3,
-            averagePayment: 35000,
-            revenueGrowth: 12.5
-          }}
-        />
-      </div>
+      {paymentStats && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Төлбөрийн шинжилгээ</h2>
+          <PaymentStatsCard stats={paymentStats} />
+        </div>
+      )}
 
       {/* Charts Section */}
       <div className="grid gap-6 lg:grid-cols-2 mt-8">
-        <RevenueChart
-          data={[
-            { date: 'Jan 1', revenue: 150000, payments: 15 },
-            { date: 'Jan 5', revenue: 280000, payments: 28 },
-            { date: 'Jan 10', revenue: 420000, payments: 42 },
-            { date: 'Jan 15', revenue: 560000, payments: 56 },
-            { date: 'Jan 20', revenue: 700000, payments: 70 },
-            { date: 'Jan 25', revenue: 850000, payments: 85 },
-            { date: 'Jan 30', revenue: 1000000, payments: 100 },
-          ]}
-        />
+        {revenueMetrics && revenueMetrics.daily_revenue.length > 0 && (
+          <RevenueChart
+            data={revenueMetrics.daily_revenue.map(item => ({
+              date: new Date(item.date).toLocaleDateString('mn-MN', { month: 'short', day: 'numeric' }),
+              revenue: item.revenue,
+              payments: item.transaction_count,
+            }))}
+          />
+        )}
 
-        <MembershipChart
-          data={[
-            { month: 'Oct', active: 85, new: 20, expired: 5 },
-            { month: 'Nov', active: 100, new: 25, expired: 10 },
-            { month: 'Dec', active: 115, new: 30, expired: 15 },
-            { month: 'Jan', active: 130, new: 35, expired: 20 },
-          ]}
-        />
+        {membershipMetrics && (
+          <MembershipChart
+            data={[
+              {
+                month: 'Одоогийн',
+                active: membershipMetrics.active_memberships,
+                new: membershipMetrics.active_memberships,
+                expired: membershipMetrics.expired_memberships,
+              },
+            ]}
+          />
+        )}
+      </div>
+
+      {/* System Status Section */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Системийн төлөв</h2>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <HealthChecks />
+          <QueueStatus />
+        </div>
       </div>
     </div>
   );

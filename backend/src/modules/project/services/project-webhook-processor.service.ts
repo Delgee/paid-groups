@@ -523,9 +523,17 @@ Use /status to check your current membership status.
    */
   private async setTenantContext(tenantId: string): Promise<void> {
     try {
-      await this.dataSource.query('SET LOCAL app.current_tenant = $1', [
-        tenantId,
-      ]);
+      // Validate UUID format to prevent SQL injection
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(tenantId)) {
+        throw new Error(`Invalid tenant ID format: ${tenantId}`);
+      }
+
+      // Use string interpolation (safe after UUID validation)
+      await this.dataSource.query(
+        `SET LOCAL app.current_tenant = '${tenantId}'`,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to set tenant context for ${tenantId}:`,
