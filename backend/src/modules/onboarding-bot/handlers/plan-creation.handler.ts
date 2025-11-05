@@ -29,9 +29,9 @@ export class PlanCreationHandler {
 
     if (!account || !account.user) {
       return {
-        text: `⚠️ You need to register first before creating membership plans.
+        text: `⚠️ Гишүүнчлэлийн багц үүсгэхээс өмнө эхлээд бүртгүүлэх хэрэгтэй.
 
-Please send /start to register your account.`,
+Бүртгүүлэхийн тулд /start илгээнэ үү.`,
       };
     }
 
@@ -44,11 +44,11 @@ Please send /start to register your account.`,
 
     if (projectsResponse.data.length === 0) {
       return {
-        text: `⚠️ You need to create a project first.
+        text: `⚠️ Эхлээд төсөл үүсгэх хэрэгтэй.
 
-Please create a project using the button below:`,
+Доорх товчлуур ашиглан төсөл үүсгэнэ үү:`,
         keyboard: {
-          inline_keyboard: [[{ text: '🚀 Create Project', callback_data: 'create_project' }]],
+          inline_keyboard: [[{ text: '🚀 Төсөл үүсгэх', callback_data: 'create_project' }]],
         },
       };
     }
@@ -63,11 +63,11 @@ Please create a project using the button below:`,
 
     if (groupsResponse.data.length === 0) {
       return {
-        text: `⚠️ You need to add Telegram groups first before creating a membership plan.
+        text: `⚠️ Гишүүнчлэлийн багц үүсгэхээс өмнө эхлээд Telegram групп нэмэх хэрэгтэй.
 
-Please add a group using the button below:`,
+Доорх товчлуур ашиглан групп нэмнэ үү:`,
         keyboard: {
-          inline_keyboard: [[{ text: '➕ Add Telegram Group', callback_data: 'add_group' }]],
+          inline_keyboard: [[{ text: '➕ Telegram групп нэмэх', callback_data: 'add_group' }]],
         },
       };
     }
@@ -90,16 +90,16 @@ Please add a group using the button below:`,
       },
     ]);
 
-    groupButtons.push([{ text: '✅ Continue with Selected Groups', callback_data: 'plan_groups_done' }]);
+    groupButtons.push([{ text: '✅ Сонгосон группуудтай үргэлжлүүлэх', callback_data: 'plan_groups_done' }]);
 
     return {
-      text: `💰 <b>Create Membership Plan</b>
+      text: `💰 <b>Гишүүнчлэлийн багц үүсгэх</b>
 
-Project: <b>${project.display_name}</b>
+Төсөл: <b>${project.display_name}</b>
 
-<b>Step 1:</b> Select the Telegram groups for this plan
+<b>Алхам 1:</b> Энэ багцад оруулах Telegram группуудыг сонгоно уу
 
-Tap groups to select them, then tap "Continue":`,
+Группүүдийг дараад "Үргэлжлүүлэх" товч дарна уу:`,
       keyboard: {
         inline_keyboard: groupButtons,
       },
@@ -115,7 +115,7 @@ Tap groups to select them, then tap "Continue":`,
     const session = await this.sessionService.getSession(telegramUserId);
 
     if (!session) {
-      return { text: 'Session expired. Please send /createplan to start again.' };
+      return { text: 'Хугацаа дууссан байна. Дахин эхлүүлэхийн тулд /createplan илгээнэ үү.' };
     }
 
     // Toggle group selection
@@ -149,14 +149,14 @@ Tap groups to select them, then tap "Continue":`,
       ];
     });
 
-    groupButtons.push([{ text: '✅ Continue with Selected Groups', callback_data: 'plan_groups_done' }]);
+    groupButtons.push([{ text: '✅ Сонгосон группуудтай үргэлжлүүлэх', callback_data: 'plan_groups_done' }]);
 
     return {
-      text: `💰 <b>Create Membership Plan</b>
+      text: `💰 <b>Гишүүнчлэлийн багц үүсгэх</b>
 
-<b>Selected Groups:</b> ${selectedGroups.length}
+<b>Сонгосон группүүд:</b> ${selectedGroups.length}
 
-Tap groups to select/deselect, then tap "Continue":`,
+Группүүдийг сонгох/хасахын тулд дараад, дараа нь "Үргэлжлүүлэх" дарна уу:`,
       keyboard: {
         inline_keyboard: groupButtons,
       },
@@ -172,21 +172,21 @@ Tap groups to select/deselect, then tap "Continue":`,
 
     if (!session || !session.data.selected_groups || session.data.selected_groups.length === 0) {
       return {
-        text: '❌ Please select at least one group before continuing.',
+        text: '❌ Үргэлжлүүлэхээс өмнө дор хаяж нэг групп сонгоно уу.',
       };
     }
 
     await this.sessionService.advanceStep(telegramUserId, SessionStep.PLAN_NAME);
 
     return {
-      text: `<b>Step 2:</b> Enter a name for your membership plan
+      text: `<b>Алхам 2:</b> Гишүүнчлэлийн багцын нэрийг оруулна уу
 
-Examples:
-• "Premium Monthly Access"
-• "VIP Membership"
-• "Basic Plan"
+Жишээ нь:
+• "Сарын төлбөртэй хандалт"
+• "VIP гишүүнчлэл"
+• "Үндсэн багц"
 
-Enter the plan name:`,
+Багцын нэрийг оруулна уу:`,
     };
   }
 
@@ -199,7 +199,7 @@ Enter the plan name:`,
     const session = await this.sessionService.getSession(telegramUserId);
 
     if (!session) {
-      return { text: 'Session expired. Please send /createplan to start again.' };
+      return { text: 'Хугацаа дууссан байна. Дахин эхлүүлэхийн тулд /createplan илгээнэ үү.' };
     }
 
     const account = await this.telegramUserAccountService.findByTelegramUserId(telegramUserId);
@@ -208,7 +208,7 @@ Enter the plan name:`,
       case SessionStep.PLAN_NAME:
         if (message.length < 3) {
           return {
-            text: '❌ Plan name must be at least 3 characters long.\n\nPlease provide a valid plan name:',
+            text: '❌ Багцын нэр дор хаяж 3 тэмдэгттэй байх ёстой.\n\nЗөв багцын нэр оруулна уу:',
           };
         }
 
@@ -217,13 +217,13 @@ Enter the plan name:`,
         });
 
         return {
-          text: `✅ Plan name: <b>${message}</b>
+          text: `✅ Багцын нэр: <b>${message}</b>
 
-<b>Step 3:</b> Enter the price in MNT (Mongolian Tugrik)
+<b>Алхам 3:</b> Үнийг төгрөгөөр (MNT) оруулна уу
 
-Example: 50000 (for 50,000 MNT)
+Жишээ: 50000 (50,000 төгрөг)
 
-Enter the price:`,
+Үнийг оруулна уу:`,
         };
 
       case SessionStep.PLAN_PRICE:
@@ -231,13 +231,13 @@ Enter the price:`,
 
         if (isNaN(price) || price <= 0) {
           return {
-            text: '❌ Invalid price. Please enter a valid number greater than 0.\n\nExample: 50000\n\nEnter the price:',
+            text: '❌ Буруу үнэ. 0-ээс их зөв тоо оруулна уу.\n\nЖишээ: 50000\n\nҮнийг оруулна уу:',
           };
         }
 
         if (price > 10000000) {
           return {
-            text: '❌ Price seems too high. Please enter a reasonable price (max 10,000,000 MNT).\n\nEnter the price:',
+            text: '❌ Үнэ хэт өндөр байна. Боломжит үнэ оруулна уу (хамгийн ихдээ 10,000,000 төгрөг).\n\nҮнийг оруулна уу:',
           };
         }
 
@@ -246,22 +246,23 @@ Enter the price:`,
         });
 
         return {
-          text: `✅ Price: <b>${price.toLocaleString()} MNT</b>
+          text: `✅ Үнэ: <b>${price.toLocaleString()} төгрөг</b>
 
-<b>Step 4:</b> Select the membership duration:`,
+<b>Алхам 4:</b> Гишүүнчлэлийн хугацааг сонгоно уу:`,
           keyboard: {
             inline_keyboard: [
-              [{ text: '7 Days', callback_data: 'plan_duration:7' }],
-              [{ text: '30 Days (1 Month)', callback_data: 'plan_duration:30' }],
-              [{ text: '90 Days (3 Months)', callback_data: 'plan_duration:90' }],
-              [{ text: '180 Days (6 Months)', callback_data: 'plan_duration:180' }],
-              [{ text: '365 Days (1 Year)', callback_data: 'plan_duration:365' }],
+              [{ text: '7 өдөр', callback_data: 'plan_duration:7' }],
+              [{ text: '30 өдөр (1 сар)', callback_data: 'plan_duration:30' }],
+              [{ text: '90 өдөр (3 сар)', callback_data: 'plan_duration:90' }],
+              [{ text: '180 өдөр (6 сар)', callback_data: 'plan_duration:180' }],
+              [{ text: '365 өдөр (1 жил)', callback_data: 'plan_duration:365' }],
             ],
           },
         };
 
       case SessionStep.PLAN_DESCRIPTION:
-        const description = message.toLowerCase() === 'skip' ? '' : message;
+        const lowerMsg = message.toLowerCase();
+        const description = (lowerMsg === 'skip' || lowerMsg === 'алгасах') ? '' : message;
 
         // Create the membership plan
         try {
@@ -275,7 +276,7 @@ Enter the price:`,
 
           const plan = await this.membershipPlanService.create(account.user.tenant_id, {
             name: updatedSession.data.plan_name!,
-            description: description || `Membership plan for ${updatedSession.data.plan_name}`,
+            description: description || `${updatedSession.data.plan_name}-ийн гишүүнчлэлийн багц`,
             price: updatedSession.data.plan_price!,
             duration_days: parseInt(updatedSession.data.plan_duration!),
             project_id: updatedSession.data.selected_project_id!,
@@ -301,37 +302,37 @@ Enter the price:`,
           await this.sessionService.clearSession(telegramUserId);
 
           return {
-            text: `🎉 <b>Membership Plan Created!</b>
+            text: `🎉 <b>Гишүүнчлэлийн багц амжилттай үүслээ!</b>
 
-<b>Plan Details:</b>
-• Name: ${plan.name}
-• Price: ${plan.price.toLocaleString()} MNT
-• Duration: ${plan.duration_days} days
-• Groups: ${updatedSession.data.selected_groups!.length}
+<b>Багцын дэлгэрэнгүй:</b>
+• Нэр: ${plan.name}
+• Үнэ: ${plan.price.toLocaleString()} төгрөг
+• Хугацаа: ${plan.duration_days} өдөр
+• Группүүд: ${updatedSession.data.selected_groups!.length}
 
-Your members can now subscribe to this plan!
+Таны гишүүд одоо энэ багц руу бүртгүүлж болно!
 
-<b>What's next?</b>`,
+<b>Дараагийн алхам:</b>`,
             keyboard: {
               inline_keyboard: [
-                [{ text: '💰 Create Another Plan', callback_data: 'create_plan' }],
-                [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
-                [{ text: '📋 View Status', callback_data: 'view_status' }],
+                [{ text: '💰 Өөр багц үүсгэх', callback_data: 'create_plan' }],
+                [{ text: '📊 Хяналтын самбар', callback_data: 'view_dashboard' }],
+                [{ text: '📋 Төлөв харах', callback_data: 'view_status' }],
               ],
             },
           };
         } catch (error) {
           return {
-            text: `❌ Failed to create membership plan.
+            text: `❌ Гишүүнчлэлийн багц үүсгэж чадсангүй.
 
-${error.response?.message || error.message || 'Unknown error'}
+${error.response?.message || error.message || 'Тодорхойгүй алдаа'}
 
-Please try again or contact support if the issue persists.`,
+Дахин оролдоно уу эсвэл асуудал үргэлжилвэл дэмжлэгтэй холбогдоно уу.`,
           };
         }
 
       default:
-        return { text: 'Something went wrong. Please send /createplan to begin again.' };
+        return { text: 'Алдаа гарлаа. Дахин эхлүүлэхийн тулд /createplan илгээнэ үү.' };
     }
   }
 
@@ -344,7 +345,7 @@ Please try again or contact support if the issue persists.`,
     const session = await this.sessionService.getSession(telegramUserId);
 
     if (!session) {
-      return { text: 'Session expired. Please send /createplan to start again.' };
+      return { text: 'Хугацаа дууссан байна. Дахин эхлүүлэхийн тулд /createplan илгээнэ үү.' };
     }
 
     await this.sessionService.advanceStep(telegramUserId, SessionStep.PLAN_DESCRIPTION, {
@@ -354,25 +355,25 @@ Please try again or contact support if the issue persists.`,
     const daysNum = parseInt(days);
     const durationLabel =
       daysNum === 7
-        ? '7 Days'
+        ? '7 өдөр'
         : daysNum === 30
-        ? '1 Month'
+        ? '1 сар'
         : daysNum === 90
-        ? '3 Months'
+        ? '3 сар'
         : daysNum === 180
-        ? '6 Months'
-        : '1 Year';
+        ? '6 сар'
+        : '1 жил';
 
     return {
-      text: `✅ Duration: <b>${durationLabel}</b>
+      text: `✅ Хугацаа: <b>${durationLabel}</b>
 
-<b>Step 5:</b> Add a description for your plan (optional)
+<b>Алхам 5:</b> Багцын тайлбар нэмэх (заавал биш)
 
-This will help members understand what they get with this plan.
+Энэ нь гишүүдэд энэ багцаас юу авахыг ойлгоход тусална.
 
-You can skip this step by typing "skip".
+Энэ алхмыг алгасахын тулд "алгасах" гэж бичнэ үү.
 
-Enter the description:`,
+Тайлбар оруулна уу:`,
     };
   }
 }

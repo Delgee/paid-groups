@@ -75,13 +75,13 @@ export class ProjectCreationHandler {
     const navButtons = [];
     if (page > 0) {
       navButtons.push({
-        text: '⬅️ Previous',
+        text: '⬅️ Өмнөх',
         callback_data: `bank:page:${page - 1}`,
       });
     }
     if (page < totalPages - 1) {
       navButtons.push({
-        text: 'Next ➡️',
+        text: 'Дараах ➡️',
         callback_data: `bank:page:${page + 1}`,
       });
     }
@@ -107,9 +107,9 @@ export class ProjectCreationHandler {
 
     if (!account || !account.user) {
       return {
-        text: `⚠️ You need to register first before creating a project.
+        text: `⚠️ Төсөл үүсгэхээс өмнө эхлээд бүртгүүлэх хэрэгтэй.
 
-Please send /start to register your account.`,
+Бүртгэл үүсгэхийн тулд /start команд илгээнэ үү.`,
       };
     }
 
@@ -134,16 +134,16 @@ Please send /start to register your account.`,
     }
 
     return {
-      text: `🚀 <b>Create New Project</b>
+      text: `🚀 <b>Шинэ төсөл үүсгэх</b>
 
-Let's set up your Telegram bot project!
+Telegram ботын төслийг тохируулъя!
 
-<b>Step 1 of 8:</b> What would you like to name your project?
+<b>Алхам 1/8:</b> Төслийн нэрийг юу гэж өгөх вэ?
 
-Examples:
-• "Premium Fitness Channel"
-• "Crypto Trading Signals"
-• "Language Learning Community"`,
+Жишээ нь:
+• "Төлбөртэй фитнесс сувag"
+• "Крипто арилжааны дохио"
+• "Хэл сурах нийгэмлэг"`,
     };
   }
 
@@ -157,7 +157,7 @@ Examples:
 
     if (!session) {
       return {
-        text: 'Session expired. Please send /newproject to start again.',
+        text: 'Хугацаа дууссан байна. Дахин эхлүүлэхийн тулд /newproject команд илгээнэ үү.',
       };
     }
 
@@ -170,13 +170,13 @@ Examples:
       case SessionStep.PROJECT_NAME:
         if (message.length < 3) {
           return {
-            text: '❌ Project name must be at least 3 characters long.\n\nPlease provide a valid project name:',
+            text: '❌ Төслийн нэр дор хаяж 3 үсэгтэй байх ёстой.\n\nЗөв төслийн нэр оруулна уу:',
           };
         }
 
         if (message.length > 100) {
           return {
-            text: '❌ Project name must be less than 100 characters.\n\nPlease provide a shorter name:',
+            text: '❌ Төслийн нэр 100 тэмдэгтээс бага байх ёстой.\n\nБогино нэр оруулна уу:',
           };
         }
 
@@ -189,15 +189,16 @@ Examples:
         );
 
         return {
-          text: `✅ Project name: <b>${message}</b>
+          text: `✅ Төслийн нэр: <b>${message}</b>
 
-<b>Step 2 of 8:</b> Provide a brief description for your project (optional).
+<b>Алхам 2/8:</b> Төслийн товч тайлбар оруулна уу (заавал биш).
 
-You can skip this step by typing "skip".`,
+Энэ алхмыг алгасахын тулд "алгасах" гэж бичнэ үү.`,
         };
 
       case SessionStep.PROJECT_DESCRIPTION:
-        const description = message.toLowerCase() === 'skip' ? '' : message;
+        const lowerMessage = message.toLowerCase();
+        const description = (lowerMessage === 'skip' || lowerMessage === 'алгасах') ? '' : message;
 
         await this.sessionService.advanceStep(
           telegramUserId,
@@ -208,15 +209,15 @@ You can skip this step by typing "skip".`,
         );
 
         return {
-          text: `<b>Step 3 of 8:</b> Enter your Telegram Bot Token
+          text: `<b>Алхам 3/8:</b> Telegram ботын токеноо оруулна уу
 
-To get a bot token:
-1. Open @BotFather in Telegram
-2. Send /newbot
-3. Follow the instructions to create your bot
-4. Copy the bot token (format: 123456789:ABC-DEF...)
+Ботын токен авах:
+1. Telegram дээрх @BotFather-г нээнэ үү
+2. /newbot команд илгээнэ үү
+3. Ботоо үүсгэх заавар дагана уу
+4. Ботын токеныг хуулна уу (формат: 123456789:ABC-DEF...)
 
-Send me the token:`,
+Токеноо илгээнэ үү:`,
         };
 
       case SessionStep.BOT_TOKEN:
@@ -224,12 +225,12 @@ Send me the token:`,
         const tokenRegex = /^\d+:[A-Za-z0-9_-]+$/;
         if (!tokenRegex.test(message)) {
           return {
-            text: `❌ Invalid bot token format.
+            text: `❌ Ботын токены формат буруу байна.
 
-The token should look like:
+Токен ийм байх ёстой:
 <code>123456789:ABCdefGHI-JKLmnoPQR</code>
 
-Please get a valid token from @BotFather and try again:`,
+@BotFather-аас зөв токен авч дахин оролдоно уу:`,
           };
         }
 
@@ -239,9 +240,9 @@ Please get a valid token from @BotFather and try again:`,
 
           if (!botInfo) {
             return {
-              text: `❌ Invalid bot token. The token was not accepted by Telegram.
+              text: `❌ Ботын токен буруу байна. Telegram токеныг хүлээн аваагүй байна.
 
-Please check your token and try again, or get a new one from @BotFather:`,
+Токеноо шалгаад дахин оролдоно уу, эсвэл @BotFather-аас шинээр авна уу:`,
             };
           }
 
@@ -256,20 +257,20 @@ Please check your token and try again, or get a new one from @BotFather:`,
           );
 
           return {
-            text: `✅ Bot verified: <b>@${botInfo.username}</b>
+            text: `✅ Бот баталгаажлаа: <b>@${botInfo.username}</b>
 
-<b>Step 4 of 8:</b> Payment Information Notice
+<b>Алхам 4/8:</b> Төлбөрийн мэдээллийн мэдэгдэл
 
-⚠️ We'll now collect your bank account details for payment processing through QPay Mongolia.
+⚠️ Одоо QPay Mongolia-аар төлбөр боловсруулахын тулд таны банкны дансны мэдээллийг цуглуулна.
 
-<b>By continuing, you agree to:</b>
-• Store bank account information securely
-• Use this information only for payment processing
-• Comply with our data protection policies
+<b>Үргэлжлүүлснээр та дараахтай зөвшөөрч байна:</b>
+• Банкны дансны мэдээллийг аюулгүй хадгалах
+• Энэ мэдээллийг зөвхөн төлбөр боловсруулахад ашиглах
+• Мэдээлэл хамгаалах бодлогыг дагаж мөрдөх
 
-Your data is encrypted and stored securely. You can delete your project and associated data at any time.
+Таны мэдээлэл шифрлэгдсэн, аюулгүй хадгалагдана. Та төсөл болон холбогдох мэдээллээ хэзээ ч устгаж болно.
 
-<b>Type 'I AGREE' to continue</b>, or send /cancel to stop the project creation.`,
+<b>Үргэлжлүүлэхийн тулд 'ЗӨВШӨӨРЧ БАЙНА' гэж бичнэ үү</b>, эсвэл төсөл үүсгэхийг зогсоохын тулд /cancel илгээнэ үү.`,
           };
         } catch (error) {
           this.logger.error('Bot token verification failed', {
@@ -280,29 +281,30 @@ Your data is encrypted and stored securely. You can delete your project and asso
 
           if (error.response?.error?.code === 'DUPLICATE_BOT_TOKEN') {
             return {
-              text: `⚠️ This bot token is already registered in the system.
+              text: `⚠️ Энэ ботын токен аль хэдийн системд бүртгэлтэй байна.
 
-Each bot can only be used once. Please create a new bot with @BotFather or use a different token:`,
+Бот зөвхөн нэг удаа ашиглагдаж болно. @BotFather-аар шинэ бот үүсгэх эсвэл өөр токен ашиглана уу:`,
             };
           }
 
           return {
-            text: `❌ Unable to verify bot token at this time.
+            text: `❌ Ботын токеныг одоогоор баталгаажуулж чадахгүй байна.
 
-This might be due to:
-• Network connectivity issues
-• Telegram API temporarily unavailable
+Энэ нь дараах шалтгаантай байж болно:
+• Сүлжээний холболтын асуудал
+• Telegram API түр ажиллахгүй байна
 
-Please try again in a few moments, or send /cancel to exit.`,
+Хэдэн хормын дараа дахин оролдоно уу, эсвэл гарахын тулд /cancel илгээнэ үү.`,
           };
         }
 
       case SessionStep.PROJECT_BANK_PRIVACY_CONSENT:
-        if (message.trim().toUpperCase() !== 'I AGREE') {
+        const upperMessage = message.trim().toUpperCase();
+        if (upperMessage !== 'I AGREE' && upperMessage !== 'ЗӨВШӨӨРЧ БАЙНА') {
           return {
-            text: `⚠️ You must type exactly 'I AGREE' (without quotes) to continue with bank account collection.
+            text: `⚠️ Банкны дансны мэдээлэл цуглуулахын тулд 'ЗӨВШӨӨРЧ БАЙНА' (хашилтгүй) гэж бичих ёстой.
 
-If you don't want to continue, send /cancel to exit.`,
+Үргэлжлүүлэхгүй бол /cancel илгээж гарна уу.`,
           };
         }
 
@@ -315,11 +317,11 @@ If you don't want to continue, send /cancel to exit.`,
         );
 
         return {
-          text: `✅ Thank you for your consent.
+          text: `✅ Зөвшөөрсөнд баярлалаа.
 
-<b>Step 5 of 8:</b> Select your bank for payment processing
+<b>Алхам 5/8:</b> Төлбөр боловсруулахад ашиглах банкаа сонгоно уу
 
-Please tap on your bank from the list below:`,
+Доорх жагсаалтаас банкаа сонгоно уу:`,
           keyboard: this.generateBankKeyboard(0),
         };
 
@@ -327,7 +329,7 @@ Please tap on your bank from the list below:`,
         // This step is handled by callback queries (inline keyboard)
         // If user sends text instead of clicking button, show error
         return {
-          text: `⚠️ Please select your bank using the buttons above, or send /cancel to exit.`,
+          text: `⚠️ Дээрх товчлуураар банкаа сонгоно уу, эсвэл гарахын тулд /cancel илгээнэ үү.`,
           keyboard: this.generateBankKeyboard(session.data.bank_page || 0),
         };
 
@@ -337,27 +339,27 @@ Please tap on your bank from the list below:`,
 
         if (trimmedAccountNumber.length === 0) {
           return {
-            text: `❌ Account number cannot be empty.
+            text: `❌ Дансны дугаар хоосон байж болохгүй.
 
-Please enter your bank account number:`,
+Банкны дансны дугаараа оруулна уу:`,
           };
         }
 
         if (trimmedAccountNumber.length > MAX_ACCOUNT_NUMBER_LENGTH) {
           return {
-            text: `❌ Account number is too long (max ${MAX_ACCOUNT_NUMBER_LENGTH} characters).
+            text: `❌ Дансны дугаар хэт урт байна (хамгийн ихдээ ${MAX_ACCOUNT_NUMBER_LENGTH} тэмдэгт).
 
-Please enter a valid bank account number:`,
+Зөв дансны дугаар оруулна уу:`,
           };
         }
 
         if (!ACCOUNT_NUMBER_REGEX.test(trimmedAccountNumber)) {
           return {
-            text: `❌ Invalid account number format.
+            text: `❌ Дансны дугаарын формат буруу байна.
 
-Bank account numbers should contain only digits (8-20 characters).
+Банкны дансны дугаар зөвхөн тоо агуулах ёстой (8-20 тэмдэгт).
 
-Please enter a valid bank account number:`,
+Зөв дансны дугаар оруулна уу:`,
           };
         }
 
@@ -372,13 +374,13 @@ Please enter a valid bank account number:`,
         const maskedAccount = this.maskAccountNumber(trimmedAccountNumber);
 
         return {
-          text: `✅ Account number saved: <code>${maskedAccount}</code>
+          text: `✅ Дансны дугаар хадгалагдлаа: <code>${maskedAccount}</code>
 
-<b>Step 7 of 8:</b> Enter the account holder name
+<b>Алхам 7/8:</b> Дансны эзэмшигчийн нэрийг оруулна уу
 
-This should match the name registered with the bank.
+Энэ нь банкинд бүртгэгдсэн нэртэй таарах ёстой.
 
-Example: Bat-Erdene Ganbaatar`,
+Жишээ: Бат-Эрдэнэ Ганбаатар`,
         };
 
       case SessionStep.PROJECT_ACCOUNT_NAME:
@@ -387,17 +389,17 @@ Example: Bat-Erdene Ganbaatar`,
 
         if (trimmedAccountName.length === 0) {
           return {
-            text: `❌ Account holder name cannot be empty.
+            text: `❌ Дансны эзэмшигчийн нэр хоосон байж болохгүй.
 
-Please enter the account holder name:`,
+Дансны эзэмшигчийн нэрийг оруулна уу:`,
           };
         }
 
         if (trimmedAccountName.length > MAX_ACCOUNT_NAME_LENGTH) {
           return {
-            text: `❌ Account holder name is too long (max ${MAX_ACCOUNT_NAME_LENGTH} characters).
+            text: `❌ Дансны эзэмшигчийн нэр хэт урт байна (хамгийн ихдээ ${MAX_ACCOUNT_NAME_LENGTH} тэмдэгт).
 
-Please enter the account holder name:`,
+Дансны эзэмшигчийн нэрийг оруулна уу:`,
           };
         }
 
@@ -419,28 +421,29 @@ Please enter the account holder name:`,
         );
 
         return {
-          text: `<b>Step 8 of 8:</b> Confirm Your Project Details
+          text: `<b>Алхам 8/8:</b> Төслийн дэлгэрэнгүй мэдээллийг баталгаажуулах
 
-Please review the information below:
+Доорх мэдээллийг шалгана уу:
 
-📝 <b>Project Name:</b> ${confirmSession.data.project_name}
-🤖 <b>Bot:</b> @${confirmSession.data.bot_username}
-📄 <b>Description:</b> ${confirmSession.data.project_description || 'None'}
-🏦 <b>Bank:</b> ${bankName}
-💳 <b>Account Number:</b> <code>${maskedAccountForConfirm}</code>
-👤 <b>Account Holder:</b> ${confirmSession.data.account_name}
+📝 <b>Төслийн нэр:</b> ${confirmSession.data.project_name}
+🤖 <b>Бот:</b> @${confirmSession.data.bot_username}
+📄 <b>Тайлбар:</b> ${confirmSession.data.project_description || 'Байхгүй'}
+🏦 <b>Банк:</b> ${bankName}
+💳 <b>Дансны дугаар:</b> <code>${maskedAccountForConfirm}</code>
+👤 <b>Дансны эзэмшигч:</b> ${confirmSession.data.account_name}
 
-⚠️ <b>Important:</b> Please verify your bank account details are correct. Incorrect information may prevent you from receiving payments.
+⚠️ <b>Анхаар:</b> Банкны дансны мэдээлэл зөв эсэхийг шалгана уу. Буруу мэдээлэл нь та төлбөр хүлээн авахад саад болно.
 
-<b>Type 'CONFIRM' to create your project</b>, or /cancel to start over.`,
+<b>Төслөө үүсгэхийн тулд 'БАТАЛГААЖУУЛАХ' гэж бичнэ үү</b>, эсвэл эхнээс эхлүүлэхийн тулд /cancel илгээнэ үү.`,
         };
 
       case SessionStep.PROJECT_CONFIRM:
-        if (message.trim().toUpperCase() !== 'CONFIRM') {
+        const confirmMessage = message.trim().toUpperCase();
+        if (confirmMessage !== 'CONFIRM' && confirmMessage !== 'БАТАЛГААЖУУЛАХ') {
           return {
-            text: `⚠️ You must type exactly 'CONFIRM' (without quotes) to create the project.
+            text: `⚠️ Төслийг үүсгэхийн тулд 'БАТАЛГААЖУУЛАХ' (хашилтгүй) гэж бичих ёстой.
 
-If you want to start over, send /cancel.`,
+Эхнээс эхлүүлэхийн тулд /cancel илгээнэ үү.`,
           };
         }
 
@@ -489,34 +492,34 @@ If you want to start over, send /cancel.`,
           });
 
           return {
-            text: `🎉 <b>Project Created Successfully!</b>
+            text: `🎉 <b>Төсөл амжилттай үүслээ!</b>
 
-<b>Project Details:</b>
-• Name: ${finalSession.data.project_name}
-• Bot: @${finalSession.data.bot_username}
-• Bank: ${finalBankName}
-• Account: <code>${finalMaskedAccount}</code>
-• Status: Active
+<b>Төслийн дэлгэрэнгүй:</b>
+• Нэр: ${finalSession.data.project_name}
+• Бот: @${finalSession.data.bot_username}
+• Банк: ${finalBankName}
+• Данс: <code>${finalMaskedAccount}</code>
+• Төлөв: Идэвхитэй
 
-Your project is now ready to accept payments!
+Таны төсөл одоо төлбөр хүлээн авахад бэлэн боллоо!
 
-<b>What's next?</b>`,
+<b>Дараагийн алхам:</b>`,
             keyboard: {
               inline_keyboard: [
-                [{ text: '➕ Add Telegram Group', callback_data: 'add_group' }],
+                [{ text: '➕ Telegram групп нэмэх', callback_data: 'add_group' }],
                 [
                   {
-                    text: '💰 Create Membership Plan',
+                    text: '💰 Гишүүнчлэлийн багц үүсгэх',
                     callback_data: 'create_plan',
                   },
                 ],
                 [
                   {
-                    text: '📊 View Dashboard',
+                    text: '📊 Хяналтын самбар',
                     callback_data: 'view_dashboard',
                   },
                 ],
-                [{ text: '❓ Get Help', callback_data: 'help' }],
+                [{ text: '❓ Тусламж авах', callback_data: 'help' }],
               ],
             },
           };
@@ -533,28 +536,28 @@ Your project is now ready to accept payments!
 
           if (error.response?.error?.code === 'DUPLICATE_BOT_TOKEN') {
             return {
-              text: `⚠️ This bot token is already registered in the system.
+              text: `⚠️ Энэ ботын токен аль хэдийн системд бүртгэлтэй байна.
 
-Each bot can only be used once. Please send /newproject to try again with a different bot.`,
+Бот зөвхөн нэг удаа ашиглагдаж болно. Өөр боттой дахин оролдохын тулд /newproject илгээнэ үү.`,
             };
           }
 
           // Don't expose internal error details to user
           return {
-            text: `❌ Unable to create project at this time.
+            text: `❌ Төслийг одоогоор үүсгэж чадахгүй байна.
 
-This might be due to:
-• System temporarily unavailable
-• Network connectivity issues
-• Invalid configuration
+Энэ нь дараах шалтгаантай байж болно:
+• Систем түр ажиллахгүй байна
+• Сүлжээний холболтын асуудал
+• Буруу тохиргоо
 
-Please try again in a few minutes. If the problem persists, contact support with reference ID: <code>${correlationId}</code>`,
+Хэдэн минутын дараа дахин оролдоно уу. Асуудал үргэлжилвэл дэмжлэгтэй холбогдож лавлах дугаарыг өгнө үү: <code>${correlationId}</code>`,
           };
         }
 
       default:
         return {
-          text: 'Something went wrong. Please send /newproject to begin again.',
+          text: 'Алдаа гарлаа. Дахин эхлүүлэхийн тулд /newproject илгээнэ үү.',
         };
     }
   }
@@ -570,7 +573,7 @@ Please try again in a few minutes. If the problem persists, contact support with
 
     if (!session || session.current_step !== SessionStep.PROJECT_BANK) {
       return {
-        text: 'Session expired. Please send /newproject to start again.',
+        text: 'Хугацаа дууссан байна. Дахин эхлүүлэхийн тулд /newproject илгээнэ үү.',
       };
     }
 
@@ -585,9 +588,9 @@ Please try again in a few minutes. If the problem persists, contact support with
       });
 
       return {
-        text: `<b>Step 5 of 8:</b> Select your bank for payment processing
+        text: `<b>Алхам 5/8:</b> Төлбөр боловсруулахад ашиглах банкаа сонгоно уу
 
-Please tap on your bank from the list below (Page ${page + 1}):`,
+Доорх жагсаалтаас банкаа сонгоно уу (Хуудас ${page + 1}):`,
         keyboard: this.generateBankKeyboard(page),
       };
     }
@@ -601,7 +604,7 @@ Please tap on your bank from the list below (Page ${page + 1}):`,
 
       if (!selectedBank) {
         return {
-          text: '❌ Invalid bank selection. Please try again.',
+          text: '❌ Буруу банк сонгогдлоо. Дахин оролдоно уу.',
           keyboard: this.generateBankKeyboard(session.data.bank_page || 0),
         };
       }
@@ -615,19 +618,19 @@ Please tap on your bank from the list below (Page ${page + 1}):`,
       );
 
       return {
-        text: `✅ Bank selected: <b>${selectedBank.name}</b>
+        text: `✅ Банк сонгогдлоо: <b>${selectedBank.name}</b>
 
-<b>Step 6 of 8:</b> Enter your bank account number
+<b>Алхам 6/8:</b> Банкны дансны дугаараа оруулна уу
 
-This is the account where payments will be deposited.
+Энэ бол төлбөр орох данс юм.
 
-<b>Format:</b> 8-20 digits only
-<b>Example:</b> 490000869`,
+<b>Формат:</b> Зөвхөн 8-20 оронтой тоо
+<b>Жишээ:</b> 490000869`,
       };
     }
 
     return {
-      text: 'Invalid selection. Please try again.',
+      text: 'Буруу сонголт. Дахин оролдоно уу.',
       keyboard: this.generateBankKeyboard(session.data.bank_page || 0),
     };
   }

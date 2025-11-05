@@ -12,16 +12,16 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const registerSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number'),
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  phone: z.string().regex(/^\d{8}$/, 'Phone must be exactly 8 digits'),
-  register_number: z.string().length(10, 'Registration number must be exactly 10 characters'),
-  company_name: z.string().min(2, 'Company name must be at least 2 characters').optional(),
+  email: z.string().email('Зөв имэйл хаяг оруулна уу'),
+  password: z.string().min(8, 'Нууц үг дор хаяж 8 тэмдэгттэй байх ёстой')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Нууц үг том үсэг, жижиг үсэг, тоо агуулсан байх ёстой'),
+  name: z.string().min(2, 'Нэр дор хаяж 2 тэмдэгттэй байх ёстой'),
+  phone: z.string().regex(/^\d{8}$/, 'Утасны дугаар яг 8 оронтой байх ёстой'),
+  register_number: z.string().length(10, 'Регистрийн дугаар яг 10 тэмдэгттэй байх ёстой'),
+  company_name: z.string().min(2, 'Компанийн нэр дор хаяж 2 тэмдэгттэй байх ёстой').optional(),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "Нууц үг таарахгүй байна",
   path: ["confirmPassword"],
 });
 
@@ -49,7 +49,7 @@ export default function RegisterPage() {
       const { confirmPassword, ...registerData } = data;
       await registerUser(registerData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during registration');
+      setError(err instanceof Error ? err.message : 'Бүртгэлийн үед алдаа гарлаа');
     } finally {
       setIsLoading(false);
     }
@@ -58,9 +58,9 @@ export default function RegisterPage() {
   return (
     <Card className="w-full">
       <CardHeader className="text-center">
-        <CardTitle>Create your account</CardTitle>
+        <CardTitle>Бүртгэл үүсгэх</CardTitle>
         <CardDescription>
-          Start managing your Telegram groups with our SaaS platform
+          Манай платформоор Telegram группүүдээ удирдаж эхлээрэй
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -72,7 +72,7 @@ export default function RegisterPage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name">Овог нэр</Label>
             <Input
               id="name"
               type="text"
@@ -87,7 +87,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="phone">Утасны дугаар</Label>
             <Input
               id="phone"
               type="tel"
@@ -101,12 +101,12 @@ export default function RegisterPage() {
               <p className="text-red-600 text-sm">{errors.phone.message}</p>
             )}
             <p className="text-xs text-gray-500">
-              8 digits (e.g., 99112210)
+              8 оронтой (жишээ нь: 99112210)
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="register_number">Registration Number (РД)</Label>
+            <Label htmlFor="register_number">Регистрийн дугаар (РД)</Label>
             <Input
               id="register_number"
               type="text"
@@ -120,19 +120,19 @@ export default function RegisterPage() {
               <p className="text-red-600 text-sm">{errors.register_number.message}</p>
             )}
             <p className="text-xs text-gray-500">
-              10 characters (e.g., АМ05321712)
+              10 тэмдэгттэй (жишээ нь: АМ05321712)
             </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="company_name">
-              Company Name <span className="text-gray-500 font-normal">(Optional)</span>
+              Компанийн нэр <span className="text-gray-500 font-normal">(Заавал биш)</span>
             </Label>
             <Input
               id="company_name"
               type="text"
               autoComplete="organization"
-              placeholder="Will be auto-generated if not provided"
+              placeholder="Оруулаагүй бол автоматаар үүснэ"
               {...register('company_name')}
               className={errors.company_name ? 'border-red-500' : ''}
             />
@@ -142,7 +142,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
+            <Label htmlFor="email">Имэйл хаяг</Label>
             <Input
               id="email"
               type="email"
@@ -157,7 +157,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Нууц үг</Label>
             <Input
               id="password"
               type="password"
@@ -170,12 +170,12 @@ export default function RegisterPage() {
               <p className="text-red-600 text-sm">{errors.password.message}</p>
             )}
             <p className="text-xs text-gray-500">
-              Password must contain uppercase, lowercase, and number
+              Нууц үг том үсэг, жижиг үсэг, тоо агуулсан байх ёстой
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">Нууц үг баталгаажуулах</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -197,21 +197,21 @@ export default function RegisterPage() {
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Creating account...
+                Бүртгэл үүсгэж байна...
               </>
             ) : (
-              'Create account'
+              'Бүртгэл үүсгэх'
             )}
           </Button>
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link 
-                href="/login" 
+              Бүртгэлтэй юу?{' '}
+              <Link
+                href="/login"
                 className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
               >
-                Sign in here
+                Нэвтрэх
               </Link>
             </p>
           </div>

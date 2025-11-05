@@ -27,7 +27,7 @@ export default function ProjectsPage() {
       const response = await projectApi.getAll();
       setProjects(response.data || []);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to load projects';
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Төслүүдийг ачаалж чадсангүй';
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -38,10 +38,10 @@ export default function ProjectsPage() {
     try {
       setSyncing(id);
       await projectApi.sync(id);
-      toast.success('Project synced successfully');
+      toast.success('Төслийг амжилттай синк хийлээ');
       await loadProjects();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to sync project';
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Төслийг синк хийхэд алдаа гарлаа';
       toast.error(errorMessage);
     } finally {
       setSyncing(null);
@@ -49,16 +49,16 @@ export default function ProjectsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this project? This will also delete all associated telegram groups and membership plans.')) {
+    if (!confirm('Энэ төслийг устгахдаа итгэлтэй байна уу? Холбогдох бүх Telegram групп болон багцууд устах болно.')) {
       return;
     }
 
     try {
       await projectApi.delete(id);
-      toast.success('Project deleted successfully');
+      toast.success('Төслийг амжилттай устгалаа');
       await loadProjects();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to delete project';
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Төсөл устгахад алдаа гарлаа';
       toast.error(errorMessage);
     }
   };
@@ -68,7 +68,7 @@ export default function ProjectsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <RefreshCwIcon className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading projects...</p>
+          <p className="text-muted-foreground">Төслүүдийг ачаалж байна...</p>
         </div>
       </div>
     );
@@ -78,14 +78,14 @@ export default function ProjectsPage() {
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Төслүүд</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your Telegram bot projects and their associated groups
+            Telegram ботын төслүүд болон холбогдох группүүдийг удирдах
           </p>
         </div>
         <Button onClick={() => router.push('/dashboard/projects/create')}>
           <PlusIcon className="mr-2 h-4 w-4" />
-          Add Project
+          Төсөл нэмэх
         </Button>
       </div>
 
@@ -93,13 +93,13 @@ export default function ProjectsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <BotIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
+            <h3 className="text-lg font-semibold mb-2">Төсөл байхгүй байна</h3>
             <p className="text-muted-foreground mb-4 text-center max-w-md">
-              Get started by creating your first project. Each project can have multiple Telegram groups with paid memberships.
+              Эхний төслөө үүсгээд эхлээрэй. Төсөл бүр олон Telegram групптэй, төлбөртэй гишүүнчлэлтэй байж болно.
             </p>
             <Button onClick={() => router.push('/dashboard/projects/create')}>
               <PlusIcon className="mr-2 h-4 w-4" />
-              Create Project
+              Төсөл үүсгэх
             </Button>
           </CardContent>
         </Card>
@@ -123,13 +123,13 @@ export default function ProjectsPage() {
                       </CardDescription>
                       {project.last_sync_at && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Last synced: {new Date(project.last_sync_at).toLocaleDateString()}
+                          Сүүлд синк хийсэн: {new Date(project.last_sync_at).toLocaleDateString('mn-MN')}
                         </p>
                       )}
                     </div>
                   </div>
                   <Badge variant={project.is_active ? 'default' : 'secondary'}>
-                    {project.is_active ? 'Active' : 'Inactive'}
+                    {project.is_active ? 'Идэвхитэй' : 'Идэвхгүй'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -142,7 +142,7 @@ export default function ProjectsPage() {
 
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Created {new Date(project.created_at).toLocaleDateString()}
+                    Үүсгэсэн {new Date(project.created_at).toLocaleDateString('mn-MN')}
                   </p>
                 </div>
 
@@ -154,7 +154,7 @@ export default function ProjectsPage() {
                     onClick={() => router.push(`/dashboard/projects/${project.id}`)}
                   >
                     <SettingsIcon className="mr-2 h-4 w-4" />
-                    Manage
+                    Удирдах
                   </Button>
                   <Button
                     variant="outline"

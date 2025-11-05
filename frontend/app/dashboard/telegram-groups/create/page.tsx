@@ -29,14 +29,14 @@ export default function CreateTelegramGroupPage() {
       // Invalidate and refetch related queries
       queryClient.invalidateQueries({ queryKey: telegramGroupsQueryKeys.all });
 
-      toast.success(`Telegram group "${newGroup.group_name}" created and connected successfully!`);
+      toast.success(`"${newGroup.group_name}" группыг амжилттай үүсгэж, холболоо!`);
 
       // Redirect to the groups list
       router.push('/dashboard/telegram-groups');
     },
     onError: (error: Error) => {
       // Error messages are now more specific from backend validation
-      toast.error(error.message || 'Failed to create telegram group');
+      toast.error(error.message || 'Telegram групп үүсгэхэд алдаа гарлаа');
     },
   });
 
@@ -49,13 +49,13 @@ export default function CreateTelegramGroupPage() {
       <div className="mb-6">
         <Button variant="ghost" onClick={() => router.back()} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Telegram Groups
+          Telegram группүүд руу буцах
         </Button>
 
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Create Telegram Group</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Telegram групп үүсгэх</h1>
           <p className="text-muted-foreground">
-            Set up a new paid Telegram group with automated access management
+            Автомат хандалтын удирдлагатай төлбөртэй Telegram групп үүсгэх
           </p>
         </div>
       </div>

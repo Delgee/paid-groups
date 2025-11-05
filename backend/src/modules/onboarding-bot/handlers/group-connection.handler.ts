@@ -29,9 +29,9 @@ export class GroupConnectionHandler {
 
     if (!account || !account.user) {
       return {
-        text: `⚠️ You need to register first before adding groups.
+        text: `⚠️ Групп нэмэхээс өмнө эхлээд бүртгүүлэх хэрэгтэй.
 
-Please send /start to register your account.`,
+Бүртгүүлэхийн тулд /start илгээнэ үү.`,
       };
     }
 
@@ -47,12 +47,12 @@ Please send /start to register your account.`,
 
     if (projectsResponse.data.length === 0) {
       return {
-        text: `⚠️ You need to create a project first before adding groups.
+        text: `⚠️ Групп нэмэхээс өмнө эхлээд төсөл үүсгэх хэрэгтэй.
 
-Please create a project using the button below:`,
+Доорх товчлуур ашиглан төсөл үүсгэнэ үү:`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '🚀 Create Project', callback_data: 'create_project' }],
+            [{ text: '🚀 Төсөл үүсгэх', callback_data: 'create_project' }],
           ],
         },
       };
@@ -80,15 +80,15 @@ Please create a project using the button below:`,
       );
 
       return {
-        text: `➕ <b>Add Telegram Group</b>
+        text: `➕ <b>Telegram групп нэмэх</b>
 
-Project: <b>${projectsResponse.data[0].display_name}</b>
+Төсөл: <b>${projectsResponse.data[0].display_name}</b>
 
-<b>Step 1:</b> What type of Telegram group do you want to add?`,
+<b>Алхам 1:</b> Ямар төрлийн Telegram групп нэмэх вэ?`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '📢 Channel', callback_data: 'group_type:channel' }],
-            [{ text: '👥 Group', callback_data: 'group_type:group' }],
+            [{ text: '📢 Сувag', callback_data: 'group_type:channel' }],
+            [{ text: '👥 Групп', callback_data: 'group_type:group' }],
           ],
         },
       };
@@ -119,9 +119,9 @@ Project: <b>${projectsResponse.data[0].display_name}</b>
     ]);
 
     return {
-      text: `➕ <b>Add Telegram Group</b>
+      text: `➕ <b>Telegram групп нэмэх</b>
 
-<b>Step 1:</b> Select the project for this group:`,
+<b>Алхам 1:</b> Энэ группд зориулсан төслөө сонгоно уу:`,
       keyboard: {
         inline_keyboard: projectButtons,
       },
@@ -142,24 +142,25 @@ Project: <b>${projectsResponse.data[0].display_name}</b>
       },
     );
 
-    const typeLabel = groupType === 'channel' ? 'Channel' : 'Group';
+    const typeLabel = groupType === 'channel' ? 'Сувag' : 'Групп';
+    const typeLabelLower = groupType === 'channel' ? 'сувгаа' : 'группаа';
 
     return {
-      text: `<b>Step 2:</b> Connect your Telegram ${typeLabel}
+      text: `<b>Алхам 2:</b> Telegram ${typeLabelLower} холбох
 
-To connect your ${groupType}:
-1. Add your bot to the ${groupType} as an <b>administrator</b>
-2. Make sure the bot has permission to:
-   ${groupType === 'channel' ? '• Post messages' : '• Manage members\n   • Invite users via link'}
-3. Send me the ${groupType}'s username (with @) or ID
+${typeLabelLower} холбохын тулд:
+1. Ботоо ${typeLabelLower} руу <b>админ</b> эрхтэй нэмнэ үү
+2. Бот дараах эрхтэй байх ёстой:
+   ${groupType === 'channel' ? '• Пост илгээх' : '• Гишүүд удирдах\n   • Линкээр урих'}
+3. ${typeLabel}-ийн хэрэглэгчийн нэр (@-тэй) эсвэл ID илгээнэ үү
 
-<b>Option 1:</b> Send username
-${groupType === 'channel' ? '@my_premium_channel' : '@my_premium_group'}
+<b>Сонголт 1:</b> Хэрэглэгчийн нэр илгээх
+${groupType === 'channel' ? '@миний_төлбөртэй_сувag' : '@миний_төлбөртэй_групп'}
 
-<b>Option 2:</b> Forward any message from your ${groupType}
-This is the easiest way! Just forward a message and I'll automatically detect the ${groupType} details.
+<b>Сонголт 2:</b> ${typeLabelLower}-аас мессеж дамжуулах
+Энэ хамгийн хялбар арга! Мессеж дамжуулбал би ${typeLabelLower}-ийн мэдээллийг автоматаар таних болно.
 
-Choose one of the options above:`,
+Дээрх сонголтоос нэгийг сонгоно уу:`,
     };
   }
 
@@ -182,7 +183,7 @@ Choose one of the options above:`,
 
     if (!project) {
       return {
-        text: '❌ Project not found. Please send /addgroup to start again.',
+        text: '❌ Төсөл олдсонгүй. Дахин эхлүүлэхийн тулд /addgroup илгээнэ үү.',
       };
     }
 
@@ -195,13 +196,13 @@ Choose one of the options above:`,
     );
 
     return {
-      text: `Project selected: <b>${project.display_name}</b>
+      text: `Төсөл сонгогдлоо: <b>${project.display_name}</b>
 
-<b>Step 2:</b> What type of Telegram group do you want to add?`,
+<b>Алхам 2:</b> Ямар төрлийн Telegram групп нэмэх вэ?`,
       keyboard: {
         inline_keyboard: [
-          [{ text: '📢 Channel', callback_data: 'group_type:channel' }],
-          [{ text: '👥 Group', callback_data: 'group_type:group' }],
+          [{ text: '📢 Сувag', callback_data: 'group_type:channel' }],
+          [{ text: '👥 Групп', callback_data: 'group_type:group' }],
         ],
       },
     };
@@ -217,7 +218,7 @@ Choose one of the options above:`,
 
     if (!session || session.current_step !== SessionStep.GROUP_CONNECTION) {
       return {
-        text: `ℹ️ To add a channel or group, please first use /addgroup command, then forward a message from your channel/group to me.`,
+        text: `ℹ️ Сувag эсвэл групп нэмэхийн тулд эхлээд /addgroup команд ашиглаад, дараа нь сувag/группаасаа мессеж надруу дамжуулна уу.`,
       };
     }
 
@@ -237,13 +238,13 @@ Choose one of the options above:`,
 
     if (!chatId) {
       return {
-        text: `❌ Could not extract channel/group information from the forwarded message.
+        text: `❌ Дамжуулсан мессежээс сувag/группын мэдээлэл олж чадсангүй.
 
-Please make sure you:
-1. Forward a message FROM the channel/group (not a message ABOUT it)
-2. The bot is added as admin in that channel/group
+Дараахыг шалгана уу:
+1. Сувag/группаас мессеж дамжуулсан эсэх (түүний тухай мессеж биш)
+2. Бот тэр сувag/группд админ эрхтэй нэмэгдсэн эсэх
 
-Try forwarding again or enter the channel username manually:`,
+Дахин дамжуулж үзэх эсвэл сувгийн хэрэглэгчийн нэрийг гараар оруулна уу:`,
       };
     }
 
@@ -263,62 +264,62 @@ Try forwarding again or enter the channel username manually:`,
       await this.sessionService.clearSession(telegramUserId);
 
       return {
-        text: `🎉 <b>Channel/Group Connected Successfully!</b>
+        text: `🎉 <b>Сувag/Групп амжилттай холбогдлоо!</b>
 
-<b>Details:</b>
-• Name: ${telegramGroup.group_name}
-• Chat ID: ${chatId}
-${chatUsername ? `• Username: @${chatUsername}` : ''}
-• Status: Active
+<b>Дэлгэрэнгүй:</b>
+• Нэр: ${telegramGroup.group_name}
+• Чатын ID: ${chatId}
+${chatUsername ? `• Хэрэглэгчийн нэр: @${chatUsername}` : ''}
+• Төлөв: Идэвхитэй
 
-<b>What's next?</b>`,
+<b>Дараагийн алхам:</b>`,
         keyboard: {
           inline_keyboard: [
             [
               {
-                text: '💰 Create Membership Plan',
+                text: '💰 Гишүүнчлэлийн багц үүсгэх',
                 callback_data: 'create_plan',
               },
             ],
-            [{ text: '➕ Add Another Group', callback_data: 'add_group' }],
-            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
+            [{ text: '➕ Өөр групп нэмэх', callback_data: 'add_group' }],
+            [{ text: '📊 Хяналтын самбар', callback_data: 'view_dashboard' }],
           ],
         },
       };
     } catch (error) {
       if (error.response?.message?.includes('not found')) {
         return {
-          text: `❌ Could not access the channel/group.
+          text: `❌ Сувag/групп руу хандаж чадсангүй.
 
-Please check:
-• The bot is added as an administrator
-• The bot has required permissions
-• Try again after adding the bot
+Дараахыг шалгана уу:
+• Бот админ эрхтэй нэмэгдсэн эсэх
+• Бот шаардлагатай эрхтэй эсэх
+• Ботыг нэмсний дараа дахин оролдоно уу
 
-Forward a message again after fixing:`,
+Засч дууссаны дараа дахин мессеж дамжуулна уу:`,
         };
       }
 
       if (error.response?.statusCode === 409) {
         return {
-          text: `⚠️ This channel/group is already connected to your project.
+          text: `⚠️ Энэ сувag/групп аль хэдийн таны төсөлд холбогдсон байна.
 
-You can:`,
+Та дараахыг хийж болно:`,
           keyboard: {
             inline_keyboard: [
-              [{ text: '➕ Add Different Group', callback_data: 'add_group' }],
-              [{ text: '📊 View All Groups', callback_data: 'view_dashboard' }],
+              [{ text: '➕ Өөр групп нэмэх', callback_data: 'add_group' }],
+              [{ text: '📊 Бүх группүүдийг харах', callback_data: 'view_dashboard' }],
             ],
           },
         };
       }
 
       return {
-        text: `❌ Failed to connect channel/group.
+        text: `❌ Сувag/групп холбож чадсангүй.
 
-${error.response?.message || error.message || 'Unknown error'}
+${error.response?.message || error.message || 'Тодорхойгүй алдаа'}
 
-Please try again or contact support if the issue persists.`,
+Дахин оролдоно уу эсвэл асуудал үргэлжилвэл дэмжлэгтэй холбогдоно уу.`,
       };
     }
   }
@@ -332,7 +333,7 @@ Please try again or contact support if the issue persists.`,
     const session = await this.sessionService.getSession(telegramUserId);
 
     if (!session) {
-      return { text: 'Session expired. Please send /addgroup to start again.' };
+      return { text: 'Хугацаа дууссан байна. Дахин эхлүүлэхийн тулд /addgroup илгээнэ үү.' };
     }
 
     const account =
@@ -354,17 +355,18 @@ Please try again or contact support if the issue persists.`,
         channelUsername.length < 5 ||
         !/^[a-zA-Z0-9_]+$/.test(channelUsername)
       ) {
+        const typeLabel = session.data.group_type === 'channel' ? 'сувгийн' : 'группын';
         return {
-          text: `❌ Invalid ${session.data.group_type} username format.
+          text: `❌ ${typeLabel} хэрэглэгчийн нэрийн формат буруу байна.
 
-Username should:
-• Be at least 5 characters
-• Contain only letters, numbers, and underscores
-• Start with @
+Хэрэглэгчийн нэр:
+• Дор хаяж 5 тэмдэгттэй байх
+• Зөвхөн үсэг, тоо, доогуур зураас агуулах
+• @-ээр эхлэх
 
-Example: @my_premium_channel
+Жишээ: @миний_төлбөртэй_сувag
 
-Please try again:`,
+Дахин оролдоно уу:`,
         };
       }
 
@@ -384,44 +386,44 @@ Please try again:`,
         await this.sessionService.clearSession(telegramUserId);
 
         const typeLabel =
-          session.data.group_type === 'channel' ? 'Channel' : 'Group';
+          session.data.group_type === 'channel' ? 'Сувag' : 'Групп';
 
         return {
-          text: `🎉 <b>${typeLabel} Connected Successfully!</b>
+          text: `🎉 <b>${typeLabel} амжилттай холбогдлоо!</b>
 
-<b>${typeLabel} Details:</b>
-• Name: ${telegramGroup.group_name}
-• Type: ${typeLabel}
-• Status: Active
+<b>${typeLabel}-ийн дэлгэрэнгүй:</b>
+• Нэр: ${telegramGroup.group_name}
+• Төрөл: ${typeLabel}
+• Төлөв: Идэвхитэй
 
-<b>What's next?</b>`,
+<b>Дараагийн алхам:</b>`,
           keyboard: {
             inline_keyboard: [
               [
                 {
-                  text: '💰 Create Membership Plan',
+                  text: '💰 Гишүүнчлэлийн багц үүсгэх',
                   callback_data: 'create_plan',
                 },
               ],
-              [{ text: '➕ Add Another Group', callback_data: 'add_group' }],
-              [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
+              [{ text: '➕ Өөр групп нэмэх', callback_data: 'add_group' }],
+              [{ text: '📊 Хяналтын самбар', callback_data: 'view_dashboard' }],
             ],
           },
         };
       } catch (error) {
         const typeLabel =
-          session.data.group_type === 'channel' ? 'channel' : 'group';
+          session.data.group_type === 'channel' ? 'сувag' : 'групп';
 
         if (error.response?.message?.includes('not found')) {
           return {
-            text: `❌ Could not find the ${typeLabel} <b>@${channelUsername}</b>
+            text: `❌ <b>@${channelUsername}</b> ${typeLabel}-ийг олж чадсангүй
 
-Please check:
-• The username is correct
-• The ${typeLabel} is public (or your bot is added as admin)
-• You added the bot to the ${typeLabel}
+Дараахыг шалгана уу:
+• Хэрэглэгчийн нэр зөв эсэх
+• ${typeLabel} нийтийн эсэх (эсвэл таны бот админаар нэмэгдсэн)
+• Ботыг ${typeLabel} руу нэмсэн эсэх
 
-Try again with the correct username:`,
+Зөв хэрэглэгчийн нэрээр дахин оролдоно уу:`,
           };
         }
 
@@ -430,35 +432,35 @@ Try again with the correct username:`,
           error.response?.message?.includes('admin')
         ) {
           return {
-            text: `❌ Bot lacks required permissions in <b>@${channelUsername}</b>
+            text: `❌ Бот <b>@${channelUsername}</b> дотор шаардлагатай эрхгүй байна
 
-<b>To fix this:</b>
-1. Open your ${typeLabel} settings
-2. Add your bot as an <b>Administrator</b>
-3. Grant these permissions:
-   ${session.data.group_type === 'channel' ? '• Post messages\n   • Edit messages' : '• Manage users\n   • Invite users via link'}
-4. Send the username again
+<b>Засахын тулд:</b>
+1. ${typeLabel}-ийн тохиргоог нээнэ үү
+2. Ботоо <b>Админ</b> эрхтэй нэмнэ үү
+3. Дараах эрхийг олгоно уу:
+   ${session.data.group_type === 'channel' ? '• Пост илгээх\n   • Пост засах' : '• Гишүүд удирдах\n   • Линкээр урих'}
+4. Хэрэглэгчийн нэрийг дахин илгээнэ үү
 
-Try again after granting permissions:`,
+Эрх олгосны дараа дахин оролдоно уу:`,
           };
         }
 
         if (error.response?.statusCode === 409) {
           return {
-            text: `⚠️ This ${typeLabel} is already connected to your project.
+            text: `⚠️ Энэ ${typeLabel} аль хэдийн таны төсөлд холбогдсон байна.
 
-You can:`,
+Та дараахыг хийж болно:`,
             keyboard: {
               inline_keyboard: [
                 [
                   {
-                    text: '➕ Add Different Group',
+                    text: '➕ Өөр групп нэмэх',
                     callback_data: 'add_group',
                   },
                 ],
                 [
                   {
-                    text: '📊 View All Groups',
+                    text: '📊 Бүх группүүдийг харах',
                     callback_data: 'view_dashboard',
                   },
                 ],
@@ -468,17 +470,17 @@ You can:`,
         }
 
         return {
-          text: `❌ Failed to connect ${typeLabel}.
+          text: `❌ ${typeLabel} холбож чадсангүй.
 
-${error.response?.message || error.message || 'Unknown error'}
+${error.response?.message || error.message || 'Тодорхойгүй алдаа'}
 
-Please try again or contact support if the issue persists.`,
+Дахин оролдоно уу эсвэл асуудал үргэлжилвэл дэмжлэгтэй холбогдоно уу.`,
         };
       }
     }
 
     return {
-      text: 'Something went wrong. Please send /addgroup to begin again.',
+      text: 'Алдаа гарлаа. Дахин эхлүүлэхийн тулд /addgroup илгээнэ үү.',
     };
   }
 }

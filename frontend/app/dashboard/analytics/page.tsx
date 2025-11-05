@@ -94,7 +94,7 @@ export default function AnalyticsPage() {
       setPaymentStats(payments);
     } catch (err: any) {
       console.error('Failed to fetch analytics:', err);
-      setError('Failed to load analytics data');
+      setError('Шинжилгээний өгөгдлийг ачаалж чадсангүй');
     } finally {
       setIsLoading(false);
     }
@@ -116,8 +116,8 @@ export default function AnalyticsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-gray-600">Track your business performance and metrics</p>
+          <h1 className="text-3xl font-bold text-gray-900">Шинжилгээ</h1>
+          <p className="text-gray-600">Бизнесийн гүйцэтгэл болон үзүүлэлтүүдийг хянах</p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
@@ -132,8 +132,8 @@ export default function AnalyticsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-gray-600">Track your business performance and metrics</p>
+          <h1 className="text-3xl font-bold text-gray-900">Шинжилгээ</h1>
+          <p className="text-gray-600">Бизнесийн гүйцэтгэл болон үзүүлэлтүүдийг хянах</p>
         </div>
         <Card>
           <CardContent className="pt-6">
@@ -145,7 +145,7 @@ export default function AnalyticsPage() {
                 onClick={fetchAnalytics}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                Try Again
+                Дахин оролдох
               </button>
             </div>
           </CardContent>
@@ -159,8 +159,8 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-gray-600">Track your business performance and metrics</p>
+          <h1 className="text-3xl font-bold text-gray-900">Шинжилгээ</h1>
+          <p className="text-gray-600">Бизнесийн гүйцэтгэл болон үзүүлэлтүүдийг хянах</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -171,7 +171,7 @@ export default function AnalyticsPage() {
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            7 Days
+            7 өдөр
           </button>
           <button
             onClick={() => setTimeRange(30)}
@@ -181,7 +181,7 @@ export default function AnalyticsPage() {
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            30 Days
+            30 өдөр
           </button>
           <button
             onClick={() => setTimeRange(90)}
@@ -191,7 +191,7 @@ export default function AnalyticsPage() {
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            90 Days
+            90 өдөр
           </button>
         </div>
       </div>
@@ -200,7 +200,7 @@ export default function AnalyticsPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Нийт орлого</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -217,7 +217,7 @@ export default function AnalyticsPage() {
                 <span className={revenueMetrics.growth_percentage >= 0 ? 'text-green-600' : 'text-red-600'}>
                   {formatPercentage(revenueMetrics.growth_percentage)}
                 </span>
-                <span className="ml-1">from last period</span>
+                <span className="ml-1">өмнөх хугацаанаас</span>
               </div>
             )}
           </CardContent>
@@ -225,7 +225,7 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Members</CardTitle>
+            <CardTitle className="text-sm font-medium">Идэвхитэй гишүүд</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -233,14 +233,14 @@ export default function AnalyticsPage() {
               {dashboardMetrics?.active_members || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Currently subscribed
+              Одоо бүртгэлтэй
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Сарын орлого</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -248,14 +248,14 @@ export default function AnalyticsPage() {
               {formatCurrency(revenueMetrics?.mrr || 0)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              MRR (Monthly Recurring Revenue)
+              MRR (Сарын давтагдах орлого)
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Churn Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Татан буулгах хувь</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -263,7 +263,7 @@ export default function AnalyticsPage() {
               {(dashboardMetrics?.churn_rate || 0).toFixed(1)}%
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Monthly churn
+              Сарын татан буулт
             </p>
           </CardContent>
         </Card>
@@ -272,32 +272,32 @@ export default function AnalyticsPage() {
       {/* Charts */}
       <Tabs defaultValue="revenue" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="memberships">Memberships</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="revenue">Орлого</TabsTrigger>
+          <TabsTrigger value="memberships">Гишүүнчлэл</TabsTrigger>
+          <TabsTrigger value="payments">Төлбөр</TabsTrigger>
         </TabsList>
 
         <TabsContent value="revenue" className="space-y-4">
           {revenueMetrics && revenueMetrics.daily_revenue.length > 0 ? (
             <RevenueChart
               data={revenueMetrics.daily_revenue.map(day => ({
-                date: new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                date: new Date(day.date).toLocaleDateString('mn-MN', { month: 'short', day: 'numeric' }),
                 revenue: day.revenue,
                 payments: day.transaction_count,
               }))}
-              title="Revenue Overview"
-              description={`Daily revenue and transaction volume over the last ${timeRange} days`}
+              title="Орлогын тойм"
+              description={`Сүүлийн ${timeRange} өдрийн өдөр тутмын орлого болон гүйлгээний хэмжээ`}
             />
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Revenue Overview</CardTitle>
+                <CardTitle>Орлогын тойм</CardTitle>
                 <CardDescription>
-                  No revenue data available for the selected period
+                  Сонгосон хугацаанд орлогын өгөгдөл байхгүй байна
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-[350px] flex items-center justify-center text-muted-foreground">
-                No data to display
+                Харуулах өгөгдөл байхгүй
               </CardContent>
             </Card>
           )}
@@ -305,9 +305,9 @@ export default function AnalyticsPage() {
           {/* ARR Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Annual Recurring Revenue</CardTitle>
+              <CardTitle>Жилийн давтагдах орлого</CardTitle>
               <CardDescription>
-                Projected annual revenue based on current subscriptions
+                Одоогийн бүртгэлд үндэслэсэн жилийн орлогын төсөөлөл
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -323,25 +323,25 @@ export default function AnalyticsPage() {
             <MembershipChart
               data={[
                 {
-                  month: 'Current',
+                  month: 'Одоогийн',
                   active: membershipMetrics.active_memberships,
                   expired: membershipMetrics.expired_memberships,
                   new: membershipMetrics.trial_memberships,
                 },
               ]}
-              title="Membership Status"
-              description="Current membership distribution by status"
+              title="Гишүүнчлэлийн төлөв"
+              description="Төлөвөөр ангилсан одоогийн гишүүнчлэлийн хуваарилалт"
             />
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Membership Growth</CardTitle>
+                <CardTitle>Гишүүнчлэлийн өсөлт</CardTitle>
                 <CardDescription>
-                  No membership data available
+                  Гишүүнчлэлийн өгөгдөл байхгүй байна
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-[350px] flex items-center justify-center text-muted-foreground">
-                No data to display
+                Харуулах өгөгдөл байхгүй
               </CardContent>
             </Card>
           )}
@@ -350,7 +350,7 @@ export default function AnalyticsPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">Total Memberships</CardTitle>
+                <CardTitle className="text-sm font-medium">Нийт гишүүнчлэл</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -361,7 +361,7 @@ export default function AnalyticsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">Trial Conversions</CardTitle>
+                <CardTitle className="text-sm font-medium">Турших хувиргалт</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -372,7 +372,7 @@ export default function AnalyticsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">Avg Lifetime Value</CardTitle>
+                <CardTitle className="text-sm font-medium">Дундаж насан туршийн үнэ цэнэ</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -392,9 +392,9 @@ export default function AnalyticsPage() {
       {dashboardMetrics && dashboardMetrics.top_performing_groups.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Top Performing Groups</CardTitle>
+            <CardTitle>Шилдэг үр дүнтэй группүүд</CardTitle>
             <CardDescription>
-              Groups with highest revenue and member engagement
+              Хамгийн их орлого болон гишүүдийн оролцоотой группүүд
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -407,13 +407,13 @@ export default function AnalyticsPage() {
                   <div>
                     <h4 className="font-medium">{group.group_name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {group.member_count} members
+                      {group.member_count} гишүүн
                     </p>
                   </div>
                   <div className="text-right">
                     <div className="font-bold">{formatCurrency(group.revenue)}</div>
                     <p className="text-sm text-muted-foreground">
-                      {group.conversion_rate.toFixed(1)}% conversion
+                      {group.conversion_rate.toFixed(1)}% хувиргалт
                     </p>
                   </div>
                 </div>

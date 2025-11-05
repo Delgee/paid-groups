@@ -54,7 +54,8 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
   const createUserMutation = useMutation({
     mutationFn: apiClient.createUser.bind(apiClient),
     onSuccess: (data: CreateUserResponse) => {
-      toast.success(`${data.role.charAt(0).toUpperCase() + data.role.slice(1)} user ${data.name} has been created`);
+      const roleMap: Record<string, string> = { admin: 'Админ', moderator: 'Модератор', owner: 'Эзэмшигч' };
+      toast.success(`${roleMap[data.role] || data.role} хэрэглэгч ${data.name} амжилттай үүсгэлээ`);
 
       // Invalidate and refetch user list
       queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
@@ -78,13 +79,13 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
       } else if (error.isDuplicateError) {
         form.setError('email', {
           type: 'server',
-          message: 'A user with this email already exists',
+          message: 'Энэ имэйл хаягтай хэрэглэгч аль хэдийн бүртгэлтэй байна',
         });
-        toast.error('A user with this email already exists in your organization');
+        toast.error('Энэ имэйл хаягтай хэрэглэгч аль хэдийн бүртгэлтэй байна');
       } else if (error.isForbidden) {
-        toast.error('Only owner users can create admin and moderator users');
+        toast.error('Зөвхөн эзэмшигч админ болон модератор үүсгэх эрхтэй');
       } else {
-        toast.error(error.message || 'An unexpected error occurred');
+        toast.error(error.message || 'Тодорхойгүй алдаа гарлаа');
       }
     },
   });
@@ -98,9 +99,9 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Create New User</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Шинэ хэрэглэгч нэмэх</h2>
         <p className="text-muted-foreground">
-          Add a new admin or moderator user to your organization.
+          Байгууллагадаа шинэ админ эсвэл модератор нэмэх.
         </p>
       </div>
 
@@ -111,7 +112,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email Address</FormLabel>
+                <FormLabel>Имэйл хаяг</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -131,19 +132,19 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>Нууц үг</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type="password"
-                    placeholder="Enter secure password"
+                    placeholder="Нууц үг оруулах"
                     data-testid="user-password-input"
                     disabled={isLoading}
                   />
                 </FormControl>
                 <FormMessage data-testid="password-error" />
                 <p className="text-sm text-muted-foreground">
-                  Must be at least 8 characters with uppercase, lowercase, and number
+                  Дор хаяж 8 тэмдэгт, том үсэг, жижиг үсэг, тоо агуулсан байх ёстой
                 </p>
               </FormItem>
             )}
@@ -154,11 +155,11 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Full Name</FormLabel>
+                <FormLabel>Овог нэр</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder="John Doe"
+                    placeholder="Овог нэр"
                     data-testid="user-name-input"
                     disabled={isLoading}
                   />
@@ -173,7 +174,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
             name="role"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Role</FormLabel>
+                <FormLabel>Эрх</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
@@ -182,17 +183,17 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
                 >
                   <FormControl>
                     <SelectTrigger data-testid="user-role-select-trigger">
-                      <SelectValue placeholder="Select a role" />
+                      <SelectValue placeholder="Эрх сонгох" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="moderator">Moderator</SelectItem>
+                    <SelectItem value="admin">Админ</SelectItem>
+                    <SelectItem value="moderator">Модератор</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage data-testid="role-error" />
                 <p className="text-sm text-muted-foreground">
-                  Admin: Full access to bots, groups, and analytics. Moderator: Groups and memberships only.
+                  Админ: Бот, групп, тайлан бүгдэд нэвтрэх эрхтэй. Модератор: Зөвхөн групп болон гишүүнчлэл удирдах эрхтэй.
                 </p>
               </FormItem>
             )}
@@ -206,7 +207,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
               className="flex-1"
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" data-testid="loading-spinner" />}
-              {isLoading ? 'Creating User...' : 'Create User'}
+              {isLoading ? 'Үүсгэж байна...' : 'Хэрэглэгч үүсгэх'}
             </Button>
             {onCancel && (
               <Button
@@ -216,7 +217,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
                 disabled={isLoading}
                 data-testid="cancel-button"
               >
-                Cancel
+                Цуцлах
               </Button>
             )}
           </div>

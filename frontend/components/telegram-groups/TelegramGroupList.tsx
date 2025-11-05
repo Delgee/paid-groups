@@ -49,6 +49,7 @@ import {
   ListTelegramGroupsParams,
 } from '@/lib/api/telegram-groups';
 import { formatDistanceToNow } from 'date-fns';
+import { mn } from 'date-fns/locale';
 
 interface TelegramGroupListProps {
   onEditGroup?: (group: TelegramGroup) => void;
@@ -151,7 +152,7 @@ export function TelegramGroupList({
       return (
         <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 flex items-center gap-1">
           <CheckCircle2 className="h-3 w-3" />
-          Connected
+          Холбогдсон
         </Badge>
       );
     }
@@ -159,7 +160,7 @@ export function TelegramGroupList({
     return (
       <Badge variant="secondary" className="bg-gray-100 text-gray-600 border-gray-200 flex items-center gap-1">
         <XCircle className="h-3 w-3" />
-        Not Connected
+        Холбогдоогүй
       </Badge>
     );
   };
@@ -204,11 +205,11 @@ export function TelegramGroupList({
         <CardContent className="pt-6">
           <div className="text-center space-y-2">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-            <p className="text-destructive font-medium">Failed to load telegram groups</p>
+            <p className="text-destructive font-medium">Telegram группүүдийг ачаалж чадсангүй</p>
             <p className="text-sm text-muted-foreground">
-              {error instanceof Error ? error.message : 'An unexpected error occurred'}
+              {error instanceof Error ? error.message : 'Тодорхойгүй алдаа гарлаа'}
             </p>
-            <Button onClick={() => refetch()}>Try Again</Button>
+            <Button onClick={() => refetch()}>Дахин оролдох</Button>
           </div>
         </CardContent>
       </Card>
@@ -220,14 +221,14 @@ export function TelegramGroupList({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Telegram Groups</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Telegram Группүүд</h1>
           <p className="text-muted-foreground">
-            Manage your paid telegram groups and member access
+            Төлбөртэй Telegram группүүд болон гишүүдийн хандалтыг удирдах
           </p>
         </div>
         <Button onClick={handleCreateGroup} data-testid="create-group-button">
           <Plus className="mr-2 h-4 w-4" />
-          Create New Group
+          Шинэ групп үүсгэх
         </Button>
       </div>
 
@@ -236,14 +237,14 @@ export function TelegramGroupList({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Filters</CardTitle>
+              <CardTitle>Шүүлтүүр</CardTitle>
               <CardDescription>
-                Filter and search your telegram groups
+                Telegram группүүдээ хайх болон шүүх
               </CardDescription>
             </div>
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={resetFilters}>
-                Clear Filters
+                Шүүлтүүр цэвэрлэх
               </Button>
             )}
           </div>
@@ -253,7 +254,7 @@ export function TelegramGroupList({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search groups by name or description..."
+              placeholder="Нэр эсвэл тайлбараар хайх..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -266,7 +267,7 @@ export function TelegramGroupList({
             {/* Items per page */}
             <div className="flex items-center space-x-2">
               <Label htmlFor="limit-select" className="text-sm font-medium">
-                Per Page
+                Хуудсанд
               </Label>
               <Select
                 value={limit.toString()}
@@ -295,11 +296,11 @@ export function TelegramGroupList({
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-muted-foreground">
             {isLoading ? (
-              'Loading groups...'
+              'Группүүдийг ачаалж байна...'
             ) : (
               <>
-                Showing {filteredGroups.length} of {data?.pagination?.total || 0} groups
-                {debouncedSearchTerm && ` matching "${debouncedSearchTerm}"`}
+                Нийт {data?.pagination?.total || 0}-с {filteredGroups.length} групп харуулж байна
+                {debouncedSearchTerm && ` "${debouncedSearchTerm}" хайлтад тохирсон`}
               </>
             )}
           </div>
@@ -311,7 +312,7 @@ export function TelegramGroupList({
             data-testid="refresh-button"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
-            Refresh
+            Шинэчлэх
           </Button>
         </div>
 
@@ -325,25 +326,25 @@ export function TelegramGroupList({
               <div className="text-center space-y-4">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground" />
                 <div>
-                  <h3 className="text-lg font-medium">No telegram groups found</h3>
+                  <h3 className="text-lg font-medium">Telegram групп олдсонгүй</h3>
                   <p className="text-muted-foreground">
                     {hasActiveFilters ? (
                       <>
-                        No groups match your current filters.{' '}
+                        Шүүлтүүрт таарах групп олдсонгүй.{' '}
                         <Button variant="link" className="p-0 h-auto" onClick={resetFilters}>
-                          Clear filters
+                          Шүүлтүүр цэвэрлэх
                         </Button>{' '}
-                        to see all groups.
+                        бүх группүүдийг харах.
                       </>
                     ) : (
-                      'Get started by creating your first telegram group.'
+                      'Эхний Telegram группоо үүсгээд эхлээрэй.'
                     )}
                   </p>
                 </div>
                 {!hasActiveFilters && (
                   <Button onClick={handleCreateGroup}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Create New Group
+                    Шинэ групп үүсгэх
                   </Button>
                 )}
               </div>
@@ -368,7 +369,7 @@ export function TelegramGroupList({
                       {onEditGroup && (
                         <DropdownMenuItem onClick={() => onEditGroup(group)}>
                           <Settings className="mr-2 h-4 w-4" />
-                          Edit Group
+                          Засах
                         </DropdownMenuItem>
                       )}
                       {onDeleteGroup && (
@@ -377,7 +378,7 @@ export function TelegramGroupList({
                           className="text-destructive focus:text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete Group
+                          Устгах
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
@@ -389,20 +390,20 @@ export function TelegramGroupList({
                     {group.group_name}
                   </CardTitle>
                   <CardDescription data-testid="group-description">
-                    {group.description || 'No description provided'}
+                    {group.description || 'Тайлбар байхгүй'}
                   </CardDescription>
                 </CardHeader>
 
                 <CardContent className="space-y-3">
                   {/* Connection Status */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Status</span>
+                    <span className="text-sm text-muted-foreground">Төлөв</span>
                     {getConnectionStatusBadge(group)}
                   </div>
 
                   {/* Member Count */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Members</span>
+                    <span className="text-sm text-muted-foreground">Гишүүд</span>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       <span className="text-sm">{group.member_count.toLocaleString()}</span>
@@ -411,14 +412,14 @@ export function TelegramGroupList({
 
                   {/* Created Date */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Created</span>
-                    <span className="text-sm">{formatDistanceToNow(new Date(group.created_at), { addSuffix: true })}</span>
+                    <span className="text-sm text-muted-foreground">Үүсгэсэн</span>
+                    <span className="text-sm">{formatDistanceToNow(new Date(group.created_at), { addSuffix: true, locale: mn })}</span>
                   </div>
                 </CardContent>
 
                 <CardFooter>
                   <Badge variant={group.is_active ? 'default' : 'secondary'}>
-                    {group.is_active ? 'Active' : 'Inactive'}
+                    {group.is_active ? 'Идэвхитэй' : 'Идэвхгүй'}
                   </Badge>
                 </CardFooter>
               </Card>
@@ -430,7 +431,7 @@ export function TelegramGroupList({
         {!isLoading && data && data.pagination && data.pagination.total > limit && (
           <div className="flex items-center justify-between pt-6">
             <div className="text-sm text-muted-foreground">
-              Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, data.pagination.total)} of {data.pagination.total} groups
+              Нийт {data.pagination.total}-с {((page - 1) * limit) + 1}-{Math.min(page * limit, data.pagination.total)} групп харуулж байна
             </div>
             <div className="flex gap-2">
               <Button
@@ -441,7 +442,7 @@ export function TelegramGroupList({
                 data-testid="prev-page-button"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Previous
+                Өмнөх
               </Button>
 
               {/* Page Numbers */}
@@ -475,7 +476,7 @@ export function TelegramGroupList({
                 disabled={!data.pagination.has_next_page}
                 data-testid="next-page-button"
               >
-                Next
+                Дараах
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

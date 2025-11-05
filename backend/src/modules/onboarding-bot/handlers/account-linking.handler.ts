@@ -26,13 +26,13 @@ export class AccountLinkingHandler {
 
     if (existingAccount) {
       return {
-        text: `⚠️ Your Telegram account is already linked to <b>${existingAccount.user.email}</b>
+        text: `⚠️ Таны Telegram данс <b>${existingAccount.user.email}</b> хаягтай аль хэдийн холбогдсон байна
 
-You can:`,
+Та дараахыг хийж болно:`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '📊 View Dashboard', callback_data: 'view_dashboard' }],
-            [{ text: '📋 View Status', callback_data: 'view_status' }],
+            [{ text: '📊 Хяналтын самбар', callback_data: 'view_dashboard' }],
+            [{ text: '📋 Төлөв харах', callback_data: 'view_status' }],
           ],
         },
       };
@@ -48,11 +48,11 @@ You can:`,
     await this.sessionService.advanceStep(telegramUserId, SessionStep.LINK_EMAIL);
 
     return {
-      text: `🔗 <b>Link Existing Account</b>
+      text: `🔗 <b>Одоо байгаа дансаа холбох</b>
 
-If you already have an account on our web dashboard, you can link it to your Telegram.
+Хэрэв та манай вэб хяналтын самбар дээр данстай бол түүнийг Telegram-тай холбож болно.
 
-<b>Step 1:</b> Enter the email address associated with your account:`,
+<b>Алхам 1:</b> Дансандаа холбогдсон имэйл хаягаа оруулна уу:`,
     };
   }
 
@@ -65,7 +65,7 @@ If you already have an account on our web dashboard, you can link it to your Tel
     const session = await this.sessionService.getSession(telegramUserId);
 
     if (!session) {
-      return { text: 'Session expired. Please send /link to start again.' };
+      return { text: 'Хугацаа дууссан байна. Дахин эхлүүлэхийн тулд /link илгээнэ үү.' };
     }
 
     switch (session.current_step) {
@@ -74,7 +74,7 @@ If you already have an account on our web dashboard, you can link it to your Tel
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(message)) {
           return {
-            text: '❌ Invalid email format.\n\nPlease provide a valid email address (e.g., john@example.com)',
+            text: '❌ Имэйл хаягийн формат буруу байна.\n\nЗөв имэйл хаяг оруулна уу (жишээ нь: john@example.com)',
           };
         }
 
@@ -85,13 +85,13 @@ If you already have an account on our web dashboard, you can link it to your Tel
 
         if (!user) {
           return {
-            text: `❌ No account found with email <b>${message}</b>
+            text: `❌ <b>${message}</b> имэйл хаягтай данс олдсонгүй
 
-Would you like to:`,
+Та дараахыг хүсч байна уу:`,
             keyboard: {
               inline_keyboard: [
-                [{ text: '📝 Register New Account', callback_data: 'register' }],
-                [{ text: '🔄 Try Different Email', callback_data: 'link_account' }],
+                [{ text: '📝 Шинэ данс бүртгүүлэх', callback_data: 'register' }],
+                [{ text: '🔄 Өөр имэйл оруулах', callback_data: 'link_account' }],
               ],
             },
           };
@@ -102,15 +102,15 @@ Would you like to:`,
 
         if (existingLink) {
           return {
-            text: `⚠️ This email is already linked to another Telegram account.
+            text: `⚠️ Энэ имэйл хаяг өөр Telegram данстай аль хэдийн холбогдсон байна.
 
-Each email can only be linked to one Telegram account.
+Нэг имэйл хаяг зөвхөн нэг Telegram данстай холбогдож болно.
 
-Would you like to:`,
+Та дараахыг хүсч байна уу:`,
             keyboard: {
               inline_keyboard: [
-                [{ text: '📝 Register New Account', callback_data: 'register' }],
-                [{ text: '❓ Get Help', callback_data: 'help' }],
+                [{ text: '📝 Шинэ данс бүртгүүлэх', callback_data: 'register' }],
+                [{ text: '❓ Тусламж авах', callback_data: 'help' }],
               ],
             },
           };
@@ -121,32 +121,32 @@ Would you like to:`,
         });
 
         return {
-          text: `<b>Account Linking - Coming Soon!</b> 🚧
+          text: `<b>Данс холбох - Удахгүй!</b> 🚧
 
-Email verification via Telegram bot is under development.
+Telegram ботоор имэйл баталгаажуулах функцийг хөгжүүлж байна.
 
-For now, please use the web dashboard at:
+Одоогоор вэб хяналтын самбарыг ашиглана уу:
 🌐 https://your-domain.com/dashboard
 
-<b>In the web dashboard:</b>
-1. Login with your email: ${message}
-2. Go to Settings → Telegram
-3. Follow the instructions to link your account
+<b>Вэб хяналтын самбар дээр:</b>
+1. Имэйл хаягаараа нэвтэрнэ үү: ${message}
+2. Тохиргоо → Telegram хэсэгт орно уу
+3. Данс холбох заавруудыг дагана уу
 
-<b>Or register a new account via Telegram:</b>`,
+<b>Эсвэл Telegram-аар шинэ данс бүртгүүлнэ үү:</b>`,
           keyboard: {
-            inline_keyboard: [[{ text: '📝 Register New Account', callback_data: 'register' }]],
+            inline_keyboard: [[{ text: '📝 Шинэ данс бүртгүүлэх', callback_data: 'register' }]],
           },
         };
 
       case SessionStep.LINK_VERIFICATION:
         // In the future, this will handle verification code validation
         return {
-          text: 'Account linking is coming soon! Please use /start to register a new account.',
+          text: 'Данс холбох удахгүй боломжтой болно! Шинэ данс бүртгүүлэхийн тулд /start илгээнэ үү.',
         };
 
       default:
-        return { text: 'Something went wrong. Please send /link to begin again.' };
+        return { text: 'Алдаа гарлаа. Дахин эхлүүлэхийн тулд /link илгээнэ үү.' };
     }
   }
 }

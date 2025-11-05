@@ -35,15 +35,15 @@ interface DashboardLayoutProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
-  { name: 'Telegram Groups', href: '/dashboard/telegram-groups', icon: MessageSquare },
-  { name: 'Members', href: '/dashboard/members', icon: Users },
-  { name: 'User Management', href: '/dashboard/users', icon: UserPlus },
-  { name: 'Plans', href: '/dashboard/plans', icon: CreditCard },
-  { name: 'Payments', href: '/dashboard/payments', icon: Wallet },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { name: 'Хяналтын самбар', href: '/dashboard', icon: Home },
+  { name: 'Төслүүд', href: '/dashboard/projects', icon: FolderKanban },
+  { name: 'Telegram Группүүд', href: '/dashboard/telegram-groups', icon: MessageSquare },
+  { name: 'Гишүүд', href: '/dashboard/members', icon: Users },
+  { name: 'Хэрэглэгч удирдлага', href: '/dashboard/users', icon: UserPlus },
+  { name: 'Багцууд', href: '/dashboard/plans', icon: CreditCard },
+  { name: 'Төлбөр', href: '/dashboard/payments', icon: Wallet },
+  { name: 'Тайлан', href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'Тохиргоо', href: '/dashboard/settings', icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -103,7 +103,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-4">
               <h1 className="text-xl font-bold text-gray-900">
-                Telegram SaaS
+                Telegram Групп
               </h1>
             </div>
             <nav className="mt-5 px-2 space-y-1">
@@ -147,7 +147,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
             <div className="flex items-center flex-shrink-0 px-4">
               <h1 className="text-xl font-bold text-gray-900">
-                Telegram SaaS
+                Telegram Групп
               </h1>
             </div>
             <nav className="mt-5 flex-1 px-2 bg-white space-y-1">
@@ -225,13 +225,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard/settings">
                         <Settings className="mr-2 h-4 w-4" />
-                        Settings
+                        Тохиргоо
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={logout}>
                       <LogOut className="mr-2 h-4 w-4" />
-                      Log out
+                      Гарах
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

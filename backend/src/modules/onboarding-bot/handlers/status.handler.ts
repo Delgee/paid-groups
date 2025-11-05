@@ -24,9 +24,9 @@ export class StatusHandler {
 
     if (!account || !account.user) {
       return {
-        text: `⚠️ You need to register first to view your status.
+        text: `⚠️ Төлвөө харахын тулд эхлээд бүртгүүлэх хэрэгтэй.
 
-Please send /start to register your account.`,
+Бүртгүүлэхийн тулд /start илгээнэ үү.`,
       };
     }
 
@@ -65,49 +65,49 @@ Please send /start to register your account.`,
 
         projectDetails.push(
           `\n<b>${project.display_name}</b>
-  • Bot: @${project.bot_username || 'not set'}
-  • Groups: ${groupCount}
-  • Plans: ${planCount}`,
+  • Бот: @${project.bot_username || 'тохируулаагүй'}
+  • Группүүд: ${groupCount}
+  • Багцууд: ${planCount}`,
         );
       }
 
-      const statusText = `📊 <b>Account Status</b>
+      const statusText = `📊 <b>Дансны төлөв</b>
 
-<b>Your Account:</b>
-• Email: ${account.user.email}
-• Name: ${account.user.name}
-• Company: ${account.user.tenant?.name || 'Not set'}
+<b>Таны данс:</b>
+• Имэйл: ${account.user.email}
+• Нэр: ${account.user.name}
+• Компани: ${account.user.tenant?.name || 'Тохируулаагүй'}
 
-<b>Overview:</b>
-• Projects: ${projects.length}
-• Telegram Groups: ${totalGroups}
-• Membership Plans: ${totalPlans}
+<b>Товч мэдээлэл:</b>
+• Төслүүд: ${projects.length}
+• Telegram группүүд: ${totalGroups}
+• Гишүүнчлэлийн багцууд: ${totalPlans}
 
-<b>Projects:${projectDetails.join('')}</b>
+<b>Төслүүд:${projectDetails.join('')}</b>
 
-<b>Dashboard:</b>
+<b>Хяналтын самбар:</b>
 🌐 https://your-domain.com/dashboard
 
-<b>What would you like to do?</b>`;
+<b>Та юу хийхийг хүсч байна?</b>`;
 
       return {
         text: statusText,
         keyboard: {
           inline_keyboard: [
-            [{ text: '🚀 Create Project', callback_data: 'create_project' }],
-            [{ text: '➕ Add Group', callback_data: 'add_group' }],
-            [{ text: '💰 Create Plan', callback_data: 'create_plan' }],
-            [{ text: '❓ Help', callback_data: 'help' }],
+            [{ text: '🚀 Төсөл үүсгэх', callback_data: 'create_project' }],
+            [{ text: '➕ Групп нэмэх', callback_data: 'add_group' }],
+            [{ text: '💰 Багц үүсгэх', callback_data: 'create_plan' }],
+            [{ text: '❓ Тусламж', callback_data: 'help' }],
           ],
         },
       };
     } catch (error) {
       return {
-        text: `❌ Failed to fetch your status.
+        text: `❌ Таны төлвийг татаж чадсангүй.
 
-${error.message || 'Unknown error'}
+${error.message || 'Тодорхойгүй алдаа'}
 
-Please try again later or contact support.`,
+Дахин оролдоно уу эсвэл дэмжлэгтэй холбогдоно уу.`,
       };
     }
   }

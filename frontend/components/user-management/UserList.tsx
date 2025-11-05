@@ -32,6 +32,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Users, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { apiClient, userQueryKeys, AllUserRoles, UserSummary } from '@/lib/api/client';
 import { formatDistanceToNow } from 'date-fns';
+import { mn } from 'date-fns/locale';
 import { useToast } from '@/components/ui/use-toast';
 
 interface UserListProps {
@@ -63,12 +64,12 @@ export function UserList({ onCreateUser }: UserListProps) {
     mutationFn: (userId: string) => apiClient.deleteUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
-      toast.success('The user has been successfully deleted');
+      toast.success('Хэрэглэгчийг амжилттай устгалаа');
       setDeleteDialogOpen(false);
       setUserToDelete(null);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete user');
+      toast.error(error.response?.data?.message || 'Хэрэглэгч устгахад алдаа гарлаа');
     },
   });
 
@@ -86,12 +87,12 @@ export function UserList({ onCreateUser }: UserListProps) {
   };
 
   const formatLastLogin = (lastLoginAt: string | null) => {
-    if (!lastLoginAt) return 'Never';
-    return formatDistanceToNow(new Date(lastLoginAt), { addSuffix: true });
+    if (!lastLoginAt) return 'Хэзээ ч үгүй';
+    return formatDistanceToNow(new Date(lastLoginAt), { addSuffix: true, locale: mn });
   };
 
   const formatCreatedAt = (createdAt: string) => {
-    return formatDistanceToNow(new Date(createdAt), { addSuffix: true });
+    return formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: mn });
   };
 
   const handleEdit = (userId: string) => {
@@ -114,8 +115,8 @@ export function UserList({ onCreateUser }: UserListProps) {
       <Card>
         <CardContent className="pt-6">
           <div className="text-center space-y-2">
-            <p className="text-destructive">Failed to load users</p>
-            <Button onClick={() => refetch()}>Try Again</Button>
+            <p className="text-destructive">Хэрэглэгчдийг ачаалж чадсангүй</p>
+            <Button onClick={() => refetch()}>Дахин оролдох</Button>
           </div>
         </CardContent>
       </Card>
@@ -126,15 +127,15 @@ export function UserList({ onCreateUser }: UserListProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Хэрэглэгч удирдлага</h1>
           <p className="text-muted-foreground">
-            Manage admin and moderator users in your organization
+            Байгууллагын админ болон модератор хэрэглэгчдийг удирдах
           </p>
         </div>
         {onCreateUser && (
           <Button onClick={onCreateUser} data-testid="create-user-button">
             <Users className="mr-2 h-4 w-4" />
-            Create New User
+            Шинэ хэрэглэгч нэмэх
           </Button>
         )}
       </div>
@@ -143,9 +144,9 @@ export function UserList({ onCreateUser }: UserListProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Users</CardTitle>
+              <CardTitle>Хэрэглэгчид</CardTitle>
               <CardDescription>
-                {data?.pagination.total ?? 0} total users in your organization
+                Нийт {data?.pagination.total ?? 0} хэрэглэгч бүртгэлтэй
               </CardDescription>
             </div>
             <Select
@@ -156,13 +157,13 @@ export function UserList({ onCreateUser }: UserListProps) {
               }}
             >
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by role" />
+                <SelectValue placeholder="Эрх сонгох" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="owner">Owners</SelectItem>
-                <SelectItem value="admin">Admins</SelectItem>
-                <SelectItem value="moderator">Moderators</SelectItem>
+                <SelectItem value="all">Бүх эрх</SelectItem>
+                <SelectItem value="owner">Эзэмшигчид</SelectItem>
+                <SelectItem value="admin">Админууд</SelectItem>
+                <SelectItem value="moderator">Модераторууд</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -171,20 +172,20 @@ export function UserList({ onCreateUser }: UserListProps) {
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Loading users...</span>
+              <span className="ml-2">Ачаалж байна...</span>
             </div>
           ) : (
             <>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Нэр</TableHead>
+                    <TableHead>Имэйл</TableHead>
+                    <TableHead>Эрх</TableHead>
+                    <TableHead>Сүүлд нэвтэрсэн</TableHead>
+                    <TableHead>Үүсгэсэн</TableHead>
+                    <TableHead>Төлөв</TableHead>
+                    <TableHead className="text-right">Үйлдэл</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -220,7 +221,7 @@ export function UserList({ onCreateUser }: UserListProps) {
                       </TableCell>
                       <TableCell>
                         <Badge variant={user.is_active ? 'default' : 'secondary'}>
-                          {user.is_active ? 'Active' : 'Inactive'}
+                          {user.is_active ? 'Идэвхитэй' : 'Идэвхгүй'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -255,16 +256,16 @@ export function UserList({ onCreateUser }: UserListProps) {
               {data?.users.length === 0 && (
                 <div className="text-center py-8">
                   <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-medium">No users found</h3>
+                  <h3 className="mt-4 text-lg font-medium">Хэрэглэгч олдсонгүй</h3>
                   <p className="text-muted-foreground">
                     {roleFilter
-                      ? `No ${roleFilter} users found. Try adjusting your filter.`
-                      : 'Get started by creating your first user.'
+                      ? `${roleFilter} эрхтэй хэрэглэгч олдсонгүй. Шүүлтүүрээ тохируулна уу.`
+                      : 'Эхний хэрэглэгчээ үүсгээд эхлээрэй.'
                     }
                   </p>
                   {onCreateUser && !roleFilter && (
                     <Button className="mt-4" onClick={onCreateUser}>
-                      Create New User
+                      Шинэ хэрэглэгч нэмэх
                     </Button>
                   )}
                 </div>
@@ -274,7 +275,7 @@ export function UserList({ onCreateUser }: UserListProps) {
               {data && data.pagination.total > limit && (
                 <div className="flex items-center justify-between pt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, data.pagination.total)} of {data.pagination.total} users
+                    Нийт {data.pagination.total}-с {((page - 1) * limit) + 1}-{Math.min(page * limit, data.pagination.total)} хэрэглэгч харуулж байна
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -284,7 +285,7 @@ export function UserList({ onCreateUser }: UserListProps) {
                       disabled={!data.pagination.has_prev_page}
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      Previous
+                      Өмнөх
                     </Button>
                     <Button
                       variant="outline"
@@ -292,7 +293,7 @@ export function UserList({ onCreateUser }: UserListProps) {
                       onClick={() => setPage(page + 1)}
                       disabled={!data.pagination.has_next_page}
                     >
-                      Next
+                      Дараах
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -307,11 +308,11 @@ export function UserList({ onCreateUser }: UserListProps) {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
+            <DialogTitle>Хэрэглэгч устгах</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete{' '}
+              Та{' '}
               <span className="font-semibold">{userToDelete?.name}</span> (
-              {userToDelete?.email})? This action cannot be undone.
+              {userToDelete?.email}) хэрэглэгчийг устгахдаа итгэлтэй байна уу? Энэ үйлдлийг буцаах боломжгүй.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -320,7 +321,7 @@ export function UserList({ onCreateUser }: UserListProps) {
               onClick={() => setDeleteDialogOpen(false)}
               disabled={deleteMutation.isPending}
             >
-              Cancel
+              Цуцлах
             </Button>
             <Button
               variant="destructive"
@@ -330,10 +331,10 @@ export function UserList({ onCreateUser }: UserListProps) {
               {deleteMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
+                  Устгаж байна...
                 </>
               ) : (
-                'Delete'
+                'Устгах'
               )}
             </Button>
           </DialogFooter>

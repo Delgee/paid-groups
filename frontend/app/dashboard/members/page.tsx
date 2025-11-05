@@ -76,7 +76,7 @@ export default function MembersPage() {
         setTotalMembers(membersResponse.total);
       } catch (err: any) {
         console.error('Failed to fetch members data:', err);
-        setError('Failed to load members data');
+        setError('Гишүүдийн мэдээлэл ачаалж чадсангүй');
       } finally {
         setIsLoading(false);
       }
@@ -108,11 +108,11 @@ export default function MembersPage() {
     const status = getMemberStatus(member);
     switch (status) {
       case 'active':
-        return <Badge variant="success">Active Member</Badge>;
+        return <Badge variant="success">Идэвхитэй гишүүн</Badge>;
       case 'inactive':
-        return <Badge variant="danger">Inactive</Badge>;
+        return <Badge variant="danger">Идэвхгүй</Badge>;
       default:
-        return <Badge>Unknown</Badge>;
+        return <Badge>Тодорхойгүй</Badge>;
     }
   };
 
@@ -123,8 +123,8 @@ export default function MembersPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Members</h1>
-            <p className="text-gray-600">Manage your community members</p>
+            <h1 className="text-3xl font-bold text-gray-900">Гишүүд</h1>
+            <p className="text-gray-600">Нийгэмлэгийн гишүүдийг удирдах</p>
           </div>
         </div>
         <div className="grid gap-4">
@@ -143,7 +143,7 @@ export default function MembersPage() {
           {error}
         </div>
         <Button onClick={() => window.location.reload()}>
-          Try Again
+          Дахин оролдох
         </Button>
       </div>
     );
@@ -154,14 +154,14 @@ export default function MembersPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Members</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Гишүүд</h1>
           <p className="text-gray-600">
-            Manage your community members and their subscriptions
+            Нийгэмлэгийн гишүүд болон тэдний гишүүнчлэлийг удирдах
           </p>
         </div>
         <Button>
           <Download className="mr-2 h-4 w-4" />
-          Export
+          Татах
         </Button>
       </div>
 
@@ -169,7 +169,7 @@ export default function MembersPage() {
       <div className="grid gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+            <CardTitle className="text-sm font-medium">Нийт гишүүд</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -179,7 +179,7 @@ export default function MembersPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Members</CardTitle>
+            <CardTitle className="text-sm font-medium">Идэвхитэй гишүүд</CardTitle>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -191,7 +191,7 @@ export default function MembersPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactive</CardTitle>
+            <CardTitle className="text-sm font-medium">Идэвхгүй</CardTitle>
             <UserX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -203,7 +203,7 @@ export default function MembersPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Groups</CardTitle>
+            <CardTitle className="text-sm font-medium">Нийт группүүд</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -217,7 +217,7 @@ export default function MembersPage() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>Шүүлтүүр</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
@@ -225,7 +225,7 @@ export default function MembersPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search members by name, username, or Telegram ID..."
+                  placeholder="Нэр, хэрэглэгчийн нэр эсвэл Telegram ID-аар хайх..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -234,20 +234,20 @@ export default function MembersPage() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Төлөвөөр шүүх" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Members</SelectItem>
-                <SelectItem value="active">Active Only</SelectItem>
-                <SelectItem value="inactive">Inactive Only</SelectItem>
+                <SelectItem value="all">Бүх гишүүд</SelectItem>
+                <SelectItem value="active">Зөвхөн идэвхитэй</SelectItem>
+                <SelectItem value="inactive">Зөвхөн идэвхгүй</SelectItem>
               </SelectContent>
             </Select>
             <Select value={groupFilter} onValueChange={setGroupFilter}>
               <SelectTrigger className="w-56">
-                <SelectValue placeholder="Filter by group" />
+                <SelectValue placeholder="Группаар шүүх" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Groups</SelectItem>
+                <SelectItem value="all">Бүх группүүд</SelectItem>
                 {allGroups.map(group => (
                   <SelectItem key={group.id} value={group.id}>
                     {group.group_name}
@@ -262,20 +262,20 @@ export default function MembersPage() {
       {/* Members List */}
       <Card>
         <CardHeader>
-          <CardTitle>Members ({totalMembers})</CardTitle>
+          <CardTitle>Гишүүд ({totalMembers})</CardTitle>
           <CardDescription>
-            All members across your Telegram groups
+            Таны Telegram группүүдийн бүх гишүүд
           </CardDescription>
         </CardHeader>
         <CardContent>
           {members.length === 0 ? (
             <div className="text-center py-8">
               <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No members found</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Гишүүн олдсонгүй</h3>
               <p className="text-gray-500">
-                {searchQuery || statusFilter !== 'all' 
-                  ? 'Try adjusting your search or filters'
-                  : 'Members will appear here once they join your groups'
+                {searchQuery || statusFilter !== 'all'
+                  ? 'Хайлт эсвэл шүүлтүүрээ тохируулна уу'
+                  : 'Группүүдэд нэгдсэн гишүүд энд харагдана'
                 }
               </p>
             </div>
@@ -311,17 +311,17 @@ export default function MembersPage() {
                             ID: {member.telegram_user_id}
                           </p>
                           <p className="text-xs text-gray-500">
-                            Joined: {new Date(member.created_at).toLocaleDateString()}
+                            Нэгдсэн: {new Date(member.created_at).toLocaleDateString('mn-MN')}
                           </p>
                           {activeMemberships.length > 0 && (
                             <p className="text-xs text-gray-500">
-                              {activeMemberships.length} active membership{activeMemberships.length > 1 ? 's' : ''}
+                              {activeMemberships.length} идэвхитэй гишүүнчлэл
                             </p>
                           )}
                         </div>
                         {memberGroups.length > 0 && (
                           <div className="flex items-center gap-2 mt-2">
-                            <span className="text-xs text-gray-500">Groups:</span>
+                            <span className="text-xs text-gray-500">Группүүд:</span>
                             <div className="flex gap-1 flex-wrap">
                               {memberGroups.map((groupName, idx) => (
                                 <Badge key={idx} variant="default">
@@ -346,14 +346,14 @@ export default function MembersPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
                             <Link href={`/dashboard/members/${member.id}`}>
-                              View Details
+                              Дэлгэрэнгүй харах
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            Manage Memberships
+                            Гишүүнчлэл удирдах
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            Send Message
+                            Мессеж илгээх
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -370,8 +370,7 @@ export default function MembersPage() {
       {totalPages > 1 && (
         <div className="flex justify-between items-center">
           <p className="text-sm text-gray-700">
-            Showing {(currentPage - 1) * membersPerPage + 1} to{' '}
-            {Math.min(currentPage * membersPerPage, totalMembers)} of {totalMembers} members
+            Нийт {totalMembers}-с {(currentPage - 1) * membersPerPage + 1}-{Math.min(currentPage * membersPerPage, totalMembers)} гишүүн харуулж байна
           </p>
           <div className="flex gap-2">
             <Button
@@ -380,7 +379,7 @@ export default function MembersPage() {
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
             >
-              Previous
+              Өмнөх
             </Button>
             <Button
               variant="outline"
@@ -388,7 +387,7 @@ export default function MembersPage() {
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
             >
-              Next
+              Дараах
             </Button>
           </div>
         </div>
