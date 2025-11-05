@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bull';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
 import { TelegramIntegrationModule } from '../../integrations/telegram/telegram-integration.module';
@@ -14,6 +15,9 @@ import { Project } from '../project/entities/project.entity';
       maxRedirects: 3,
     }),
     TypeOrmModule.forFeature([Project]),
+    BullModule.registerQueue({
+      name: 'payment-processing',
+    }),
     TelegramIntegrationModule,
     QPayIntegrationModule,
   ],

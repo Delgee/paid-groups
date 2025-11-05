@@ -1,11 +1,15 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AppService } from './app.service';
+import { HealthService } from './modules/health/health.service';
 
 @ApiTags('Health')
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly healthService: HealthService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Health check endpoint' })
@@ -15,9 +19,9 @@ export class AppController {
   }
 
   @Get('health')
-  @ApiOperation({ summary: 'Detailed health check' })
+  @ApiOperation({ summary: 'Detailed health check with all service statuses' })
   @ApiResponse({ status: 200, description: 'Detailed service health status' })
-  getHealth() {
-    return this.appService.getHealth();
+  async getHealth() {
+    return this.healthService.getHealthStatus();
   }
 }

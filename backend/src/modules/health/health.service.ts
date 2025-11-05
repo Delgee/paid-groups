@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
@@ -8,6 +8,9 @@ import { TelegramApiService } from '../../integrations/telegram/telegram-api.ser
 import { QPayAuthService } from '../../integrations/qpay/services/qpay-auth.service';
 import { firstValueFrom } from 'rxjs';
 import { Project } from '../project/entities/project.entity';
+import { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bull';
+import { QueueStatusDto, QueueStatsDto } from './dto/queue-stats.dto';
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';
@@ -40,6 +43,9 @@ export class HealthService {
     private qpayAuthService: QPayAuthService,
     @Inject(CACHE_MANAGER)
     private cacheManager: Cache,
+    @Optional()
+    @InjectQueue('payment-processing')
+    private paymentQueue?: Queue,
   ) {}
 
   async getHealthStatus(): Promise<HealthStatus> {
@@ -105,6 +111,74 @@ export class HealthService {
 
   async getTelegramHealth(): Promise<HealthCheck> {
     return this.checkTelegramHealth();
+  }
+
+  async getQueueStatus(): Promise<QueueStatusDto> {
+    if (!this.paymentQueue) {
+      return {
+        name: 'payment-processing',
+        stats: {
+          waiting: 0,
+          active: 0,
+          completed: 0,
+          failed: 0,
+          delayed: 0,
+        },
+        is_healthy: false,
+        message: 'Payment queue not initialized',
+      };
+    }
+
+    try {
+      const [waiting, active, completed, failed, delayed] = await Promise.all([
+        this.paymentQueue.getWaiting(),
+        this.paymentQueue.getActive(),
+        this.paymentQueue.getCompleted(),
+        this.paymentQueue.getFailed(),
+        this.paymentQueue.getDelayed(),
+      ]);
+
+      const stats: QueueStatsDto = {
+        waiting: waiting.length,
+        active: active.length,
+        completed: completed.length,
+        failed: failed.length,
+        delayed: delayed.length,
+      };
+
+      // Determine queue health
+      const failureRate =
+        stats.completed > 0 ? stats.failed / (stats.completed + stats.failed) : 0;
+      const isHealthy = stats.active >= 0 && failureRate < 0.1; // Less than 10% failure rate
+
+      let message = 'Queue is operating normally';
+      if (failureRate >= 0.1) {
+        message = `High failure rate: ${(failureRate * 100).toFixed(1)}%`;
+      } else if (stats.waiting > 100) {
+        message = `High backlog: ${stats.waiting} jobs waiting`;
+      }
+
+      return {
+        name: 'payment-processing',
+        stats,
+        is_healthy: isHealthy,
+        message,
+      };
+    } catch (error) {
+      this.logger.error('Error getting queue status:', error);
+      return {
+        name: 'payment-processing',
+        stats: {
+          waiting: 0,
+          active: 0,
+          completed: 0,
+          failed: 0,
+          delayed: 0,
+        },
+        is_healthy: false,
+        message: `Error: ${error.message}`,
+      };
+    }
   }
 
   private async checkDatabaseHealth(): Promise<HealthCheck> {
