@@ -6,6 +6,9 @@ export enum SessionStep {
   PROJECT_NAME = 'PROJECT_NAME',
   PROJECT_DESCRIPTION = 'PROJECT_DESCRIPTION',
   BOT_TOKEN = 'BOT_TOKEN',
+  PROJECT_BANK = 'PROJECT_BANK',
+  PROJECT_ACCOUNT_NUMBER = 'PROJECT_ACCOUNT_NUMBER',
+  PROJECT_ACCOUNT_NAME = 'PROJECT_ACCOUNT_NAME',
   GROUP_SELECTION = 'GROUP_SELECTION',
   GROUP_TYPE = 'GROUP_TYPE',
   GROUP_CONNECTION = 'GROUP_CONNECTION',
@@ -32,6 +35,9 @@ export interface SessionData {
   bot_token?: string;
   bot_username?: string;
   project_id?: string;
+  account_bank_code?: string;
+  account_number?: string;
+  account_name?: string;
 
   // Group flow
   selected_project_id?: string;
