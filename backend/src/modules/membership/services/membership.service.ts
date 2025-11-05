@@ -533,4 +533,129 @@ export class MembershipService {
       },
     }));
   }
+
+  /**
+   * Find memberships needing renewal reminders (within 3 days of expiration)
+   */
+  async findMembershipsNeedingRenewalReminder(): Promise<Membership[]> {
+    const threeDaysFromNow = new Date();
+    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+
+    return this.membershipRepository.find({
+      where: {
+        status: MembershipStatus.ACTIVE,
+      },
+      relations: ['member', 'group', 'plan'],
+      order: { expires_at: 'ASC' },
+    }).then(memberships =>
+      memberships.filter(m =>
+        m.expires_at < threeDaysFromNow &&
+        !m.renewal_reminder_sent_at
+      )
+    );
+  }
+
+  /**
+   * Find expired memberships that are still marked as active
+   */
+  async findExpiredMemberships(): Promise<Membership[]> {
+    const now = new Date();
+
+    return this.membershipRepository.find({
+      where: {
+        status: MembershipStatus.ACTIVE,
+        expires_at: LessThan(now),
+      },
+      relations: ['member', 'group'],
+      order: { expires_at: 'ASC' },
+    });
+  }
+
+  /**
+   * Record that renewal reminder was sent
+   */
+  async recordRenewalReminderSent(
+    tenantId: string,
+    membershipId: string,
+  ): Promise<Membership> {
+    const membership = await this.findById(tenantId, membershipId);
+    membership.renewal_reminder_sent_at = new Date();
+    return this.membershipRepository.save(membership);
+  }
+
+  /**
+   * Mark membership as joined (when user actually joins the channel)
+   */
+  async markAsJoined(
+    tenantId: string,
+    membershipId: string,
+  ): Promise<Membership> {
+    const membership = await this.findById(tenantId, membershipId);
+    membership.joined_at = new Date();
+    return this.membershipRepository.save(membership);
+  }
+
+  /**
+   * Mark membership as expired and record removal time
+   */
+  async markAsExpiredWithRemoval(
+    tenantId: string,
+    membershipId: string,
+  ): Promise<Membership> {
+    const membership = await this.findById(tenantId, membershipId);
+    membership.status = MembershipStatus.EXPIRED;
+    membership.removed_at = new Date();
+    return this.membershipRepository.save(membership);
+  }
+
+  /**
+   * Update invite link for a membership
+   */
+  async updateInviteLink(
+    tenantId: string,
+    membershipId: string,
+    inviteLink: string,
+  ): Promise<Membership> {
+    const membership = await this.findById(tenantId, membershipId);
+    membership.invite_link = inviteLink;
+    return this.membershipRepository.save(membership);
+  }
+
+  /**
+   * Find memberships by payment transaction
+   */
+  async findByPaymentTransaction(
+    tenantId: string,
+    paymentTransactionId: string,
+  ): Promise<Membership[]> {
+    return this.membershipRepository.find({
+      where: {
+        payment_transaction_id: paymentTransactionId,
+        tenant_id: tenantId,
+      },
+      relations: ['member', 'group', 'plan'],
+    });
+  }
+
+  /**
+   * Find membership by telegram user and group
+   */
+  async findByTelegramUserAndGroup(
+    tenantId: string,
+    telegramUserId: number,
+    groupId: string,
+  ): Promise<Membership | null> {
+    const membership = await this.membershipRepository
+      .createQueryBuilder('membership')
+      .leftJoinAndSelect('membership.member', 'member')
+      .leftJoinAndSelect('membership.group', 'group')
+      .leftJoinAndSelect('membership.plan', 'plan')
+      .where('membership.tenant_id = :tenantId', { tenantId })
+      .andWhere('membership.group_id = :groupId', { groupId })
+      .andWhere('member.telegram_user_id = :telegramUserId', { telegramUserId })
+      .andWhere('membership.status = :status', { status: MembershipStatus.ACTIVE })
+      .getOne();
+
+    return membership;
+  }
 }

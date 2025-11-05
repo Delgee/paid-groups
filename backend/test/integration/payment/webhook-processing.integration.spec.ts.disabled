@@ -5,7 +5,7 @@ import { BullModule } from '@nestjs/bull';
 import { PaymentModule } from '../../../src/modules/payment/payment.module';
 import { MembershipPlanModule } from '../../../src/modules/membership-plan/membership-plan.module';
 import { PaymentTransactionService } from '../../../src/modules/payment/services/payment-transaction.service';
-import { ChannelMemberService } from '../../../src/modules/payment/services/channel-member.service';
+import { MembershipService } from '../../../src/modules/membership/services/membership.service';
 import { DataSource } from 'typeorm';
 import { Queue } from 'bull';
 import { v4 as uuidv4 } from 'uuid';
@@ -25,7 +25,7 @@ import * as crypto from 'crypto';
 describe('Payment Webhook Processing Integration', () => {
   let app: INestApplication;
   let paymentTransactionService: PaymentTransactionService;
-  let channelMemberService: ChannelMemberService;
+  let membershipService: MembershipService;
   let dataSource: DataSource;
   let membershipQueue: Queue;
   let tenantId: string;
@@ -64,7 +64,7 @@ describe('Payment Webhook Processing Integration', () => {
     await app.init();
 
     paymentTransactionService = moduleFixture.get<PaymentTransactionService>(PaymentTransactionService);
-    channelMemberService = moduleFixture.get<ChannelMemberService>(ChannelMemberService);
+    membershipService = moduleFixture.get<MembershipService>(MembershipService);
     dataSource = moduleFixture.get<DataSource>(DataSource);
     membershipQueue = moduleFixture.get('BullQueue_membership');
 

@@ -2,14 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { ChannelMemberService } from '../services/channel-member.service';
+import { MembershipService } from '../../membership/services/membership.service';
 
 @Injectable()
 export class MembershipSchedulerService {
   private readonly logger = new Logger(MembershipSchedulerService.name);
 
   constructor(
-    private readonly channelMemberService: ChannelMemberService,
+    private readonly membershipService: MembershipService,
     @InjectQueue('membership') private membershipQueue: Queue,
   ) {}
 
@@ -22,17 +22,17 @@ export class MembershipSchedulerService {
     this.logger.log('Checking for memberships needing renewal reminders');
 
     try {
-      const members = await this.channelMemberService.findMembersNeedingRenewalReminder();
+      const memberships = await this.membershipService.findMembershipsNeedingRenewalReminder();
 
-      this.logger.log(`Found ${members.length} members needing renewal reminders`);
+      this.logger.log(`Found ${memberships.length} memberships needing renewal reminders`);
 
-      for (const member of members) {
+      for (const membership of memberships) {
         await this.membershipQueue.add('send-renewal-reminder', {
-          tenantId: member.tenant_id,
-          channelMemberId: member.id,
-          telegramUserId: member.telegram_user_id,
-          channelId: member.channel_id,
-          expiresAt: member.expires_at,
+          tenantId: membership.tenant_id,
+          membershipId: membership.id,
+          telegramUserId: membership.member.telegram_user_id,
+          groupId: membership.group_id,
+          expiresAt: membership.expires_at,
         }, {
           attempts: 3,
           backoff: {
@@ -42,7 +42,7 @@ export class MembershipSchedulerService {
         });
       }
 
-      this.logger.log(`Queued ${members.length} renewal reminder jobs`);
+      this.logger.log(`Queued ${memberships.length} renewal reminder jobs`);
     } catch (error) {
       this.logger.error('Failed to check renewal reminders', error.stack);
     }
@@ -57,16 +57,16 @@ export class MembershipSchedulerService {
     this.logger.log('Checking for expired memberships');
 
     try {
-      const expiredMembers = await this.channelMemberService.findExpiredMembers();
+      const expiredMemberships = await this.membershipService.findExpiredMemberships();
 
-      this.logger.log(`Found ${expiredMembers.length} expired memberships`);
+      this.logger.log(`Found ${expiredMemberships.length} expired memberships`);
 
-      for (const member of expiredMembers) {
+      for (const membership of expiredMemberships) {
         await this.membershipQueue.add('expire-membership', {
-          tenantId: member.tenant_id,
-          channelMemberId: member.id,
-          telegramUserId: member.telegram_user_id,
-          channelId: member.channel_id,
+          tenantId: membership.tenant_id,
+          membershipId: membership.id,
+          telegramUserId: membership.member.telegram_user_id,
+          groupId: membership.group_id,
         }, {
           attempts: 3,
           backoff: {
@@ -76,7 +76,7 @@ export class MembershipSchedulerService {
         });
       }
 
-      this.logger.log(`Queued ${expiredMembers.length} expire-membership jobs`);
+      this.logger.log(`Queued ${expiredMemberships.length} expire-membership jobs`);
     } catch (error) {
       this.logger.error('Failed to check expired memberships', error.stack);
     }

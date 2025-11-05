@@ -14,6 +14,8 @@ import { Member } from './member.entity';
 import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { MembershipPlan } from '../../membership-plan/entities/membership-plan.entity';
 import { Payment } from '../../payment/entities/payment.entity';
+import { PaymentTransaction } from '../../payment/entities/payment-transaction.entity';
+import { Project } from '../../project/entities/project.entity';
 
 export enum MembershipStatus {
   ACTIVE = 'active',
@@ -77,6 +79,24 @@ export class Membership {
   @Column({ type: 'timestamp', nullable: true })
   last_warning_sent_at: Date;
 
+  @Column({ type: 'text', nullable: true })
+  invite_link: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  joined_at: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  removed_at: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  renewal_reminder_sent_at: Date;
+
+  @Column({ type: 'uuid', nullable: true })
+  payment_transaction_id: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  project_id: string;
+
   @Column({ type: 'jsonb', default: {} })
   metadata: Record<string, any>;
 
@@ -101,6 +121,14 @@ export class Membership {
   @ManyToOne(() => MembershipPlan, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'plan_id' })
   plan: MembershipPlan;
+
+  @ManyToOne(() => PaymentTransaction, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'payment_transaction_id' })
+  payment_transaction: PaymentTransaction;
+
+  @ManyToOne(() => Project, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'project_id' })
+  project: Project;
 
   @OneToMany(() => Payment, payment => payment.membership)
   payments: Payment[];

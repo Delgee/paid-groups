@@ -3,11 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { PaymentController } from './payment.controller';
 import { PaymentTransactionService } from './services/payment-transaction.service';
-import { ChannelMemberService } from './services/channel-member.service';
 import { PaymentTransaction } from './entities/payment-transaction.entity';
-import { ChannelMember } from './entities/channel-member.entity';
 import { Project } from '../project/entities/project.entity';
 import { MembershipPlanModule } from '../membership-plan/membership-plan.module';
+import { MembershipModule } from '../membership/membership.module';
 import { MetricsModule } from '../../common/metrics/metrics.module';
 import { TelegramIntegrationModule } from '../../integrations/telegram/telegram-integration.module';
 import { QPayIntegrationModule } from '../../integrations/qpay/qpay-integration.module';
@@ -18,7 +17,7 @@ import { MembershipSchedulerService } from './tasks/membership-scheduler.service
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PaymentTransaction, ChannelMember, Project]),
+    TypeOrmModule.forFeature([PaymentTransaction, Project]),
     BullModule.registerQueue({
       name: 'membership',
       defaultJobOptions: {
@@ -27,6 +26,7 @@ import { MembershipSchedulerService } from './tasks/membership-scheduler.service
       },
     }),
     MembershipPlanModule,
+    MembershipModule,
     MetricsModule,
     TelegramIntegrationModule,
     QPayIntegrationModule,
@@ -36,10 +36,9 @@ import { MembershipSchedulerService } from './tasks/membership-scheduler.service
   controllers: [PaymentController],
   providers: [
     PaymentTransactionService,
-    ChannelMemberService,
     MembershipProcessor,
     MembershipSchedulerService,
   ],
-  exports: [PaymentTransactionService, ChannelMemberService],
+  exports: [PaymentTransactionService],
 })
 export class PaymentModule {}

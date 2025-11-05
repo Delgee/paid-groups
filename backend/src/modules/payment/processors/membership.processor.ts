@@ -3,11 +3,13 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ChannelMemberService } from '../services/channel-member.service';
+import { MembershipService } from '../../membership/services/membership.service';
+import { MemberService } from '../../membership/services/member.service';
 import { PaymentTransactionService } from '../services/payment-transaction.service';
 import { MembershipPlanService } from '../../membership-plan/services/membership-plan.service';
 import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 import { Project } from '../../project/entities/project.entity';
+import { MembershipStatus } from '../../membership/entities/membership.entity';
 
 interface CreateMembershipJobData {
   tenantId: string;
@@ -44,17 +46,17 @@ interface ActivateMembershipJobData {
 
 interface RenewalReminderJobData {
   tenantId: string;
-  channelMemberId: string;
-  telegramUserId: string;
-  channelId: string;
+  membershipId: string;
+  telegramUserId: number;
+  groupId: string;
   expiresAt: Date;
 }
 
 interface ExpireMembershipJobData {
   tenantId: string;
-  channelMemberId: string;
-  telegramUserId: string;
-  channelId: string;
+  membershipId: string;
+  telegramUserId: number;
+  groupId: string;
 }
 
 @Processor('membership')
@@ -62,7 +64,8 @@ export class MembershipProcessor {
   private readonly logger = new Logger(MembershipProcessor.name);
 
   constructor(
-    private readonly channelMemberService: ChannelMemberService,
+    private readonly membershipService: MembershipService,
+    private readonly memberService: MemberService,
     private readonly paymentTransactionService: PaymentTransactionService,
     private readonly membershipPlanService: MembershipPlanService,
     private readonly telegramApiService: TelegramApiService,
@@ -78,18 +81,27 @@ export class MembershipProcessor {
 
     try {
       // Check if membership already exists
-      const existingMembers = await this.channelMemberService.findByPaymentTransaction(
+      const existingMemberships = await this.membershipService.findByPaymentTransaction(
         tenantId,
         paymentTransactionId,
       );
 
-      if (existingMembers && existingMembers.length > 0) {
+      if (existingMemberships && existingMemberships.length > 0) {
         this.logger.warn(`Membership already exists for payment ${paymentTransactionId}`);
         return;
       }
 
       // Get payment transaction to retrieve snapshot data
       const payment = await this.paymentTransactionService.findOne(tenantId, paymentTransactionId);
+
+      // Get or create member
+      const member = await this.memberService.createOrUpdateMember({
+        telegram_user_id: parseInt(telegramUserId),
+        first_name: payment.telegram_first_name || 'User',
+        last_name: payment.telegram_last_name,
+        username: payment.telegram_username,
+        tenant_id: tenantId,
+      });
 
       // Get all telegram groups associated with the membership plan
       const telegramGroups = await this.membershipPlanService.findGroupsForPlan(membershipPlanId);
@@ -101,36 +113,41 @@ export class MembershipProcessor {
 
       this.logger.log(`Granting access to ${telegramGroups.length} groups for user ${telegramUserId}`);
 
-      // Create channel member records for ALL groups in the plan
-      const channelMembers = [];
+      // Create membership records for ALL groups in the plan
+      const memberships = [];
       for (const group of telegramGroups) {
         if (!group.telegram_chat_id) {
           this.logger.warn(`Telegram group ${group.id} has no telegram_chat_id, skipping`);
           continue;
         }
 
-        const channelMember = await this.channelMemberService.create(tenantId, {
-          payment_transaction_id: paymentTransactionId,
-          project_id: projectId,
-          telegram_user_id: telegramUserId,
-          channel_id: group.telegram_chat_id.toString(),
-          expires_at: expiresAt.toISOString(),
+        const membership = await this.membershipService.create(tenantId, {
+          member_id: member.id,
+          group_id: group.id,
+          plan_id: membershipPlanId,
+          starts_at: new Date(),
+          expires_at: expiresAt,
         });
 
-        channelMembers.push(channelMember);
-        this.logger.log(`Channel member created for group ${group.group_name}: ${channelMember.id}`);
+        // Update with payment transaction and project references
+        membership.payment_transaction_id = paymentTransactionId;
+        membership.project_id = projectId;
+        await this.membershipService.update(tenantId, membership.id, {});
+
+        memberships.push(membership);
+        this.logger.log(`Membership created for group ${group.group_name}: ${membership.id}`);
       }
 
-      this.logger.log(`Successfully created ${channelMembers.length} channel memberships for payment ${paymentTransactionId}`);
+      this.logger.log(`Successfully created ${memberships.length} memberships for payment ${paymentTransactionId}`);
 
       // TODO: Generate Telegram invite links for each group
-      // for (const member of channelMembers) {
-      //   const inviteLink = await this.telegramService.createChatInviteLink(botToken, member.channel_id);
-      //   await this.channelMemberService.update(tenantId, member.id, { invite_link: inviteLink });
+      // for (const membership of memberships) {
+      //   const inviteLink = await this.telegramService.createChatInviteLink(botToken, membership.group.telegram_chat_id);
+      //   await this.membershipService.updateInviteLink(tenantId, membership.id, inviteLink);
       // }
 
       // TODO: Send Telegram notification with all invite links
-      // const groupLinks = channelMembers.map((m, i) => `• ${telegramGroups[i].group_name}: ${m.invite_link}`).join('\n');
+      // const groupLinks = memberships.map((m, i) => `• ${telegramGroups[i].group_name}: ${m.invite_link}`).join('\n');
       // await this.telegramService.sendMessage(botToken, telegramUserId, {
       //   text: `Payment successful! Your membership is active until ${expiresAt.toLocaleDateString()}\n\nJoin your groups:\n${groupLinks}`,
       // });
@@ -143,9 +160,9 @@ export class MembershipProcessor {
 
   @Process('send-renewal-reminder')
   async handleRenewalReminder(job: Job<RenewalReminderJobData>): Promise<void> {
-    const { tenantId, channelMemberId, telegramUserId, expiresAt } = job.data;
+    const { tenantId, membershipId, telegramUserId, expiresAt } = job.data;
 
-    this.logger.log(`Processing renewal reminder for member ${channelMemberId}`);
+    this.logger.log(`Processing renewal reminder for membership ${membershipId}`);
 
     try {
       // TODO: Send Telegram notification
@@ -156,11 +173,11 @@ export class MembershipProcessor {
       // });
 
       // Record that reminder was sent
-      await this.channelMemberService.recordRenewalReminderSent(tenantId, channelMemberId);
+      await this.membershipService.recordRenewalReminderSent(tenantId, membershipId);
 
-      this.logger.log(`Renewal reminder sent for member ${channelMemberId}`);
+      this.logger.log(`Renewal reminder sent for membership ${membershipId}`);
     } catch (error) {
-      this.logger.error(`Failed to send renewal reminder for member ${channelMemberId}`, error.stack);
+      this.logger.error(`Failed to send renewal reminder for membership ${membershipId}`, error.stack);
       throw error;
     }
   }
@@ -350,21 +367,36 @@ export class MembershipProcessor {
         }
       }
 
-      // Create channel member records for tracking
+      // Get or create member
+      const member = await this.memberService.createOrUpdateMember({
+        telegram_user_id: parseInt(telegram_user_id),
+        first_name: telegram_first_name || 'User',
+        last_name: telegram_last_name,
+        username: telegram_username,
+        tenant_id: tenant_id,
+      });
+
+      // Create membership records for tracking
       for (const group of telegramGroups) {
         if (!group.telegram_chat_id) continue;
 
         try {
-          await this.channelMemberService.create(tenant_id, {
-            payment_transaction_id: transaction_id,
-            project_id,
-            telegram_user_id,
-            channel_id: group.telegram_chat_id.toString(),
-            expires_at: expiresAt.toISOString(),
+          const membership = await this.membershipService.create(tenant_id, {
+            member_id: member.id,
+            group_id: group.id,
+            plan_id: membership_plan_id,
+            starts_at: new Date(),
+            expires_at: expiresAt,
           });
-          this.logger.log(`Channel member record created for group ${group.group_name}`);
+
+          // Update with payment transaction and project references
+          membership.payment_transaction_id = transaction_id;
+          membership.project_id = project_id;
+          await this.membershipService.update(tenant_id, membership.id, {});
+
+          this.logger.log(`Membership record created for group ${group.group_name}`);
         } catch (error) {
-          this.logger.error(`Error creating channel member record for group ${group.group_name}:`, error.stack);
+          this.logger.error(`Error creating membership record for group ${group.group_name}:`, error.stack);
         }
       }
 
@@ -409,17 +441,18 @@ export class MembershipProcessor {
 
   @Process('expire-membership')
   async handleExpireMembership(job: Job<ExpireMembershipJobData>): Promise<void> {
-    const { tenantId, channelMemberId, telegramUserId, channelId } = job.data;
+    const { tenantId, membershipId, telegramUserId, groupId } = job.data;
 
-    this.logger.log(`Processing expire-membership for member ${channelMemberId}`);
+    this.logger.log(`Processing expire-membership for membership ${membershipId}`);
 
     try {
       // Mark membership as expired
-      await this.channelMemberService.markAsExpired(tenantId, channelMemberId);
+      await this.membershipService.markAsExpiredWithRemoval(tenantId, membershipId);
 
       // TODO: Remove user from Telegram channel
-      // await this.telegramService.banChatMember(botToken, channelId, telegramUserId);
-      // await this.telegramService.unbanChatMember(botToken, channelId, telegramUserId); // Unban to allow rejoining later
+      // const membership = await this.membershipService.findById(tenantId, membershipId);
+      // await this.telegramService.banChatMember(botToken, membership.group.telegram_chat_id, telegramUserId);
+      // await this.telegramService.unbanChatMember(botToken, membership.group.telegram_chat_id, telegramUserId); // Unban to allow rejoining later
 
       // TODO: Send expiration notification
       // await this.telegramService.sendMessage(botToken, telegramUserId, {
@@ -427,9 +460,9 @@ export class MembershipProcessor {
       //   reply_markup: { inline_keyboard: [[{ text: 'Renew Now', callback_data: 'renew' }]] }
       // });
 
-      this.logger.log(`Membership expired for member ${channelMemberId}`);
+      this.logger.log(`Membership expired for membership ${membershipId}`);
     } catch (error) {
-      this.logger.error(`Failed to expire membership for member ${channelMemberId}`, error.stack);
+      this.logger.error(`Failed to expire membership for membership ${membershipId}`, error.stack);
       throw error;
     }
   }
