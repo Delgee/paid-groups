@@ -55,11 +55,11 @@ function Badge({ children, variant = 'default' }: { children: React.ReactNode; v
 }
 
 const createPlanSchema = z.object({
-  name: z.string().min(1, 'Plan name is required').max(100, 'Name too long'),
+  name: z.string().min(1, 'Багцын нэр шаардлагатай').max(100, 'Нэр хэт урт байна'),
   description: z.string().optional(),
-  price: z.number().min(0, 'Price must be positive'),
-  duration_days: z.number().min(1, 'Duration must be at least 1 day'),
-  project_id: z.string().min(1, 'Project is required'),
+  price: z.number().min(0, 'Үнэ эерэг байх ёстой'),
+  duration_days: z.number().min(1, 'Хугацаа дор хаяж 1 өдөр байх ёстой'),
+  project_id: z.string().min(1, 'Төсөл шаардлагатай'),
 });
 
 type CreatePlanFormData = z.infer<typeof createPlanSchema>;
@@ -103,7 +103,7 @@ export default function PlansPage() {
         setProjects(projectsData.data);
       } catch (err: any) {
         console.error('Failed to fetch data:', err);
-        setError('Failed to load membership plans');
+        setError('Багцуудыг ачаалж чадсангүй');
       } finally {
         setIsLoading(false);
       }
@@ -122,12 +122,12 @@ export default function PlansPage() {
       reset();
     } catch (err: any) {
       console.error('Failed to create plan:', err);
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to create plan';
+      const errorMessage = err.response?.data?.message || err.message || 'Багц үүсгэж чадсангүй';
       setError(errorMessage);
 
       // If it's a 401, the user might need to log in again
       if (err.response?.status === 401) {
-        alert('Your session has expired. Please log in again.');
+        alert('Таны нэвтрэлт дууссан байна. Дахин нэвтэрнэ үү.');
         window.location.href = '/login';
       }
     } finally {
@@ -208,12 +208,12 @@ export default function PlansPage() {
   };
 
   const formatDuration = (days: number) => {
-    if (days === 1) return '1 day';
-    if (days === 7) return '1 week';
-    if (days === 30) return '1 month';
-    if (days === 90) return '3 months';
-    if (days === 365) return '1 year';
-    return `${days} days`;
+    if (days === 1) return '1 өдөр';
+    if (days === 7) return '1 долоо хоног';
+    if (days === 30) return '1 сар';
+    if (days === 90) return '3 сар';
+    if (days === 365) return '1 жил';
+    return `${days} өдөр`;
   };
 
   if (isLoading) {
@@ -221,8 +221,8 @@ export default function PlansPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Membership Plans</h1>
-            <p className="text-gray-600">Manage your subscription plans</p>
+            <h1 className="text-3xl font-bold text-gray-900">Багцууд</h1>
+            <p className="text-gray-600">Гишүүнчлэлийн багцуудаа удирдах</p>
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -241,7 +241,7 @@ export default function PlansPage() {
           {error}
         </div>
         <Button onClick={() => window.location.reload()}>
-          Try Again
+          Дахин оролдох
         </Button>
       </div>
     );
@@ -252,14 +252,14 @@ export default function PlansPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Membership Plans</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Багцууд</h1>
           <p className="text-gray-600">
-            Create and manage subscription plans for your Telegram groups
+            Telegram группүүдийн гишүүнчлэлийн багцуудыг үүсгэх, удирдах
           </p>
         </div>
         <Button onClick={() => setIsCreateModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Create Plan
+          Багц үүсгэх
         </Button>
       </div>
 
@@ -267,7 +267,7 @@ export default function PlansPage() {
       <div className="grid gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Plans</CardTitle>
+            <CardTitle className="text-sm font-medium">Нийт багц</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -277,7 +277,7 @@ export default function PlansPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Plans</CardTitle>
+            <CardTitle className="text-sm font-medium">Идэвхитэй багц</CardTitle>
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -289,7 +289,7 @@ export default function PlansPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Price</CardTitle>
+            <CardTitle className="text-sm font-medium">Дундаж үнэ</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -306,13 +306,13 @@ export default function PlansPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Subscribers</CardTitle>
+            <CardTitle className="text-sm font-medium">Захиалагчид</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">
-              Active subscriptions
+              Идэвхитэй захиалга
             </p>
           </CardContent>
         </Card>
@@ -323,14 +323,13 @@ export default function PlansPage() {
         <Card className="col-span-full">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <CreditCard className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No membership plans yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Багц байхгүй байна</h3>
             <p className="text-gray-500 text-center mb-6 max-w-md">
-              Create your first membership plan to start offering paid subscriptions 
-              to your Telegram groups.
+              Telegram группүүддээ төлбөртэй гишүүнчлэл санал болгохын тулд эхний багцаа үүсгээрэй.
             </p>
             <Button onClick={() => setIsCreateModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Create Your First Plan
+              Эхний багцаа үүсгэх
             </Button>
           </CardContent>
         </Card>
@@ -343,7 +342,7 @@ export default function PlansPage() {
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-xl">{plan.name}</CardTitle>
                     <Badge variant={plan.is_active ? 'success' : 'warning'}>
-                      {plan.is_active ? 'Active' : 'Inactive'}
+                      {plan.is_active ? 'Идэвхитэй' : 'Идэвхгүй'}
                     </Badge>
                   </div>
                   <DropdownMenu>
@@ -355,18 +354,18 @@ export default function PlansPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleEditPlan(plan)}>
                         <Edit className="mr-2 h-4 w-4" />
-                        Edit Plan
+                        Засах
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleTogglePlan(plan)}>
                         {plan.is_active ? (
                           <>
                             <EyeOff className="mr-2 h-4 w-4" />
-                            Deactivate
+                            Идэвхгүй болгох
                           </>
                         ) : (
                           <>
                             <Eye className="mr-2 h-4 w-4" />
-                            Activate
+                            Идэвхжүүлэх
                           </>
                         )}
                       </DropdownMenuItem>
@@ -376,7 +375,7 @@ export default function PlansPage() {
                         onClick={() => setDeleteConfirmPlan(plan)}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Plan
+                        Устгах
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -392,14 +391,14 @@ export default function PlansPage() {
                     {formatPrice(plan.price, plan.currency)}
                   </div>
                   <div className="text-sm text-gray-500">
-                    per {formatDuration(plan.duration_days)}
+                    {formatDuration(plan.duration_days)} тутамд
                   </div>
                 </div>
 
                 {/* Features */}
                 {plan.features && plan.features.length > 0 && (
                   <div>
-                    <h4 className="font-medium mb-2">Features</h4>
+                    <h4 className="font-medium mb-2">Онцлог</h4>
                     <ul className="text-sm space-y-1">
                       {plan.features.map((feature, index) => (
                         <li key={index} className="flex items-center">
@@ -414,11 +413,11 @@ export default function PlansPage() {
                 {/* Details */}
                 <div className="grid grid-cols-2 gap-4 text-sm pt-4 border-t">
                   <div>
-                    <span className="text-gray-500">Duration</span>
+                    <span className="text-gray-500">Хугацаа</span>
                     <p className="font-medium">{formatDuration(plan.duration_days)}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Currency</span>
+                    <span className="text-gray-500">Валют</span>
                     <p className="font-medium">MNT (₮)</p>
                   </div>
                 </div>
@@ -426,7 +425,7 @@ export default function PlansPage() {
                 {/* Actions */}
                 <div className="pt-4">
                   <Button variant="outline" className="w-full">
-                    View Details
+                    Дэлгэрэнгүй
                   </Button>
                 </div>
               </CardContent>
@@ -441,23 +440,23 @@ export default function PlansPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
-              Create Membership Plan
+              Багц үүсгэх
             </DialogTitle>
             <DialogDescription>
-              Create a new subscription plan for your Telegram groups.
+              Telegram группүүддээ шинэ гишүүнчлэлийн багц үүсгэх.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="project_id">Project</Label>
+              <Label htmlFor="project_id">Төсөл</Label>
               <Controller
                 name="project_id"
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className={errors.project_id ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Select a project" />
+                      <SelectValue placeholder="Төсөл сонгох" />
                     </SelectTrigger>
                     <SelectContent>
                       {projects.map((project) => (
@@ -473,15 +472,15 @@ export default function PlansPage() {
                 <p className="text-red-600 text-sm">{errors.project_id.message}</p>
               )}
               <p className="text-xs text-gray-500">
-                Select the project this plan belongs to
+                Энэ багц хамаарах төслийг сонгох
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Plan Name</Label>
+              <Label htmlFor="name">Багцын нэр</Label>
               <Input
                 id="name"
-                placeholder="Premium Membership"
+                placeholder="Премиум гишүүнчлэл"
                 {...register('name')}
                 className={errors.name ? 'border-red-500' : ''}
               />
@@ -491,16 +490,16 @@ export default function PlansPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description">Тайлбар (Заавал биш)</Label>
               <Input
                 id="description"
-                placeholder="Access to premium content and features"
+                placeholder="Премиум контент болон онцлогууд"
                 {...register('description')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="price">Price (MNT)</Label>
+              <Label htmlFor="price">Үнэ (₮)</Label>
               <div className="relative">
                 <Input
                   id="price"
@@ -518,12 +517,12 @@ export default function PlansPage() {
                 <p className="text-red-600 text-sm">{errors.price.message}</p>
               )}
               <p className="text-xs text-gray-500">
-                Enter amount in Mongolian Tugrik (₮)
+                Монгол төгрөгөөр дүн оруулна уу
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="duration_days">Duration (Days)</Label>
+              <Label htmlFor="duration_days">Хугацаа (Өдөр)</Label>
               <Input
                 id="duration_days"
                 type="number"
@@ -535,7 +534,7 @@ export default function PlansPage() {
                 <p className="text-red-600 text-sm">{errors.duration_days.message}</p>
               )}
               <p className="text-xs text-gray-500">
-                Common values: 7 (week), 30 (month), 365 (year)
+                Түгээмэл утгууд: 7 (долоо хоног), 30 (сар), 365 (жил)
               </p>
             </div>
 
@@ -546,18 +545,18 @@ export default function PlansPage() {
                 onClick={() => setIsCreateModalOpen(false)}
                 disabled={isCreating}
               >
-                Cancel
+                Цуцлах
               </Button>
               <Button type="submit" disabled={isCreating}>
                 {isCreating ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Creating...
+                    Үүсгэж байна...
                   </>
                 ) : (
                   <>
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Create Plan
+                    Багц үүсгэх
                   </>
                 )}
               </Button>
@@ -572,23 +571,23 @@ export default function PlansPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit className="h-5 w-5" />
-              Edit Membership Plan
+              Багц засах
             </DialogTitle>
             <DialogDescription>
-              Update your subscription plan details.
+              Гишүүнчлэлийн багцын дэлгэрэнгүйг засах.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(handleUpdatePlan)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-project_id">Project</Label>
+              <Label htmlFor="edit-project_id">Төсөл</Label>
               <Controller
                 name="project_id"
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className={errors.project_id ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Select a project" />
+                      <SelectValue placeholder="Төсөл сонгох" />
                     </SelectTrigger>
                     <SelectContent>
                       {projects.map((project) => (
@@ -604,15 +603,15 @@ export default function PlansPage() {
                 <p className="text-red-600 text-sm">{errors.project_id.message}</p>
               )}
               <p className="text-xs text-gray-500">
-                Select the project this plan belongs to
+                Энэ багц хамаарах төслийг сонгох
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Plan Name</Label>
+              <Label htmlFor="edit-name">Багцын нэр</Label>
               <Input
                 id="edit-name"
-                placeholder="Premium Membership"
+                placeholder="Премиум гишүүнчлэл"
                 {...register('name')}
                 className={errors.name ? 'border-red-500' : ''}
               />
@@ -622,16 +621,16 @@ export default function PlansPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-description">Description (Optional)</Label>
+              <Label htmlFor="edit-description">Тайлбар (Заавал биш)</Label>
               <Input
                 id="edit-description"
-                placeholder="Access to premium content and features"
+                placeholder="Премиум контент болон онцлогууд"
                 {...register('description')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-price">Price (MNT)</Label>
+              <Label htmlFor="edit-price">Үнэ (₮)</Label>
               <div className="relative">
                 <Input
                   id="edit-price"
@@ -649,12 +648,12 @@ export default function PlansPage() {
                 <p className="text-red-600 text-sm">{errors.price.message}</p>
               )}
               <p className="text-xs text-gray-500">
-                Enter amount in Mongolian Tugrik (₮)
+                Монгол төгрөгөөр дүн оруулна уу
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-duration_days">Duration (Days)</Label>
+              <Label htmlFor="edit-duration_days">Хугацаа (Өдөр)</Label>
               <Input
                 id="edit-duration_days"
                 type="number"
@@ -666,7 +665,7 @@ export default function PlansPage() {
                 <p className="text-red-600 text-sm">{errors.duration_days.message}</p>
               )}
               <p className="text-xs text-gray-500">
-                Common values: 7 (week), 30 (month), 365 (year)
+                Түгээмэл утгууд: 7 (долоо хоног), 30 (сар), 365 (жил)
               </p>
             </div>
 
@@ -681,18 +680,18 @@ export default function PlansPage() {
                 }}
                 disabled={isUpdating}
               >
-                Cancel
+                Цуцлах
               </Button>
               <Button type="submit" disabled={isUpdating}>
                 {isUpdating ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Updating...
+                    Шинэчилж байна...
                   </>
                 ) : (
                   <>
                     <Edit className="mr-2 h-4 w-4" />
-                    Update Plan
+                    Багц шинэчлэх
                   </>
                 )}
               </Button>
@@ -707,18 +706,17 @@ export default function PlansPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <Trash2 className="h-5 w-5" />
-              Delete Membership Plan
+              Багц устгах
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteConfirmPlan?.name}&quot;?
-              This action cannot be undone.
+              &quot;{deleteConfirmPlan?.name}&quot; багцыг устгахдаа итгэлтэй байна уу?
+              Энэ үйлдлийг буцаах боломжгүй.
             </DialogDescription>
           </DialogHeader>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 my-4">
             <p className="text-sm text-yellow-800">
-              <strong>Warning:</strong> Deleting this plan will not affect existing members,
-              but new users won&apos;t be able to subscribe to this plan.
+              <strong>Анхааруулга:</strong> Энэ багцыг устгах нь одоогийн гишүүдэд нөлөөлөхгүй боловч шинэ хэрэглэгчид энэ багцаар бүртгүүлэх боломжгүй болно.
             </p>
           </div>
 
@@ -729,7 +727,7 @@ export default function PlansPage() {
               onClick={() => setDeleteConfirmPlan(null)}
               disabled={isDeleting}
             >
-              Cancel
+              Цуцлах
             </Button>
             <Button
               type="button"
@@ -740,12 +738,12 @@ export default function PlansPage() {
               {isDeleting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Deleting...
+                  Устгаж байна...
                 </>
               ) : (
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Plan
+                  Багц устгах
                 </>
               )}
             </Button>
