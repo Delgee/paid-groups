@@ -29,6 +29,19 @@ interface ActivateTrialJobData {
   trial_ends_at: string;
 }
 
+interface ActivateMembershipJobData {
+  tenant_id: string;
+  project_id: string;
+  membership_plan_id: string;
+  telegram_user_id: string;
+  telegram_username?: string;
+  telegram_first_name?: string;
+  telegram_last_name?: string;
+  transaction_id: string;
+  payment_amount: number;
+  duration_days: number;
+}
+
 interface RenewalReminderJobData {
   tenantId: string;
   channelMemberId: string;
@@ -253,6 +266,143 @@ export class MembershipProcessor {
       this.logger.log(`Successfully activated trial for member ${member_id}`);
     } catch (error) {
       this.logger.error(`Failed to activate trial for member ${member_id}`, error.stack);
+      throw error;
+    }
+  }
+
+  @Process('activate-membership')
+  async handleActivateMembership(job: Job<ActivateMembershipJobData>): Promise<void> {
+    const {
+      tenant_id,
+      project_id,
+      membership_plan_id,
+      telegram_user_id,
+      telegram_username,
+      telegram_first_name,
+      telegram_last_name,
+      transaction_id,
+      payment_amount,
+      duration_days,
+    } = job.data;
+
+    this.logger.log(`Processing activate-membership job for transaction ${transaction_id}`);
+
+    try {
+      // Get project (with bot_token)
+      const project = await this.projectRepository.findOne({
+        where: { id: project_id, tenant_id },
+      });
+
+      if (!project) {
+        this.logger.error(`Project not found: ${project_id}`);
+        throw new Error(`Project not found: ${project_id}`);
+      }
+
+      // Get membership plan with telegram groups
+      const membershipPlan = await this.membershipPlanService.findOne(tenant_id, membership_plan_id);
+      if (!membershipPlan) {
+        this.logger.error(`Membership plan not found: ${membership_plan_id}`);
+        return;
+      }
+
+      const telegramGroups = membershipPlan.telegram_groups || [];
+
+      if (telegramGroups.length === 0) {
+        this.logger.warn(`No telegram groups found for membership activation, transaction ${transaction_id}`);
+        return;
+      }
+
+      // Calculate expiration date
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + duration_days);
+
+      this.logger.log(`Generating invite links for ${telegramGroups.length} groups for user ${telegram_user_id}`);
+
+      // Generate invite links for each group
+      const inviteLinks: Array<{ groupName: string; inviteLink: string }> = [];
+
+      for (const group of telegramGroups) {
+        if (!group.telegram_chat_id) {
+          this.logger.warn(`Telegram group ${group.id} has no telegram_chat_id, skipping`);
+          continue;
+        }
+
+        try {
+          // Generate invite link that never expires (member_limit: 1 for single use)
+          const inviteLink = await this.telegramApiService.generateInviteLink(
+            project.bot_token,
+            group.telegram_chat_id,
+            null, // No expiration
+            1,    // Single-use link
+          );
+
+          if (inviteLink) {
+            inviteLinks.push({
+              groupName: group.group_name,
+              inviteLink,
+            });
+            this.logger.log(`Generated invite link for group ${group.group_name}: ${inviteLink}`);
+          } else {
+            this.logger.error(`Failed to generate invite link for group ${group.group_name}`);
+          }
+        } catch (error) {
+          this.logger.error(`Error generating invite link for group ${group.group_name}:`, error.stack);
+        }
+      }
+
+      // Create channel member records for tracking
+      for (const group of telegramGroups) {
+        if (!group.telegram_chat_id) continue;
+
+        try {
+          await this.channelMemberService.create(tenant_id, {
+            payment_transaction_id: transaction_id,
+            project_id,
+            telegram_user_id,
+            channel_id: group.telegram_chat_id.toString(),
+            expires_at: expiresAt.toISOString(),
+          });
+          this.logger.log(`Channel member record created for group ${group.group_name}`);
+        } catch (error) {
+          this.logger.error(`Error creating channel member record for group ${group.group_name}:`, error.stack);
+        }
+      }
+
+      // Send message with invite links to user
+      if (inviteLinks.length > 0) {
+        const userName = telegram_first_name || telegram_username || 'Хэрэглэгч';
+        const groupLinksText = inviteLinks
+          .map((link, index) => `${index + 1}. [${link.groupName}](${link.inviteLink})`)
+          .join('\n');
+
+        const message =
+          `✅ *Төлбөр амжилттай!*\n\n` +
+          `Баярлалаа, ${userName}! Таны *${membershipPlan.name}* гишүүнчлэл идэвхжлээ.\n\n` +
+          `💰 Төлсөн дүн: ${payment_amount.toLocaleString()} MNT\n` +
+          `⏰ Хүчинтэй хугацаа: ${duration_days} хоног\n` +
+          `📅 Дуусах огноо: ${expiresAt.toLocaleDateString('mn-MN')}\n\n` +
+          `📱 *Бүлгүүддээ нэгдэх:*\n${groupLinksText}\n\n` +
+          `⚠️ *Анхаар:* Эдгээр холбоос нь ганцхан удаа ашиглагдана.`;
+
+        const sent = await this.telegramApiService.sendMessage(
+          project.bot_token,
+          parseInt(telegram_user_id),
+          message,
+          { parse_mode: 'Markdown' },
+        );
+
+        if (sent) {
+          this.logger.log(`Membership activation message sent to user ${telegram_user_id}`);
+        } else {
+          this.logger.error(`Failed to send membership activation message to user ${telegram_user_id}`);
+        }
+      } else {
+        this.logger.error(`No invite links generated for membership activation, transaction ${transaction_id}`);
+      }
+
+      this.logger.log(`Successfully activated membership for transaction ${transaction_id}`);
+    } catch (error) {
+      this.logger.error(`Failed to activate membership for transaction ${transaction_id}`, error.stack);
       throw error;
     }
   }
