@@ -123,7 +123,7 @@ export default function ProjectsPage() {
                       </CardDescription>
                       {project.last_sync_at && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Сүүлд синк хийсэн: {new Date(project.last_sync_at).toLocaleDateString()}
+                          Сүүлд синк хийсэн: {new Date(project.last_sync_at).toLocaleDateString('mn-MN')}
                         </p>
                       )}
                     </div>
@@ -142,7 +142,7 @@ export default function ProjectsPage() {
 
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Үүсгэсэн {new Date(project.created_at).toLocaleDateString()}
+                    Үүсгэсэн {new Date(project.created_at).toLocaleDateString('mn-MN')}
                   </p>
                 </div>
 

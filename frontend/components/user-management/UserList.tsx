@@ -32,6 +32,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Users, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { apiClient, userQueryKeys, AllUserRoles, UserSummary } from '@/lib/api/client';
 import { formatDistanceToNow } from 'date-fns';
+import { mn } from 'date-fns/locale';
 import { useToast } from '@/components/ui/use-toast';
 
 interface UserListProps {
@@ -87,11 +88,11 @@ export function UserList({ onCreateUser }: UserListProps) {
 
   const formatLastLogin = (lastLoginAt: string | null) => {
     if (!lastLoginAt) return 'Хэзээ ч үгүй';
-    return formatDistanceToNow(new Date(lastLoginAt), { addSuffix: true });
+    return formatDistanceToNow(new Date(lastLoginAt), { addSuffix: true, locale: mn });
   };
 
   const formatCreatedAt = (createdAt: string) => {
-    return formatDistanceToNow(new Date(createdAt), { addSuffix: true });
+    return formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: mn });
   };
 
   const handleEdit = (userId: string) => {

@@ -49,6 +49,7 @@ import {
   ListTelegramGroupsParams,
 } from '@/lib/api/telegram-groups';
 import { formatDistanceToNow } from 'date-fns';
+import { mn } from 'date-fns/locale';
 
 interface TelegramGroupListProps {
   onEditGroup?: (group: TelegramGroup) => void;
@@ -412,7 +413,7 @@ export function TelegramGroupList({
                   {/* Created Date */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Үүсгэсэн</span>
-                    <span className="text-sm">{formatDistanceToNow(new Date(group.created_at), { addSuffix: true })}</span>
+                    <span className="text-sm">{formatDistanceToNow(new Date(group.created_at), { addSuffix: true, locale: mn })}</span>
                   </div>
                 </CardContent>
 

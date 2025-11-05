@@ -52,11 +52,11 @@ export default function EditTelegramGroupPage({ params }: EditTelegramGroupPageP
       queryClient.invalidateQueries({ queryKey: telegramGroupsQueryKeys.all });
       queryClient.setQueryData(telegramGroupsQueryKeys.detail(id), updatedGroup);
 
-      toast.success(`Telegram group "${updatedGroup.group_name}" updated successfully!`);
+      toast.success(`"${updatedGroup.group_name}" группыг амжилттай шинэчиллээ!`);
       router.push('/dashboard/telegram-groups');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to update telegram group: ${error.message}`);
+      toast.error(`Telegram групп шинэчлэхэд алдаа гарлаа: ${error.message}`);
     },
   });
 
@@ -80,12 +80,12 @@ export default function EditTelegramGroupPage({ params }: EditTelegramGroupPageP
         <div className="mb-6">
           <Button variant="ghost" onClick={handleCancel} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Telegram Groups
+            Telegram группүүд руу буцах
           </Button>
 
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Edit Telegram Group</h1>
-            <p className="text-muted-foreground">Loading group details...</p>
+            <h1 className="text-3xl font-bold tracking-tight">Telegram групп засах</h1>
+            <p className="text-muted-foreground">Группын мэдээлэл ачаалж байна...</p>
           </div>
         </div>
 
@@ -93,7 +93,7 @@ export default function EditTelegramGroupPage({ params }: EditTelegramGroupPageP
           <CardContent className="pt-6">
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Loading telegram group...</span>
+              <span className="ml-2">Telegram групп ачаалж байна...</span>
             </div>
           </CardContent>
         </Card>
@@ -108,13 +108,13 @@ export default function EditTelegramGroupPage({ params }: EditTelegramGroupPageP
         <div className="mb-6">
           <Button variant="ghost" onClick={handleCancel} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Telegram Groups
+            Telegram группүүд руу буцах
           </Button>
 
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight text-destructive">Error Loading Group</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-destructive">Групп ачаалахад алдаа гарлаа</h1>
             <p className="text-muted-foreground">
-              Failed to load the telegram group details
+              Telegram группын мэдээллийг ачаалж чадсангүй
             </p>
           </div>
         </div>
@@ -123,14 +123,14 @@ export default function EditTelegramGroupPage({ params }: EditTelegramGroupPageP
           <CardContent className="pt-6">
             <div className="text-center space-y-2">
               <p className="text-destructive">
-                {error?.message || 'An unexpected error occurred'}
+                {error?.message || 'Тодорхойгүй алдаа гарлаа'}
               </p>
               <div className="flex gap-2 justify-center">
                 <Button onClick={() => window.location.reload()}>
-                  Try Again
+                  Дахин оролдох
                 </Button>
                 <Button variant="outline" onClick={() => router.push('/dashboard/telegram-groups')}>
-                  Back to Groups
+                  Группүүд руу буцах
                 </Button>
               </div>
             </div>
@@ -146,13 +146,13 @@ export default function EditTelegramGroupPage({ params }: EditTelegramGroupPageP
       <div className="mb-6">
         <Button variant="ghost" onClick={handleCancel} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Telegram Groups
+          Telegram группүүд руу буцах
         </Button>
 
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Edit Telegram Group</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Telegram групп засах</h1>
           <p className="text-muted-foreground">
-            Update settings and configuration for &quot;{telegramGroup?.group_name}&quot;
+            &quot;{telegramGroup?.group_name}&quot; группын тохиргоо болон мэдээллийг шинэчлэх
           </p>
         </div>
       </div>

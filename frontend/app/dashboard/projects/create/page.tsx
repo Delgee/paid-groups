@@ -18,21 +18,21 @@ import { MONGOLIAN_BANKS } from '@/lib/constants/banks';
 
 const formSchema = z.object({
   bot_token: z.string()
-    .min(1, 'Bot token is required')
-    .regex(/^\d+:[A-Za-z0-9_-]+$/, 'Invalid bot token format'),
+    .min(1, 'Ботын токен шаардлагатай')
+    .regex(/^\d+:[A-Za-z0-9_-]+$/, 'Ботын токены формат буруу байна'),
   bot_username: z.string()
-    .min(1, 'Bot username is required. Please verify your bot token.')
-    .max(32, 'Username cannot exceed 32 characters'),
+    .min(1, 'Ботын хэрэглэгчийн нэр шаардлагатай. Токеноо шалгана уу.')
+    .max(32, 'Хэрэглэгчийн нэр 32 тэмдэгтээс хэтрэх боломжгүй'),
   display_name: z.string()
-    .min(2, 'Display name must be at least 2 characters')
-    .max(255, 'Display name cannot exceed 255 characters'),
-  description: z.string().max(512, 'Description cannot exceed 512 characters').optional(),
+    .min(2, 'Харагдах нэр дор хаяж 2 тэмдэгттэй байх ёстой')
+    .max(255, 'Харагдах нэр 255 тэмдэгтээс хэтрэх боломжгүй'),
+  description: z.string().max(512, 'Тайлбар 512 тэмдэгтээс хэтрэх боломжгүй').optional(),
   welcome_message: z.string()
-    .min(10, 'Welcome message must be at least 10 characters')
-    .max(4096, 'Welcome message cannot exceed 4096 characters'),
-  account_bank_code: z.string().min(1, 'Bank is required'),
-  account_number: z.string().min(1, 'Account number is required').max(50, 'Account number cannot exceed 50 characters'),
-  account_name: z.string().min(1, 'Account holder name is required').max(255, 'Account name cannot exceed 255 characters'),
+    .min(10, 'Угтах мессеж дор хаяж 10 тэмдэгттэй байх ёстой')
+    .max(4096, 'Угтах мессеж 4096 тэмдэгтээс хэтрэх боломжгүй'),
+  account_bank_code: z.string().min(1, 'Банк сонгох шаардлагатай'),
+  account_number: z.string().min(1, 'Дансны дугаар шаардлагатай').max(50, 'Дансны дугаар 50 тэмдэгтээс хэтрэх боломжгүй'),
+  account_name: z.string().min(1, 'Дансны эзэмшигчийн нэр шаардлагатай').max(255, 'Дансны эзэмшигчийн нэр 255 тэмдэгтээс хэтрэх боломжгүй'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -80,7 +80,7 @@ export default function CreateProjectPage() {
       form.clearErrors('bot_username');
       form.clearErrors('display_name');
 
-      toast.success(`Successfully verified @${botInfo.username}`);
+      toast.success(`@${botInfo.username} ботыг амжилттай баталгаажууллаа`);
     } catch (error: any) {
       // Clear fields on error
       form.setValue('bot_username', '');
@@ -88,7 +88,7 @@ export default function CreateProjectPage() {
       setLastVerifiedToken('');
 
       // Set error on bot_token field
-      const errorMessage = error.response?.data?.error?.message || 'Could not verify bot token. Please check that the token is correct and the bot is active.';
+      const errorMessage = error.response?.data?.error?.message || 'Ботын токен баталгаажуулж чадсангүй. Токен зөв эсэх болон бот идэвхтэй эсэхийг шалгана уу.';
 
       form.setError('bot_token', {
         type: 'manual',
@@ -111,7 +111,7 @@ export default function CreateProjectPage() {
 
       const project = await projectApi.create(payload);
 
-      toast.success('Project created successfully');
+      toast.success('Төсөл амжилттай үүслээ');
 
       // Redirect to project detail page
       router.push(`/dashboard/projects/${project.id}`);
@@ -123,30 +123,30 @@ export default function CreateProjectPage() {
 
       if (errorData?.code === 'DUPLICATE_BOT_TOKEN' || error.response?.status === 409) {
         // Set error on specific field
-        const errorMessage = errorData?.message || 'This bot token is already registered. Please use a different bot.';
+        const errorMessage = errorData?.message || 'Энэ ботын токен аль хэдийн бүртгэлтэй байна. Өөр бот ашиглана уу.';
 
         form.setError('bot_token', {
           type: 'manual',
           message: errorMessage,
         });
 
-        toast.error(`Failed to create project: ${errorMessage}`);
+        toast.error(`Төсөл үүсгэхэд алдаа гарлаа: ${errorMessage}`);
       } else if (errorData?.code === 'VALIDATION_ERROR' && errorData?.details?.field) {
         // Set error on the specific field mentioned in the error
         const fieldName = errorData.details.field as keyof FormData;
         form.setError(fieldName, {
           type: 'manual',
-          message: errorData.message || 'Validation failed',
+          message: errorData.message || 'Баталгаажуулалт амжилтгүй боллоо',
         });
 
-        toast.error(`Validation error: ${errorData.message || 'Please check the form for errors'}`);
+        toast.error(`Баталгаажуулалтын алдаа: ${errorData.message || 'Маягтын алдааг шалгана уу'}`);
       } else if (error.response?.status === 401) {
-        toast.error('Authentication error: Your session has expired. Please login again.');
+        toast.error('Нэвтрэлтийн алдаа: Таны нэвтрэх хугацаа дууссан байна. Дахин нэвтэрнэ үү.');
       } else if (error.response?.status === 403) {
-        toast.error('Permission denied: You do not have permission to create projects.');
+        toast.error('Эрх хүрэхгүй: Танд төсөл үүсгэх эрх байхгүй байна.');
       } else {
         // Generic error
-        const message = errorData?.message || error.response?.data?.message || error.message || 'Failed to create project. Please try again.';
+        const message = errorData?.message || error.response?.data?.message || error.message || 'Төсөл үүсгэхэд алдаа гарлаа. Дахин оролдоно уу.';
 
         toast.error(message);
       }
@@ -163,14 +163,14 @@ export default function CreateProjectPage() {
         className="mb-4"
       >
         <ArrowLeftIcon className="mr-2 h-4 w-4" />
-        Back
+        Буцах
       </Button>
 
       <Card>
         <CardHeader>
-          <CardTitle>Create Project</CardTitle>
+          <CardTitle>Төсөл үүсгэх</CardTitle>
           <CardDescription>
-            Create a new project with a Telegram bot. You can add multiple groups and membership plans later.
+            Telegram боттой шинэ төсөл үүсгэх. Та дараа нь олон групп болон багцууд нэмж болно.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -181,7 +181,7 @@ export default function CreateProjectPage() {
                 name="bot_token"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Bot Token *</FormLabel>
+                    <FormLabel>Ботын токен *</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
@@ -210,9 +210,9 @@ export default function CreateProjectPage() {
                     </FormControl>
                     <FormDescription>
                       {verifying ? (
-                        <span className="text-blue-600">Verifying bot token...</span>
+                        <span className="text-blue-600">Ботын токен баталгаажуулж байна...</span>
                       ) : (
-                        'Get your bot token from @BotFather on Telegram. Bot details will be auto-filled.'
+                        'Telegram дээрх @BotFather-аас ботын токен авна уу. Ботын мэдээлэл автоматаар бөглөгдөнө.'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -225,10 +225,10 @@ export default function CreateProjectPage() {
                 name="bot_username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Bot Username *</FormLabel>
+                    <FormLabel>Ботын хэрэглэгчийн нэр *</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Automatically filled after verification"
+                        placeholder="Баталгаажуулалтын дараа автоматаар бөглөгдөнө"
                         {...field}
                         readOnly
                         disabled
@@ -236,7 +236,7 @@ export default function CreateProjectPage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Auto-filled from Telegram API (read-only)
+                      Telegram API-аас автоматаар бөглөгдсөн (зөвхөн унших)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -248,12 +248,12 @@ export default function CreateProjectPage() {
                 name="display_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Display Name *</FormLabel>
+                    <FormLabel>Харагдах нэр *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Premium Content Project" {...field} />
+                      <Input placeholder="Төлбөртэй контент төсөл" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Auto-filled from bot, but you can change it to anything you like
+                      Ботоос автоматаар бөглөгдсөн боловч та өөрчлөх боломжтой
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -265,17 +265,17 @@ export default function CreateProjectPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Тайлбар</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="This project manages multiple premium groups..."
+                        placeholder="Энэ төсөл олон төлбөртэй группүүдийг удирддаг..."
                         className="resize-none"
                         rows={3}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Optional description for internal reference
+                      Дотоод лавлагаанд зориулсан тайлбар (заавал биш)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -287,16 +287,16 @@ export default function CreateProjectPage() {
                 name="welcome_message"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Welcome Message *</FormLabel>
+                    <FormLabel>Угтах мессеж *</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Welcome! Choose a membership plan to access our premium groups."
+                        placeholder="Тавтай морил! Манай төлбөртэй группүүдэд хандахын тулд багц сонгоно уу."
                         rows={4}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Message sent when users start the bot with /start
+                      Хэрэглэгчид /start командыг ашиглахад илгээгдэх мессеж
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -304,9 +304,9 @@ export default function CreateProjectPage() {
               />
 
               <div className="space-y-4 pt-4 border-t">
-                <h3 className="text-lg font-medium">Bank Account Information</h3>
+                <h3 className="text-lg font-medium">Банкны дансны мэдээлэл</h3>
                 <p className="text-sm text-muted-foreground">
-                  Configure bank account details for QPay payment integration
+                  QPay төлбөрийн холболтод зориулсан банкны дансны мэдээллийг тохируулах
                 </p>
 
                 <FormField
@@ -314,11 +314,11 @@ export default function CreateProjectPage() {
                   name="account_bank_code"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bank *</FormLabel>
+                      <FormLabel>Банк *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a bank" />
+                            <SelectValue placeholder="Банк сонгох" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -330,7 +330,7 @@ export default function CreateProjectPage() {
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Select the bank for payment processing
+                        Төлбөр боловсруулахад ашиглах банк сонгох
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -342,12 +342,12 @@ export default function CreateProjectPage() {
                   name="account_number"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Account Number *</FormLabel>
+                      <FormLabel>Дансны дугаар *</FormLabel>
                       <FormControl>
                         <Input placeholder="490000869" {...field} />
                       </FormControl>
                       <FormDescription>
-                        Bank account number for receiving payments
+                        Төлбөр хүлээн авах банкны дансны дугаар
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -359,12 +359,12 @@ export default function CreateProjectPage() {
                   name="account_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Account Holder Name *</FormLabel>
+                      <FormLabel>Дансны эзэмшигчийн нэр *</FormLabel>
                       <FormControl>
-                        <Input placeholder="test account2" {...field} />
+                        <Input placeholder="Тест данс 2" {...field} />
                       </FormControl>
                       <FormDescription>
-                        Name of the account holder as registered with the bank
+                        Банкинд бүртгэгдсэн дансны эзэмшигчийн нэр
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -380,10 +380,10 @@ export default function CreateProjectPage() {
                   disabled={submitting}
                   className="flex-1"
                 >
-                  Cancel
+                  Цуцлах
                 </Button>
                 <Button type="submit" disabled={submitting} className="flex-1">
-                  {submitting ? 'Creating...' : 'Create Project'}
+                  {submitting ? 'Үүсгэж байна...' : 'Төсөл үүсгэх'}
                 </Button>
               </div>
             </form>
