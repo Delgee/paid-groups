@@ -222,6 +222,11 @@ export class OnboardingBotController {
             case SessionStep.PROJECT_NAME:
             case SessionStep.PROJECT_DESCRIPTION:
             case SessionStep.BOT_TOKEN:
+            case SessionStep.PROJECT_BANK_PRIVACY_CONSENT:
+            case SessionStep.PROJECT_BANK:
+            case SessionStep.PROJECT_ACCOUNT_NUMBER:
+            case SessionStep.PROJECT_ACCOUNT_NAME:
+            case SessionStep.PROJECT_CONFIRM:
               botResponse =
                 await this.projectCreationHandler.handleProjectCreationFlow(
                   telegramUserId,
@@ -327,7 +332,12 @@ export class OnboardingBotController {
       let botResponse: BotResponse;
 
       // Route callback query based on callback_data prefix
-      if (callbackData.startsWith('group_type:')) {
+      if (callbackData.startsWith('bank:')) {
+        botResponse = await this.projectCreationHandler.handleBankCallback(
+          telegramUserId,
+          callbackData,
+        );
+      } else if (callbackData.startsWith('group_type:')) {
         const groupType = callbackData.split(':')[1] as 'channel' | 'group';
         botResponse =
           await this.groupConnectionHandler.handleGroupTypeSelection(
