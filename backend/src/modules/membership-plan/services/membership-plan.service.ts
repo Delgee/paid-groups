@@ -86,7 +86,7 @@ export class MembershipPlanService {
 
     return this.membershipPlanRepository.find({
       where,
-      relations: ['telegram_groups', 'project'],
+      relations: ['group_associations', 'group_associations.telegram_group', 'project'],
       order: { created_at: 'DESC' },
     });
   }
@@ -96,7 +96,7 @@ export class MembershipPlanService {
 
     const membershipPlan = await this.membershipPlanRepository.findOne({
       where: { id, tenant_id: tenantId },
-      relations: ['telegram_groups', 'project'],
+      relations: ['group_associations', 'group_associations.telegram_group', 'project'],
     });
 
     if (!membershipPlan) {
@@ -187,7 +187,7 @@ export class MembershipPlanService {
   async findGroupsForPlan(planId: string): Promise<TelegramGroup[]> {
     const plan = await this.membershipPlanRepository.findOne({
       where: { id: planId },
-      relations: ['telegram_groups'],
+      relations: ['group_associations', 'group_associations.telegram_group'],
     });
 
     if (!plan) {

@@ -269,7 +269,7 @@ export class PaymentService {
     // Get the plan details with telegram_groups relation
     const plan = await this.planRepository.findOne({
       where: { id: planId, tenant_id: tenantId },
-      relations: ['telegram_groups'],
+      relations: ['group_associations', 'group_associations.telegram_group'],
     });
 
     if (!plan) {

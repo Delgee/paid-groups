@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Project } from '../../project/entities/project.entity';
+import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { MembershipPlanGroup } from './membership-plan-group.entity';
 
 @Entity('membership_plans')
@@ -90,4 +91,13 @@ export class MembershipPlan {
     cascade: true,
   })
   group_associations: MembershipPlanGroup[];
+
+  // Virtual property for backward compatibility
+  // Maps group_associations to telegram_groups array
+  get telegram_groups(): TelegramGroup[] {
+    if (!this.group_associations) {
+      return [];
+    }
+    return this.group_associations.map(association => association.telegram_group).filter(Boolean);
+  }
 }
