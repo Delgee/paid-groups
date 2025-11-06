@@ -1,0 +1,297 @@
+version: '3.8'
+
+# SECURE PRODUCTION CONFIGURATION
+# This file addresses all critical security issues identified in DEPLOYMENT_REVIEW.md
+# Key changes:
+# - No exposed database/redis/backend/frontend ports (only nginx ports 80/443)
+# - Resource limits on all services
+# - Fixed Redis health check with password support
+# - Bind mounts instead of named volumes for data persistence
+# - Database connection pooling configured
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: telegram-saas-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-telegram_saas}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    # SECURITY FIX: No ports exposed to host - internal network only
+    volumes:
+      # RELIABILITY FIX: Use bind mount instead of named volume
+      - ${DATA_DIR:-./data}/postgres:/var/lib/postgresql/data
+      - ./backend/src/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - telegram-saas-network
+    # RELIABILITY FIX: Configure connection pooling and performance
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=512MB
+      -c effective_cache_size=1536MB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-telegram_saas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # RELIABILITY FIX: Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: telegram-saas-redis
+    restart: always
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    # SECURITY FIX: No ports exposed to host
+    volumes:
+      # RELIABILITY FIX: Use bind mount
+      - ${DATA_DIR:-./data}/redis:/data
+    networks:
+      - telegram-saas-network
+    # SECURITY FIX: Health check with password support
+    healthcheck:
+      test: |
+        sh -c '
+        if [ -n "$REDIS_PASSWORD" ]; then
+          redis-cli -a "$REDIS_PASSWORD" ping
+        else
+          redis-cli ping
+        fi
+        '
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    # RELIABILITY FIX: Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: telegram-saas-backend
+    restart: always
+    # SECURITY FIX: No ports exposed - accessed only via nginx
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-telegram_saas}
+      DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-telegram_saas}
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+
+      # QPay Payment Gateway
+      QPAY_USERNAME: ${QPAY_USERNAME}
+      QPAY_PASSWORD: ${QPAY_PASSWORD}
+      QPAY_TERMINAL_ID: ${QPAY_TERMINAL_ID}
+      QPAY_BASE_URL: ${QPAY_BASE_URL}
+      QPAY_WEBHOOK_SECRET: ${QPAY_WEBHOOK_SECRET}
+      QPAY_CALLBACK_BASE_URL: ${QPAY_CALLBACK_BASE_URL}
+      QPAY_ENV: ${QPAY_ENV:-production}
+
+      # CORS
+      FRONTEND_URL: ${FRONTEND_URL}
+
+      # Telegram
+      TELEGRAM_ONBOARDING_BOT_TOKEN: ${TELEGRAM_ONBOARDING_BOT_TOKEN}
+      TELEGRAM_CHANNEL_ID_BOT_TOKEN: ${TELEGRAM_CHANNEL_ID_BOT_TOKEN}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_DIR: logs
+      LOG_REQUEST_BODIES: ${LOG_REQUEST_BODIES:-false}
+      LOG_DB_QUERIES: ${LOG_DB_QUERIES:-false}
+
+      # Rate Limiting
+      RATE_LIMIT_TTL: ${RATE_LIMIT_TTL:-60}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+
+      # Bot Token Encryption
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+
+      # Base URL
+      BASE_URL: ${BASE_URL}
+
+      # Webhook Health Check
+      WEBHOOK_HEALTH_CHECK_ON_STARTUP: ${WEBHOOK_HEALTH_CHECK_ON_STARTUP:-true}
+      WEBHOOK_AUTO_FIX_ON_STARTUP: ${WEBHOOK_AUTO_FIX_ON_STARTUP:-true}
+    volumes:
+      - ${DATA_DIR:-./data}/backend_logs:/app/logs
+    networks:
+      - telegram-saas-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # RELIABILITY FIX: Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: telegram-saas-frontend
+    restart: always
+    # SECURITY FIX: No ports exposed - accessed only via nginx
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      API_URL: http://backend:3001
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Telegram Groups SaaS}
+      NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-1.0.0}
+      NEXT_PUBLIC_ENABLE_ANALYTICS: ${NEXT_PUBLIC_ENABLE_ANALYTICS:-true}
+      NEXT_PUBLIC_ENABLE_NOTIFICATIONS: ${NEXT_PUBLIC_ENABLE_NOTIFICATIONS:-true}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+    networks:
+      - telegram-saas-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    # RELIABILITY FIX: Correct health check endpoint
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 || r.statusCode === 307 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # RELIABILITY FIX: Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: telegram-saas-nginx
+    restart: always
+    # ONLY nginx ports are exposed to host
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ${DATA_DIR:-./data}/nginx_cache:/var/cache/nginx
+    networks:
+      - telegram-saas-network
+    depends_on:
+      - backend
+      - frontend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # RELIABILITY FIX: Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+# RELIABILITY FIX: Removed named volumes in favor of bind mounts
+# Volumes are now configured via DATA_DIR environment variable (default: ./data)
+# This prevents accidental data loss with 'docker-compose down -v'
+
+networks:
+  telegram-saas-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

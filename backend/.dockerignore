@@ -1,0 +1,51 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Build output
+dist
+build
+coverage
+
+# Logs
+logs
+*.log
+
+# Testing
+test
+*.spec.ts
+*.test.ts
+jest.config.js
+test-*.json
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Database files
+*.sql
+*.db
+*.sqlite
+
+# Misc
+.DS_Store
+Thumbs.db

@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Build output
+.next
+out
+build
+dist
+
+# Testing
+__tests__
+*.spec.ts
+*.spec.tsx
+*.test.ts
+*.test.tsx
+jest.config.js
+playwright.config.ts
+tests
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Misc
+.DS_Store
+Thumbs.db
