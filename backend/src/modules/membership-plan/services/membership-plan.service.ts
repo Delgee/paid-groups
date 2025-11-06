@@ -203,7 +203,8 @@ export class MembershipPlanService {
   async findPlansForGroup(groupId: string, tenantId: string): Promise<MembershipPlan[]> {
     return this.membershipPlanRepository
       .createQueryBuilder('plan')
-      .innerJoin('plan.telegram_groups', 'group')
+      .innerJoin('plan.group_associations', 'group_association')
+      .innerJoin('group_association.telegram_group', 'group')
       .where('group.id = :groupId', { groupId })
       .andWhere('plan.tenant_id = :tenantId', { tenantId })
       .andWhere('plan.is_active = :isActive', { isActive: true })
