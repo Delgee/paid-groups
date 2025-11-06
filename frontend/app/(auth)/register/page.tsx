@@ -18,7 +18,6 @@ const registerSchema = z.object({
   name: z.string().min(2, 'Нэр дор хаяж 2 тэмдэгттэй байх ёстой'),
   phone: z.string().regex(/^\d{8}$/, 'Утасны дугаар яг 8 оронтой байх ёстой'),
   register_number: z.string().length(10, 'Регистрийн дугаар яг 10 тэмдэгттэй байх ёстой'),
-  company_name: z.string().min(2, 'Компанийн нэр дор хаяж 2 тэмдэгттэй байх ёстой').optional(),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Нууц үг таарахгүй байна",
@@ -122,23 +121,6 @@ export default function RegisterPage() {
             <p className="text-xs text-gray-500">
               10 тэмдэгттэй (жишээ нь: АМ05321712)
             </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="company_name">
-              Компанийн нэр <span className="text-gray-500 font-normal">(Заавал биш)</span>
-            </Label>
-            <Input
-              id="company_name"
-              type="text"
-              autoComplete="organization"
-              placeholder="Оруулаагүй бол автоматаар үүснэ"
-              {...register('company_name')}
-              className={errors.company_name ? 'border-red-500' : ''}
-            />
-            {errors.company_name && (
-              <p className="text-red-600 text-sm">{errors.company_name.message}</p>
-            )}
           </div>
 
           <div className="space-y-2">
