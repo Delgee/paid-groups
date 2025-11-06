@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --production=false
+RUN npm ci
 
 # Stage 2: Build
 FROM node:20-alpine AS builder

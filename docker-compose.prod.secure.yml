@@ -115,7 +115,7 @@ services:
     restart: always
     # SECURITY FIX: No ports exposed - accessed only via nginx
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 3001
 
       # Database
@@ -211,7 +211,7 @@ services:
     restart: always
     # SECURITY FIX: No ports exposed - accessed only via nginx
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       API_URL: http://backend:3001
       NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Telegram Groups SaaS}

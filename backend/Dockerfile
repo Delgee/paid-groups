@@ -17,9 +17,6 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Remove dev dependencies
-RUN npm prune --production
-
 # Stage 2: Production
 FROM node:20-alpine
 
