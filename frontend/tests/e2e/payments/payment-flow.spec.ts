@@ -53,7 +53,7 @@ test.describe('Payment Flow E2E', () => {
     expect(Array.isArray(bots)).toBeTruthy();
     expect(bots.length).toBeGreaterThan(0);
 
-    const paymentBot = bots.find(b => b.bot_username === 'payment_flow_bot');
+    const paymentBot = bots.find((b: any) => b.bot_username === 'payment_flow_bot');
     expect(paymentBot).toBeDefined();
     expect(paymentBot.display_name).toBe('Payment Flow Test Bot');
   });

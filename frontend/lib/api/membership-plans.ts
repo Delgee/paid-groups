@@ -10,7 +10,8 @@ export interface MembershipPlan {
   price: number;
   currency: string;
   duration_days: number;
-  trial_days: number;
+  trial_enabled: boolean;
+  trial_duration_seconds: number;
   features: Record<string, any>;
   is_active: boolean;
   max_members?: number;
@@ -21,21 +22,27 @@ export interface MembershipPlan {
 
 export interface CreateMembershipPlanDto {
   project_id: string;
+  telegram_group_ids: string[];
   name: string;
   description?: string;
   price: number;
   duration_days: number;
-  telegram_group_ids?: string[];
+  trial_enabled?: boolean;
+  trial_duration_seconds?: number;
   is_active?: boolean;
+  sort_order?: number;
 }
 
 export interface UpdateMembershipPlanDto {
+  telegram_group_ids?: string[];
   name?: string;
   description?: string;
   price?: number;
   duration_days?: number;
-  telegram_group_ids?: string[];
+  trial_enabled?: boolean;
+  trial_duration_seconds?: number;
   is_active?: boolean;
+  sort_order?: number;
 }
 
 export const membershipPlanApi = {

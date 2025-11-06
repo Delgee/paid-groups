@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, CreditCard, Users, Gift } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { telegramGroupsApi, TelegramGroup } from '@/lib/api/telegram-groups';
-import { membershipPlanApi } from '@/lib/api/membership-plans';
+import { membershipPlanApi, CreateMembershipPlanDto } from '@/lib/api/membership-plans';
 import { toast } from 'sonner';
 
 const createPlanSchema = z.object({
@@ -109,17 +109,15 @@ export default function CreatePlanPage() {
       }
 
       // Include project_id, telegram_group_ids, and trial configuration in the request
-      const requestData = {
+      const requestData: CreateMembershipPlanDto = {
         name: data.name,
         description: data.description,
         price: data.price,
         duration_days: data.duration_days,
         project_id: projectId,
-        ...(selectedGroupIds.length > 0 && { telegram_group_ids: selectedGroupIds }),
-        ...(trialEnabled && {
-          trial_enabled: true,
-          trial_duration_seconds: data.trial_duration_seconds || 300,
-        }),
+        telegram_group_ids: selectedGroupIds,
+        trial_enabled: trialEnabled,
+        trial_duration_seconds: trialEnabled ? (data.trial_duration_seconds || 300) : undefined,
       };
 
       const newPlan = await membershipPlanApi.create(requestData);

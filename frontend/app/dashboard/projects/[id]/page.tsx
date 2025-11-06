@@ -372,8 +372,8 @@ export default function ProjectDetailPage() {
                             {plan.price.toLocaleString()} {plan.currency}
                           </span>
                           <span>{plan.duration_days} days</span>
-                          {plan.trial_days > 0 && (
-                            <span className="text-green-600">{plan.trial_days} day trial</span>
+                          {plan.trial_enabled && (
+                            <span className="text-green-600">{Math.floor(plan.trial_duration_seconds / 86400)} day trial</span>
                           )}
                         </div>
                         {plan.telegram_groups && plan.telegram_groups.length > 0 && (
