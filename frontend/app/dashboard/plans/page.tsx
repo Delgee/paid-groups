@@ -400,7 +400,7 @@ export default function PlansPage() {
                   <div>
                     <h4 className="font-medium mb-2">Онцлог</h4>
                     <ul className="text-sm space-y-1">
-                      {plan.features.map((feature, index) => (
+                      {plan.features.map((feature: string, index: number) => (
                         <li key={index} className="flex items-center">
                           <span className="w-1 h-1 bg-blue-600 rounded-full mr-2"></span>
                           {feature}
