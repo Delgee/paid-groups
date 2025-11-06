@@ -11,6 +11,14 @@ import { Project } from '../entities/project.entity';
 import { TelegramUpdate } from '../project-webhook.controller';
 import { TelegramApiService } from '../../../integrations/telegram/telegram-api.service';
 import { ProjectCommandHandlerService } from './project-command-handler.service';
+import { MembershipPlanService } from '../../membership-plan/services/membership-plan.service';
+import { PaymentTransactionService } from '../../payment/services/payment-transaction.service';
+import { TrialUsageService } from '../../membership/services/trial-usage.service';
+import { MemberService } from '../../membership/services/member.service';
+import { MembershipService } from '../../membership/services/membership.service';
+import { MembershipStatus } from '../../membership/entities/membership.entity';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 /**
  * ProjectWebhookProcessorService
@@ -28,6 +36,12 @@ export class ProjectWebhookProcessorService {
     private readonly dataSource: DataSource,
     private readonly telegramApiService: TelegramApiService,
     private readonly commandHandler: ProjectCommandHandlerService,
+    private readonly membershipPlanService: MembershipPlanService,
+    private readonly paymentTransactionService: PaymentTransactionService,
+    private readonly trialUsageService: TrialUsageService,
+    private readonly memberService: MemberService,
+    private readonly membershipService: MembershipService,
+    @InjectQueue('membership') private membershipQueue: Queue,
   ) {}
 
   /**
@@ -204,6 +218,10 @@ export class ProjectWebhookProcessorService {
         await this.handleSubscribeCommand(project, chatId);
         break;
 
+      case '/buy':
+        await this.handleBuyCommand(project, message);
+        break;
+
       // Admin commands
       case '/ban':
         await this.commandHandler.handleBanCommand(ctx);
@@ -337,6 +355,97 @@ Use /status to check your current membership status.
   }
 
   /**
+   * Handle /buy command
+   */
+  private async handleBuyCommand(
+    project: Project,
+    message: any,
+  ): Promise<void> {
+    try {
+      const chatId = message.chat.id;
+      const userId = message.from.id;
+
+      // Fetch active membership plans for this project
+      const plans = await this.membershipPlanService.findActiveByProject(
+        project.tenant_id,
+        project.id,
+      );
+
+      if (plans.length === 0) {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          'Одоогоор багц байхгүй байна. Дараа дахин шалгана уу.',
+        );
+        return;
+      }
+
+      // Create inline keyboard with plan options showing trial buttons
+      const keyboard = [];
+
+      for (const plan of plans) {
+        const groupCount = plan.telegram_groups?.length || 0;
+        const planButtons = [];
+
+        // Buy button (always shown)
+        planButtons.push({
+          text: `💳 Buy ${plan.name} - ${Number(plan.price).toLocaleString()} MNT`,
+          callback_data: `buy_plan_${plan.id}`,
+        });
+
+        // Trial button (only if trial is enabled and user hasn't used it)
+        if (plan.trial_enabled) {
+          const hasUsedTrial = await this.trialUsageService.hasUsedTrial(
+            project.tenant_id,
+            userId,
+            plan.id,
+          );
+
+          if (!hasUsedTrial) {
+            const trialDurationMinutes = Math.floor(plan.trial_duration_seconds / 60);
+            const trialDurationText =
+              trialDurationMinutes < 60
+                ? `${trialDurationMinutes}min`
+                : `${Math.floor(trialDurationMinutes / 60)}h`;
+
+            planButtons.push({
+              text: `🎁 Try Free (${trialDurationText})`,
+              callback_data: `trial_plan_${plan.id}`,
+            });
+          }
+        }
+
+        keyboard.push(planButtons);
+      }
+
+      await this.telegramApiService.sendMessage(
+        project.bot_token,
+        chatId,
+        '🎯 *Багц сонгох:*\n\nПремиум эрх авахын тулд багц сонгоно уу!\n\n' +
+          '💳 *Худалдан авах* - Төлбөртэй бүрэн эрх\n' +
+          '🎁 *Үнэгүй туршилт* - Хязгаарлагдмал хугацаа (ганцхан удаа)',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: keyboard,
+          },
+        },
+      );
+
+      this.logger.log(
+        `Showed ${plans.length} plans to user ${userId} on project ${project.id}`,
+      );
+    } catch (error) {
+      this.logger.error('Error handling buy command', error.stack);
+      await this.telegramApiService.sendMessage(
+        project.bot_token,
+        message.chat.id,
+        'Алдаа гарлаа. Дараа дахин оролдоно уу.',
+      );
+    }
+  }
+
+  /**
    * Handle callback queries (inline button presses)
    */
   private async handleCallbackQuery(
@@ -346,6 +455,7 @@ Use /status to check your current membership status.
     const queryId = callbackQuery.id;
     const data = callbackQuery.data;
     const chatId = callbackQuery.message?.chat?.id;
+    const userId = callbackQuery.from?.id;
 
     this.logger.debug(`Handling callback query: ${data} for project ${project.id}`);
 
@@ -360,6 +470,19 @@ Use /status to check your current membership status.
       if (data.startsWith('subscribe_')) {
         const planId = data.replace('subscribe_', '');
         await this.handleSubscriptionCallback(project, chatId, planId);
+      } else if (data.startsWith('buy_plan_')) {
+        const planId = data.replace('buy_plan_', '');
+        if (userId) {
+          await this.initiatePayment(project, callbackQuery, planId, userId.toString());
+        }
+      } else if (data.startsWith('trial_plan_')) {
+        const planId = data.replace('trial_plan_', '');
+        if (userId) {
+          await this.activateTrial(project, callbackQuery, planId, userId);
+        }
+      } else if (data.startsWith('demo_pay:')) {
+        const transactionId = data.replace('demo_pay:', '');
+        await this.handleDemoPayment(project, callbackQuery, transactionId);
       } else {
         this.logger.debug(`Unhandled callback query data: ${data}`);
       }
@@ -516,6 +639,417 @@ Use /status to check your current membership status.
 
     // TODO: Handle bot being added/removed from groups
     // TODO: Update group configuration in database
+  }
+
+  /**
+   * Initiate payment for a membership plan
+   */
+  private async initiatePayment(
+    project: Project,
+    callbackQuery: any,
+    planId: string,
+    telegramUserId: string,
+  ): Promise<void> {
+    try {
+      const chatId = callbackQuery.message?.chat?.id;
+      const from = callbackQuery.from;
+
+      // Get plan details with telegram_groups relation
+      const plan = await this.membershipPlanService.findOne(
+        project.tenant_id,
+        planId,
+      );
+
+      if (!plan.is_active) {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          'Энэ багц боломжгүй болсон байна. Өөр багц сонгоно уу.',
+        );
+        return;
+      }
+
+      // Show groups included in the plan
+      const groupCount = plan.telegram_groups?.length || 0;
+      const groupText =
+        groupCount > 0
+          ? `\nAccess to ${groupCount} group${groupCount > 1 ? 's' : ''}`
+          : '';
+
+      // Create payment transaction with project_id
+      // Convert decimal price to integer (TypeORM returns decimal as string)
+      const priceInt = Math.round(Number(plan.price));
+
+      const result = await this.paymentTransactionService.initiatePayment(
+        project.tenant_id,
+        {
+          membership_plan_id: plan.id,
+          project_id: project.id,
+          telegram_user_id: telegramUserId,
+          telegram_username: from.username,
+          telegram_first_name: from.first_name,
+          telegram_last_name: from.last_name,
+          amount: priceInt,
+          snapshot_plan_name: plan.name,
+          snapshot_price: priceInt,
+          snapshot_duration_days: plan.duration_days,
+        },
+      );
+
+      this.logger.log(
+        `Payment initiated for user ${telegramUserId}, transaction ${result.transaction.id}, project ${project.id}`,
+      );
+
+      // Build payment buttons
+      const paymentButtons: any[][] = [
+        [{ text: '💳 Төлбөр төлөх', url: result.payment_link }]
+      ];
+
+      // Add demo payment button in development mode
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      if (isDevelopment) {
+        paymentButtons.push([
+          { text: '🧪 Demo Payment (Dev Only)', callback_data: `demo_pay:${result.transaction.id}` }
+        ]);
+      }
+
+      // Send QR code image with payment buttons
+      if (result.qr_image) {
+        try {
+          // Convert base64 to buffer and send as photo
+          const qrBuffer = Buffer.from(result.qr_image, 'base64');
+
+          await this.telegramApiService.sendPhoto(
+            project.bot_token,
+            chatId,
+            qrBuffer,
+            {
+              caption:
+                `💳 *${plan.name}-ийн төлбөр*\n\n` +
+                `Үнэ: ${priceInt.toLocaleString()} MNT\n` +
+                `Хугацаа: ${plan.duration_days} хоног${groupText}\n\n` +
+                `📱 QR кодыг уншуулж эсвэл доорх товчоор төлбөр төлнө үү:` +
+                (isDevelopment ? `\n\n⚠️ *Хөгжүүлэлтийн горим:* Demo payment товч идэвхтэй` : ''),
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: paymentButtons,
+              },
+            },
+          );
+        } catch (qrError) {
+          this.logger.error('Failed to send QR code image', qrError.stack);
+          // Fallback: send payment link as text
+          await this.telegramApiService.sendMessage(
+            project.bot_token,
+            chatId,
+            `💳 *Төлбөр төлөх*\n\n` +
+              `Үнэ: ${priceInt.toLocaleString()} MNT\n` +
+              `Хугацаа: ${plan.duration_days} хоног${groupText}` +
+              (isDevelopment ? `\n\n⚠️ *Хөгжүүлэлтийн горим:* Demo payment товч идэвхтэй` : ''),
+            {
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: paymentButtons,
+              },
+            },
+          );
+        }
+      } else {
+        // No QR image, send payment link only
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          `💳 *${plan.name}-ийн төлбөр*\n\n` +
+            `Үнэ: ${priceInt.toLocaleString()} MNT\n` +
+            `Хугацаа: ${plan.duration_days} хоног${groupText}\n\n` +
+            `📱 Доорх товчоор төлбөр төлнө үү:` +
+            (isDevelopment ? `\n\n⚠️ *Хөгжүүлэлтийн горим:* Demo payment товч идэвхтэй` : ''),
+          {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: paymentButtons,
+            },
+          },
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error initiating payment', error.stack);
+      const chatId = callbackQuery.message?.chat?.id;
+      if (chatId) {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          '❌ Төлбөр эхлүүлэхэд алдаа гарлаа. Дахин оролдох эсвэл тусламжид хандана уу.',
+        );
+      }
+    }
+  }
+
+  /**
+   * Handle demo payment simulation (development only)
+   */
+  private async handleDemoPayment(
+    project: Project,
+    callbackQuery: any,
+    transactionId: string,
+  ): Promise<void> {
+    try {
+      const chatId = callbackQuery.message?.chat?.id;
+
+      // Only allow in development mode
+      if (process.env.NODE_ENV !== 'development') {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          'Demo payment is only available in development mode',
+        );
+        return;
+      }
+
+      this.logger.log(`Demo payment triggered for transaction ${transactionId}`);
+
+      // Find the payment transaction
+      const transaction = await this.paymentTransactionService.findOne(
+        project.tenant_id,
+        transactionId,
+      );
+
+      if (!transaction) {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          '❌ Төлбөрийн гүйлгээ олдсонгүй.',
+        );
+        return;
+      }
+
+      // Check if already completed
+      if (transaction.status === 'completed') {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          '✅ Энэ төлбөр аль хэдийн төлөгдсөн байна.',
+        );
+        return;
+      }
+
+      // Mark transaction as completed
+      await this.paymentTransactionService.markAsCompleted(
+        project.tenant_id,
+        transactionId,
+        {
+          qpay_transaction_id: 'DEMO_' + Date.now(),
+          qpay_payment_method: 'demo',
+        },
+      );
+
+      this.logger.log(`Demo payment completed for transaction ${transactionId}`);
+
+      // Queue membership activation job
+      await this.membershipQueue.add('activate-membership', {
+        tenant_id: transaction.tenant_id,
+        project_id: transaction.project_id,
+        membership_plan_id: transaction.membership_plan_id,
+        telegram_user_id: transaction.telegram_user_id,
+        telegram_username: transaction.telegram_username,
+        telegram_first_name: transaction.telegram_first_name,
+        telegram_last_name: transaction.telegram_last_name,
+        transaction_id: transaction.id,
+        payment_amount: transaction.amount,
+        duration_days: transaction.snapshot_duration_days,
+      });
+
+      this.logger.log(`Membership activation job queued for transaction ${transactionId}`);
+
+      await this.telegramApiService.sendMessage(
+        project.bot_token,
+        chatId,
+        `✅ *Demo төлбөр амжилттай!*\n\n` +
+          `🧪 Энэ бол тест төлбөр байна.\n` +
+          `Таны гишүүнчлэл удахгүй идэвхжинэ.`,
+        { parse_mode: 'Markdown' },
+      );
+    } catch (error) {
+      this.logger.error('Error processing demo payment', error.stack);
+      const chatId = callbackQuery.message?.chat?.id;
+      if (chatId) {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          '❌ Demo төлбөр хийхэд алдаа гарлаа.',
+        );
+      }
+    }
+  }
+
+  /**
+   * Activate trial membership for a user
+   */
+  private async activateTrial(
+    project: Project,
+    callbackQuery: any,
+    planId: string,
+    telegramUserId: number,
+  ): Promise<void> {
+    try {
+      const chatId = callbackQuery.message?.chat?.id;
+      const from = callbackQuery.from;
+
+      // Get plan details with telegram_groups relation
+      const plan = await this.membershipPlanService.findOne(
+        project.tenant_id,
+        planId,
+      );
+
+      if (!plan.is_active) {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          '❌ Энэ багц боломжгүй болсон байна. Өөр багц сонгоно уу.',
+        );
+        return;
+      }
+
+      if (!plan.trial_enabled) {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          '❌ Энэ багцад туршилт байхгүй байна. Бүрэн гишүүнчлэл худалдан авна уу.',
+        );
+        return;
+      }
+
+      // Check if user already used trial
+      const hasUsedTrial = await this.trialUsageService.hasUsedTrial(
+        project.tenant_id,
+        telegramUserId,
+        plan.id,
+      );
+
+      if (hasUsedTrial) {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          '❌ Та энэ багцын туршилтыг аль хэдийн ашигласан байна. Үргэлжлүүлэхийн тулд бүрэн гишүүнчлэл худалдан авна уу.',
+        );
+        return;
+      }
+
+      // Get or create member
+      let member = await this.memberService.findByTelegramUserId(
+        telegramUserId,
+        project.tenant_id,
+      );
+
+      if (!member) {
+        member = await this.memberService.create(project.tenant_id, {
+          telegram_user_id: telegramUserId,
+          telegram_username: from.username,
+          first_name: from.first_name,
+          last_name: from.last_name,
+          is_bot: from.is_bot,
+        });
+      }
+
+      // Calculate trial end time
+      const trialEndsAt = new Date(Date.now() + plan.trial_duration_seconds * 1000);
+
+      // Create trial memberships for all groups in the plan
+      const groupCount = plan.telegram_groups?.length || 0;
+      const createdMemberships = [];
+
+      for (const group of plan.telegram_groups) {
+        // Create TRIAL membership
+        const membership = await this.membershipService.create(project.tenant_id, {
+          member_id: member.id,
+          group_id: group.id,
+          plan_id: plan.id,
+          starts_at: new Date(),
+          expires_at: trialEndsAt,
+        });
+
+        // Update status to TRIAL (create method creates ACTIVE by default)
+        await this.membershipService.update(project.tenant_id, membership.id, {
+          status: MembershipStatus.TRIAL,
+        });
+        membership.status = MembershipStatus.TRIAL;
+
+        createdMemberships.push(membership);
+
+        // Create trial usage record (only once per plan, not per group)
+        if (createdMemberships.length === 1) {
+          await this.trialUsageService.createTrialUsage(
+            project.tenant_id,
+            member.id,
+            plan.id,
+            membership.id,
+            trialEndsAt,
+          );
+        }
+      }
+
+      // Queue job to add user to Telegram channels
+      await this.membershipQueue.add('activate-trial', {
+        tenant_id: project.tenant_id,
+        project_id: project.id,
+        member_id: member.id,
+        membership_plan_id: plan.id,
+        membership_ids: createdMemberships.map((m) => m.id),
+        telegram_user_id: telegramUserId,
+        plan_name: plan.name,
+        trial_ends_at: trialEndsAt.toISOString(),
+      });
+
+      // Calculate trial duration display
+      const trialDurationMinutes = Math.floor(plan.trial_duration_seconds / 60);
+      const trialDurationText =
+        trialDurationMinutes < 60
+          ? `${trialDurationMinutes} minutes`
+          : `${Math.floor(trialDurationMinutes / 60)} hours`;
+
+      this.logger.log(
+        `Trial activated for user ${telegramUserId}, plan ${planId}, project ${project.id}, expires ${trialEndsAt.toISOString()}`,
+      );
+
+      // Send success message
+      await this.telegramApiService.sendMessage(
+        project.bot_token,
+        chatId,
+        `🎉 *Туршилт идэвхжлээ!*\n\n` +
+          `Багц: *${plan.name}*\n` +
+          `Хугацаа: ${trialDurationText}\n` +
+          `Дуусах огноо: ${trialEndsAt.toLocaleString()}\n` +
+          `Бүлгүүд: ${groupCount}\n\n` +
+          `✅ Таныг удахгүй бүлгүүдэд нэмнэ.\n\n` +
+          `⚠️ *Анхаар:* Туршилт дууссаны дараа бүрэн гишүүнчлэл худалдан авахгүй бол таныг бүлгүүдээс автоматаар хасна.`,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '💳 Бүрэн гишүүнчлэл авах', callback_data: `buy_plan_${plan.id}` }],
+              [{ text: '📊 Миний төлөв', callback_data: 'my_status' }],
+            ],
+          },
+        },
+      );
+    } catch (error) {
+      this.logger.error('Error activating trial', error.stack);
+      const chatId = callbackQuery.message?.chat?.id;
+
+      if (error.response?.error?.code === 'TRIAL_ALREADY_USED') {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          '❌ Та энэ багцын туршилтыг аль хэдийн ашигласан байна. Үргэлжлүүлэхийн тулд бүрэн гишүүнчлэл худалдан авна уу.',
+        );
+      } else {
+        await this.telegramApiService.sendMessage(
+          project.bot_token,
+          chatId,
+          '❌ Туршилт идэвхжүүлэхэд алдаа гарлаа. Дахин оролдох эсвэл тусламжид хандана уу.',
+        );
+      }
+    }
   }
 
   /**

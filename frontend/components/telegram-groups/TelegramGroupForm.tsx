@@ -37,20 +37,20 @@ import { projectApi } from '@/lib/api/projects';
 const telegramGroupFormSchema = z.object({
   group_name: z
     .string()
-    .min(1, 'Group name is required')
-    .max(255, 'Group name must not exceed 255 characters')
+    .min(1, 'Группын нэр шаардлагатай')
+    .max(255, 'Группын нэр 255 тэмдэгтээс хэтрэхгүй байх ёстой')
     .transform((val) => val.trim()),
   description: z
     .string()
-    .max(1000, 'Description must not exceed 1000 characters')
+    .max(1000, 'Тайлбар 1000 тэмдэгтээс хэтрэхгүй байх ёстой')
     .optional()
     .transform((val) => (val?.trim() === '' ? undefined : val?.trim())),
-  project_id: z.string().uuid('Please select a valid project'),
+  project_id: z.string().uuid('Зөв төсөл сонгоно уу'),
   telegram_chat_id: z
     .string()
-    .regex(/^-?\d+$/, 'Chat ID must be a valid number (e.g., -1001234567890)')
+    .regex(/^-?\d+$/, 'Chat ID нь тоон утга байх ёстой (жишээ нь: -1001234567890)')
     .refine((val) => val.startsWith('-'), {
-      message: 'Chat ID for groups/channels must be negative (start with -)',
+      message: 'Групп/сувгийн Chat ID сөрөг тоо байх ёстой (- тэмдэгтээр эхэлнэ)',
     }),
   settings: z
     .string()
@@ -60,7 +60,7 @@ const telegramGroupFormSchema = z.object({
       try {
         return JSON.parse(val.trim());
       } catch {
-        throw new Error('Settings must be valid JSON');
+        throw new Error('Тохиргоо зөв JSON форматтай байх ёстой');
       }
     }),
 });
@@ -164,20 +164,20 @@ export function TelegramGroupForm({
         if (error.message.includes('group_name')) {
           form.setError('group_name', {
             type: 'server',
-            message: 'Group name is invalid or already exists'
+            message: 'Группын нэр буруу эсвэл аль хэдийн байна'
           });
         } else if (error.message.includes('project_id')) {
           form.setError('project_id', {
             type: 'server',
-            message: 'Selected project is invalid or unavailable'
+            message: 'Сонгосон төсөл буруу эсвэл идэвхгүй байна'
           });
         } else if (error.message.includes('settings')) {
           form.setError('settings', {
             type: 'server',
-            message: 'Settings format is invalid'
+            message: 'Тохиргооны формат буруу байна'
           });
         } else {
-          toast.error(error.message || 'An unexpected error occurred');
+          toast.error(error.message || 'Санамсаргүй алдаа гарлаа');
         }
       }
     }
@@ -189,18 +189,18 @@ export function TelegramGroupForm({
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            {mode === 'create' ? 'Create New Telegram Group' : 'Edit Telegram Group'}
+            {mode === 'create' ? 'Шинэ Telegram групп үүсгэх' : 'Telegram групп засах'}
           </h2>
           <p className="text-muted-foreground">
             {mode === 'create'
-              ? 'Set up a new telegram group for member management.'
-              : 'Update the telegram group details and settings.'
+              ? 'Гишүүдийн удирдлагын шинэ telegram групп тохируулах.'
+              : 'Telegram группын дэлгэрэнгүй болон тохиргоог шинэчлэх.'
             }
           </p>
         </div>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2 text-muted-foreground">Loading projects...</span>
+          <span className="ml-2 text-muted-foreground">Төслүүдийг ачааллаж байна...</span>
         </div>
       </div>
     );
@@ -212,17 +212,17 @@ export function TelegramGroupForm({
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            {mode === 'create' ? 'Create New Telegram Group' : 'Edit Telegram Group'}
+            {mode === 'create' ? 'Шинэ Telegram групп үүсгэх' : 'Telegram групп засах'}
           </h2>
           <p className="text-muted-foreground">
             {mode === 'create'
-              ? 'Set up a new telegram group for member management.'
-              : 'Update the telegram group details and settings.'
+              ? 'Гишүүдийн удирдлагын шинэ telegram групп тохируулах.'
+              : 'Telegram группын дэлгэрэнгүй болон тохиргоог шинэчлэх.'
             }
           </p>
         </div>
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-          Failed to load projects. Please refresh the page and try again.
+          Төслүүдийг ачааллахад алдаа гарлаа. Хуудсыг сэргээж дахин оролдоно уу.
         </div>
       </div>
     );
@@ -234,12 +234,12 @@ export function TelegramGroupForm({
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">
-          {mode === 'create' ? 'Create New Telegram Group' : 'Edit Telegram Group'}
+          {mode === 'create' ? 'Шинэ Telegram групп үүсгэх' : 'Telegram групп засах'}
         </h2>
         <p className="text-muted-foreground">
           {mode === 'create'
-            ? 'Connect your Telegram channel and set up member management. Make sure the bot has admin rights in the channel.'
-            : 'Update the telegram group details and settings.'
+            ? 'Telegram сувгаа холбож, гишүүдийн удирдлагыг тохируулах. Бот нь суваг дээр админ эрхтэй эсэхийг шалгана уу.'
+            : 'Telegram группын дэлгэрэнгүй болон тохиргоог шинэчлэх.'
           }
         </p>
       </div>
@@ -251,18 +251,18 @@ export function TelegramGroupForm({
             name="group_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Group Name *</FormLabel>
+                <FormLabel>Группын нэр *</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder="Enter group name (e.g., VIP Premium Group)"
+                    placeholder="Группын нэр оруулна уу (жишээ нь: VIP Төлбөртэй Групп)"
                     data-testid="group-name-input"
                     disabled={isLoading}
                   />
                 </FormControl>
                 <FormMessage data-testid="group-name-error" />
                 <p className="text-sm text-muted-foreground">
-                  A descriptive name for your telegram group
+                  Telegram группын тодорхойлох нэр
                 </p>
               </FormItem>
             )}
@@ -273,11 +273,11 @@ export function TelegramGroupForm({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Description</FormLabel>
+                <FormLabel>Тайлбар</FormLabel>
                 <FormControl>
                   <Textarea
                     {...field}
-                    placeholder="Enter a description for this group (optional)"
+                    placeholder="Энэ группын тайлбар оруулна уу (заавал биш)"
                     data-testid="group-description-input"
                     disabled={isLoading}
                     rows={3}
@@ -285,7 +285,7 @@ export function TelegramGroupForm({
                 </FormControl>
                 <FormMessage data-testid="description-error" />
                 <p className="text-sm text-muted-foreground">
-                  Optional description to help identify the purpose of this group
+                  Энэ группын зориулалтыг тодорхойлоход туслах тайлбар (заавал биш)
                 </p>
               </FormItem>
             )}
@@ -297,7 +297,7 @@ export function TelegramGroupForm({
               name="project_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Project *</FormLabel>
+                  <FormLabel>Төсөл *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -306,13 +306,13 @@ export function TelegramGroupForm({
                   >
                     <FormControl>
                       <SelectTrigger data-testid="project-select-trigger">
-                        <SelectValue placeholder="Select a project for this group" />
+                        <SelectValue placeholder="Энэ группд зориулж төсөл сонгох" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {availableProjects.length === 0 ? (
                         <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                          No active projects available
+                          Идэвхтэй төсөл байхгүй байна
                         </div>
                       ) : (
                         availableProjects.map((project) => (
@@ -332,7 +332,7 @@ export function TelegramGroupForm({
                   </Select>
                   <FormMessage data-testid="project-error" />
                   <p className="text-sm text-muted-foreground">
-                    Choose which project/bot will manage this telegram group
+                    Энэ telegram группыг удирдах төсөл/ботыг сонгоно уу
                   </p>
                 </FormItem>
               )}
@@ -341,7 +341,7 @@ export function TelegramGroupForm({
 
           {mode === 'create' && preselectedProjectId && projectDetails && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Project</label>
+              <label className="text-sm font-medium">Төсөл</label>
               <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/50">
                 <div className="flex-1">
                   <p className="font-medium">{projectDetails.display_name}</p>
@@ -352,18 +352,18 @@ export function TelegramGroupForm({
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">
-                  Pre-selected
+                  Урьдчилан сонгосон
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                This telegram group will be created for the selected project
+                Энэ telegram групп сонгосон төсөлд зориулж үүсгэгдэх болно
               </p>
             </div>
           )}
 
           {mode === 'edit' && projectDetails && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Project</label>
+              <label className="text-sm font-medium">Төсөл</label>
               <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/50">
                 <div className="flex-1">
                   <p className="font-medium">{projectDetails.display_name}</p>
@@ -379,11 +379,11 @@ export function TelegramGroupForm({
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">
-                  Read-only
+                  Зөвхөн унших
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Project cannot be changed after group creation
+                Групп үүсгэсний дараа төслийг өөрчлөх боломжгүй
               </p>
             </div>
           )}
@@ -407,17 +407,17 @@ export function TelegramGroupForm({
                     <FormMessage data-testid="telegram-chat-id-error" />
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">
-                        The numeric ID of your Telegram group/channel (must start with -)
+                        Таны Telegram групп/сувгийн тоон ID (- тэмдэгтээр эхлэх ёстой)
                       </p>
                       <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-900">
-                        <p className="font-medium mb-1">How to get your channel&apos;s Chat ID:</p>
+                        <p className="font-medium mb-1">Сувгийн Chat ID-г хэрхэн авах вэ:</p>
                         <ol className="list-decimal ml-4 space-y-1">
-                          <li>Forward any message from your channel to your bot</li>
-                          <li>The bot will respond with the Chat ID of that channel</li>
-                          <li>Copy the Chat ID (e.g., -1001234567890) and paste it here</li>
+                          <li>Өөрийн сувгаас аливаа мессежийг ботруугаа дамжуулна</li>
+                          <li>Бот тухайн сувгийн Chat ID-г хариу өгнө</li>
+                          <li>Chat ID-г хуулаад (жишээ нь: -1001234567890) энд байрлуулна</li>
                         </ol>
                         <p className="mt-2 text-xs text-blue-700">
-                          Note: Make sure your bot is added as an admin to the channel first
+                          Анхааруулга: Ботыг эхлээд сувагт админаар нэмсэн эсэхээ шалгаарай
                         </p>
                       </div>
                     </div>
@@ -429,7 +429,7 @@ export function TelegramGroupForm({
 
           {mode === 'edit' && initialData?.telegram_chat_id && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Telegram Channel</label>
+              <label className="text-sm font-medium">Telegram суваг</label>
               <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/50">
                 <div className="flex-1">
                   <p className="font-medium">Chat ID: {initialData.telegram_chat_id}</p>
@@ -440,11 +440,11 @@ export function TelegramGroupForm({
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">
-                  Connected
+                  Холбогдсон
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Channel connection cannot be changed after group creation
+                Групп үүсгэсний дараа сувгийн холболтыг өөрчлөх боломжгүй
               </p>
             </div>
           )}
@@ -454,11 +454,11 @@ export function TelegramGroupForm({
             name="settings"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Advanced Settings</FormLabel>
+                <FormLabel>Нарийвчилсан тохиргоо</FormLabel>
                 <FormControl>
                   <Textarea
                     {...field}
-                    placeholder='{"welcome_message": "Welcome to our group!", "auto_approve": true}'
+                    placeholder='{"welcome_message": "Манай группд тавтай морилно уу!", "auto_approve": true}'
                     data-testid="group-settings-input"
                     disabled={isLoading}
                     rows={4}
@@ -466,7 +466,7 @@ export function TelegramGroupForm({
                 </FormControl>
                 <FormMessage data-testid="settings-error" />
                 <p className="text-sm text-muted-foreground">
-                  Optional JSON configuration for group settings (leave empty for defaults)
+                  Группын тохиргооны JSON формат (анхдагч утгад үлдээх бол хоосон үлдээх)
                 </p>
               </FormItem>
             )}
@@ -483,8 +483,8 @@ export function TelegramGroupForm({
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" data-testid="loading-spinner" />
               )}
               {isLoading
-                ? `${mode === 'create' ? 'Creating' : 'Updating'} Group...`
-                : `${mode === 'create' ? 'Create' : 'Update'} Group`
+                ? `${mode === 'create' ? 'Групп үүсгэж байна' : 'Групп шинэчилж байна'}...`
+                : `${mode === 'create' ? 'Групп үүсгэх' : 'Групп шинэчлэх'}`
               }
             </Button>
             {onCancel && (
@@ -495,7 +495,7 @@ export function TelegramGroupForm({
                 disabled={isLoading}
                 data-testid="cancel-button"
               >
-                Cancel
+                Болих
               </Button>
             )}
           </div>
@@ -504,8 +504,8 @@ export function TelegramGroupForm({
 
       {availableProjects.length === 0 && mode === 'create' && !preselectedProjectId && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md text-sm">
-          <p className="font-medium">No Active Projects Available</p>
-          <p>You need to create and activate at least one project before creating a telegram group.</p>
+          <p className="font-medium">Идэвхтэй төсөл байхгүй байна</p>
+          <p>Telegram групп үүсгэхээсээ өмнө нэг идэвхтэй төсөл үүсгэх шаардлагатай.</p>
         </div>
       )}
     </div>

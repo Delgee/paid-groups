@@ -259,6 +259,58 @@ export class TelegramApiService {
     }
   }
 
+  /**
+   * Sends a photo to a chat
+   * @param botToken - The bot token
+   * @param chatId - The chat ID
+   * @param photo - Photo to send (file_id, URL, or Buffer)
+   * @param options - Additional message options (caption, reply_markup, etc.)
+   * @returns Promise<boolean> - True if successful, false otherwise
+   */
+  async sendPhoto(
+    botToken: string,
+    chatId: string | number,
+    photo: string | Buffer | any,
+    options?: any
+  ): Promise<boolean> {
+    const startTime = Date.now();
+    try {
+      await this.executeWithRateLimit(botToken, async () => {
+        const bot = this.getBotInstance(botToken);
+
+        // If photo is a Buffer, wrap it in an InputFile object with filename
+        let photoInput = photo;
+        if (Buffer.isBuffer(photo)) {
+          photoInput = {
+            source: photo,
+            filename: 'qr-code.png'
+          };
+        }
+
+        await bot.telegram.sendPhoto(chatId, photoInput as any, options);
+      });
+
+      const duration = Date.now() - startTime;
+      this.logger.telegram('SendPhoto', {
+        chatId,
+        duration,
+        success: true,
+      });
+
+      return true;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.telegram('SendPhoto', {
+        chatId,
+        error: error.message,
+        duration,
+        success: false,
+      }, 'error');
+
+      return false;
+    }
+  }
+
   async kickChatMember(
     botToken: string,
     chatId: string | number,

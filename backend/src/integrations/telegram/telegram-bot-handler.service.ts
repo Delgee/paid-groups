@@ -109,26 +109,27 @@ export class TelegramBotHandlerService implements OnModuleInit, OnModuleDestroy 
 
       const bot = new Telegraf(config.botToken);
 
-      // Register default /start command if not already registered
+      // Register custom command handlers
       const commandHandlers = this.commandHandlers.get(config.id) || [];
       const hasStartCommand = commandHandlers.some(h => h.command === 'start');
 
+      // Register all custom command handlers
+      for (const { command, handler } of commandHandlers) {
+        bot.command(command, async (ctx) => {
+          try {
+            await handler(ctx, config);
+          } catch (error) {
+            this.logger.error(`Error handling command /${command}:`, error.stack);
+            await ctx.reply('Алдаа гарлаа. Дараа дахин оролдоно уу.');
+          }
+        });
+      }
+
+      // Register default /start command if not already registered
       if (!hasStartCommand) {
         bot.start(async (ctx) => {
           await this.handleDefaultStart(ctx, config);
         });
-      } else {
-        // Register custom command handlers
-        for (const { command, handler } of commandHandlers) {
-          bot.command(command, async (ctx) => {
-            try {
-              await handler(ctx, config);
-            } catch (error) {
-              this.logger.error(`Error handling command /${command}:`, error.stack);
-              await ctx.reply('Алдаа гарлаа. Дараа дахин оролдоно уу.');
-            }
-          });
-        }
       }
 
       // Register callback query handlers
