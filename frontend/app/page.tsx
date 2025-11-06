@@ -16,7 +16,6 @@ import {
   Shield,
   TrendingUp,
   Clock,
-  Star,
   MessageSquare
 } from 'lucide-react';
 
@@ -77,7 +76,7 @@ export default function Home() {
                   className="bg-white text-blue-600 hover:bg-blue-50 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg px-8 py-6 h-auto"
                 >
                   <Link href="/register" className="flex items-center gap-2">
-                    Үнэгүй эхлэх
+                    Эхлэх
                     <ArrowRight className="h-5 w-5" />
                   </Link>
                 </Button>
@@ -91,26 +90,6 @@ export default function Home() {
                     Нэвтрэх
                   </Link>
                 </Button>
-              </div>
-
-              {/* Stats */}
-              <div className="mt-16 grid grid-cols-2 gap-8 md:grid-cols-4 max-w-4xl mx-auto">
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-white mb-2">500+</div>
-                  <div className="text-sm text-blue-200">Идэвхтэй бүлэг</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-white mb-2">50К+</div>
-                  <div className="text-sm text-blue-200">Гишүүд</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-white mb-2">₮100M+</div>
-                  <div className="text-sm text-blue-200">Сарын орлого</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-white mb-2">99.9%</div>
-                  <div className="text-sm text-blue-200">Ажиллах хувь</div>
-                </div>
               </div>
             </div>
           </div>
@@ -275,188 +254,170 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Тохиромжтой үнийн санал
+              Үнийн санал
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Хэмжээнээсээ үл хамааран бүх бизнест тохиромжтой
+              Таны бизнест тохирсон үнийн саналыг бид тань хийнэ. Холбогдоод ярилцаарай.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Starter Plan */}
-            <div className="rounded-2xl border-2 border-gray-200 p-8 hover:border-blue-300 transition-all duration-300 hover:shadow-lg">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Эхлэх</h3>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-900">₮29,000</span>
-                <span className="text-gray-600">/сар</span>
+          <div className="max-w-4xl mx-auto">
+            <div className="rounded-2xl border-2 border-blue-500 p-12 relative shadow-xl bg-gradient-to-b from-blue-50/50 to-white text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-8 mx-auto shadow-lg">
+                <MessageSquare className="h-10 w-10 text-white" />
               </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">1 Telegram бот</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">500 хүртэл гишүүн</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">Үндсэн аналитик</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">QPay холболт</span>
-                </li>
-              </ul>
-              <Button asChild className="w-full" variant="outline">
-                <Link href="/register">Сонгох</Link>
-              </Button>
-            </div>
 
-            {/* Professional Plan - Featured */}
-            <div className="rounded-2xl border-2 border-blue-500 p-8 relative shadow-xl bg-gradient-to-b from-blue-50/50 to-white">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                Хамгийн алдартай
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Мэргэжлийн</h3>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-900">₮79,000</span>
-                <span className="text-gray-600">/сар</span>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-blue-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">5 хүртэл Telegram бот</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-blue-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">5,000 хүртэл гишүүн</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-blue-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">Дэлгэрэнгүй аналитик</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-blue-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">Олон төлбөрийн хэрэгсэл</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-blue-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">Тусгай дэмжлэг</span>
-                </li>
-              </ul>
-              <Button asChild className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600">
-                <Link href="/register">Сонгох</Link>
-              </Button>
-            </div>
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                Таны бизнест тохирсон үнийн санал
+              </h3>
 
-            {/* Enterprise Plan */}
-            <div className="rounded-2xl border-2 border-gray-200 p-8 hover:border-purple-300 transition-all duration-300 hover:shadow-lg">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Байгууллага</h3>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-900">Тохирох</span>
+              <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+                Бид таны хэрэгцээ, бизнесийн хэмжээ, ашиглах функцүүдээс хамааруулан
+                хамгийн тохиромжтой үнийн саналыг бэлдэнэ. Та бидэнтэй холбогдоод
+                дэлгэрэнгүй мэдээлэл аваарай.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-left">
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-6 w-6 text-blue-500 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="font-semibold text-gray-900 mb-1">Уян хатан төлөвлөгөө</div>
+                    <div className="text-sm text-gray-600">Таны бизнест тохирсон боломжууд</div>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-6 w-6 text-blue-500 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="font-semibold text-gray-900 mb-1">Техникийн дэмжлэг</div>
+                    <div className="text-sm text-gray-600">Бүрэн туслалцаа үзүүлнэ</div>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-6 w-6 text-blue-500 flex-shrink-0 mt-1" />
+                  <div>
+                    <div className="font-semibold text-gray-900 mb-1">Сургалт үнэгүй</div>
+                    <div className="text-sm text-gray-600">Системийг ашиглахад заана</div>
+                  </div>
+                </div>
               </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">Хязгааргүй бот</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">Хязгааргүй гишүүн</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">Бүрэн аналитик + AI</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">Захиалгат функц</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-600">24/7 дэмжлэг</span>
-                </li>
-              </ul>
-              <Button asChild className="w-full" variant="outline">
-                <Link href="/register">Холбогдох</Link>
-              </Button>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-lg px-8 py-6 h-auto"
+                >
+                  <Link href="/register" className="flex items-center gap-2">
+                    Эхлэх
+                    <ArrowRight className="h-5 w-5" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-2 text-lg px-8 py-6 h-auto"
+                >
+                  <a href="mailto:info@telegramgroups.mn" className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Холбогдох
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Testimonials Section */}
+      {/* Why Choose Us Section */}
       <div className="py-24 bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Хэрэглэгчдийн сэтгэгдэл
+              Яагаад биднийг сонгох ёстой вэ?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Платформоо ашиглаж байгаа контент үүсгэгчид юу хэлж байна вэ?
+              Монголын зах зээлд зориулан бүтээгдсэн, найдвартай шийдэл
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl mb-6 shadow-lg">
+                <Shield className="h-7 w-7 text-white" />
               </div>
-              <p className="text-gray-700 mb-6 leading-relaxed">
-                "Энэ платформ маш хялбар бөгөөд хүчирхэг. Telegram бүлгээ удирдах цаг заваа 80% багассан. Гайхалтай!"
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                Найдвартай аюулгүй байдал
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Бүх төлбөр, гишүүдийн мэдээлэл шифрлэгдсэн, аюулгүй серверт хадгалагдана.
+                Олон улсын стандартыг баримталдаг.
               </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  Б
-                </div>
-                <div className="ml-4">
-                  <div className="font-semibold text-gray-900">Болдбаатар</div>
-                  <div className="text-sm text-gray-600">Санхүүгийн зөвлөх</div>
-                </div>
-              </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                ))}
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl mb-6 shadow-lg">
+                <Zap className="h-7 w-7 text-white" />
               </div>
-              <p className="text-gray-700 mb-6 leading-relaxed">
-                "Автомат төлбөрийн систем үнэхээр гайхалтай. Одоо би контент бүтээхэд л анхаарч, бүх зүйл өөрөө ажилладаг."
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                Бүрэн автоматжуулалт
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Төлбөр хүлээн авалт, гишүүд нэмэх, эрх дуусгах гэх мэт бүх үйлдлүүд
+                автоматаар явагдана. Та зөвхөн контент бүтээхэд анхаарна.
               </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  С
-                </div>
-                <div className="ml-4">
-                  <div className="font-semibold text-gray-900">Сарангэрэл</div>
-                  <div className="text-sm text-gray-600">Хөгжмийн багш</div>
-                </div>
-              </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                ))}
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl mb-6 shadow-lg">
+                <TrendingUp className="h-7 w-7 text-white" />
               </div>
-              <p className="text-gray-700 mb-6 leading-relaxed">
-                "Аналитик мэдээлэл маш их ашигтай. Бизнесийнхээ өсөлтийг бодитоор харж чадаж байна. Баярлалаа!"
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                Орлогоо нэмэгдүүлэх
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Аналитик мэдээлэл, төлбөрийн төлөвлөгөө, гишүүдийн мэдээллээс
+                таны орлогыг өсгөх олон боломж олох болно.
               </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  Э
-                </div>
-                <div className="ml-4">
-                  <div className="font-semibold text-gray-900">Эрдэнэбат</div>
-                  <div className="text-sm text-gray-600">Фитнесс дасгалжуулагч</div>
-                </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl mb-6 shadow-lg">
+                <Clock className="h-7 w-7 text-white" />
               </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                Хурдан эхлэх
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                5 минутад бүртгүүлж, ботоо холбоод шууд ашиглаж эхлэх боломжтой.
+                Техникийн мэдлэг шаардахгүй, маш энгийн.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl mb-6 shadow-lg">
+                <Users className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                Монголд зориулсан
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                QPay төлбөрийн систем, монгол хэл дээрх дэмжлэг, Монголын зах зээлд
+                тохирсон функцүүд бүгд багтсан.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl mb-6 shadow-lg">
+                <MessageSquare className="h-7 w-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                Тасралтгүй дэмжлэг
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Техникийн дэмжлэг, сургалт, холбогдох асуудлуудад шуурхай хариулна.
+                Таны амжилт бол бидний амжилт.
+              </p>
             </div>
           </div>
         </div>
@@ -468,10 +429,10 @@ export default function Home() {
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Өнөөдөр эхэлж, маргааш орлого олоорой
+            Өнөөдөр эхлээд Telegram бүлгээ өсгөөрэй
           </h2>
           <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-            Мянга мянган контент үүсгэгчид Telegram бүлгээ орлого болгож байна.
+            Telegram бүлгийнхээ удирдлага, төлбөр, гишүүдийн хяналтыг автоматжуулаарай.
             Та ч бидэнтэй нэгдээрэй!
           </p>
 
@@ -482,7 +443,7 @@ export default function Home() {
               className="bg-white text-blue-600 hover:bg-blue-50 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg px-10 py-7 h-auto w-full sm:w-auto"
             >
               <Link href="/register" className="flex items-center gap-2">
-                Үнэгүй эхлэх
+                Эхлэх
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
@@ -492,25 +453,25 @@ export default function Home() {
               variant="outline"
               className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm text-lg px-10 py-7 h-auto w-full sm:w-auto"
             >
-              <Link href="/login" className="flex items-center gap-2">
+              <a href="mailto:info@telegramgroups.mn" className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
-                Дэмжлэг авах
-              </Link>
+                Холбогдох
+              </a>
             </Button>
           </div>
 
-          <div className="flex items-center justify-center gap-8 text-blue-100 text-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-blue-100 text-sm">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
-              Кредит карт шаардлагагүй
+              Монголд зориулсан платформ
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
-              14 хоногийн туршилт үнэгүй
+              QPay төлбөрийн систем
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
-              Хэзээ ч цуцлах боломжтой
+              Бүрэн техникийн дэмжлэг
             </div>
           </div>
         </div>
