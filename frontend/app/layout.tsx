@@ -8,8 +8,8 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Telegram Groups SaaS',
-  description: 'Manage your paid Telegram groups with ease',
+  title: 'Telegram Groups - Монгол улсын анхны Telegram бүлгийн удирдлагын платформ',
+  description: 'Автомат төлбөрийн систем, гишүүдийн удирдлага, аналитик мэдээлэл - бүгдийг нэг платформд. Telegram бүлгээ орлоготой болгох хамгийн хялбар арга.',
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang='en'>
+    <html lang='mn'>
       <body className={inter.className}>
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>
