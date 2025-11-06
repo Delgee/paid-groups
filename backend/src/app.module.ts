@@ -47,7 +47,8 @@ import { GlobalBotWebhookService } from './common/services/global-bot-webhook.se
         database: configService.getOrThrow('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') === 'development',
+        // Allow override via TYPEORM_SYNCHRONIZE env var, otherwise use NODE_ENV check
+        synchronize: configService.get('TYPEORM_SYNCHRONIZE') === 'true' || configService.get('NODE_ENV') === 'development',
         logging: configService.get('NODE_ENV') === 'development',
       }),
       inject: [ConfigService],
