@@ -9,7 +9,6 @@ import {
   ManyToMany,
   OneToMany,
   JoinColumn,
-  JoinTable,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Project } from '../../project/entities/project.entity';
@@ -87,16 +86,13 @@ export class MembershipPlan {
   @JoinColumn({ name: 'project_id' })
   project: Project;
 
-  // Many-to-many relationship with TelegramGroups via junction table
+  // Many-to-many relationship with TelegramGroups via explicit junction entity
+  // NOTE: We don't use @JoinTable here because we have an explicit MembershipPlanGroup entity
+  // TypeORM will manage the relationship through the OneToMany/ManyToOne in the junction entity
   @ManyToMany(() => TelegramGroup, group => group.membership_plans)
-  @JoinTable({
-    name: 'membership_plan_groups',
-    joinColumn: { name: 'membership_plan_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'telegram_group_id', referencedColumnName: 'id' },
-  })
   telegram_groups: TelegramGroup[];
 
-  // Junction table associations
+  // Junction table associations (explicit entity for better control)
   @OneToMany(() => MembershipPlanGroup, association => association.membership_plan)
   group_associations: MembershipPlanGroup[];
 }

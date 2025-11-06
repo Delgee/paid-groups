@@ -127,7 +127,9 @@ services:
       DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-telegram_saas}
 
       # TypeORM Configuration
-      TYPEORM_SYNCHRONIZE: ${TYPEORM_SYNCHRONIZE:-false}
+      # Set to 'true' for dev server to auto-sync schema changes
+      # WARNING: NEVER use 'true' in production - use migrations instead
+      TYPEORM_SYNCHRONIZE: ${TYPEORM_SYNCHRONIZE:-true}
 
       # Redis
       REDIS_HOST: redis
