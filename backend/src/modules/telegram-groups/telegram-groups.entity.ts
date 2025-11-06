@@ -76,13 +76,10 @@ export class TelegramGroup {
   @OneToMany('Membership', 'group')
   memberships: any[];
 
-  // Many-to-many relationship with MembershipPlans
+  // Many-to-many relationship with MembershipPlans via junction entity
+  // Access membership plans through: group.plan_associations.map(a => a.membership_plan)
   @OneToMany('MembershipPlanGroup', 'telegram_group')
   plan_associations: any[];
-
-  // Legacy one-to-many (deprecated)
-  @OneToMany('MembershipPlan', 'group')
-  membership_plans: any[];
 
   tenant: any; // Add tenant relation placeholder for compatibility
 

@@ -6,13 +6,11 @@ import {
   UpdateDateColumn,
   Check,
   ManyToOne,
-  ManyToMany,
   OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Project } from '../../project/entities/project.entity';
-import { TelegramGroup } from '../../telegram-groups/telegram-groups.entity';
 import { MembershipPlanGroup } from './membership-plan-group.entity';
 
 @Entity('membership_plans')
@@ -87,12 +85,9 @@ export class MembershipPlan {
   project: Project;
 
   // Many-to-many relationship with TelegramGroups via explicit junction entity
-  // NOTE: We don't use @JoinTable here because we have an explicit MembershipPlanGroup entity
-  // TypeORM will manage the relationship through the OneToMany/ManyToOne in the junction entity
-  @ManyToMany(() => TelegramGroup, group => group.membership_plans)
-  telegram_groups: TelegramGroup[];
-
-  // Junction table associations (explicit entity for better control)
-  @OneToMany(() => MembershipPlanGroup, association => association.membership_plan)
+  // Access telegram groups through: plan.group_associations.map(a => a.telegram_group)
+  @OneToMany(() => MembershipPlanGroup, association => association.membership_plan, {
+    cascade: true,
+  })
   group_associations: MembershipPlanGroup[];
 }
