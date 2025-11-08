@@ -302,13 +302,15 @@ class ApiClient {
 
       setCookie('access_token', access_token, {
         maxAge: 60 * 15,
+        path: '/',
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Set to false to work with both HTTP and HTTPS
       });
       setCookie('refresh_token', newRefreshToken, {
         maxAge: 60 * 60 * 24 * 7,
+        path: '/',
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Set to false to work with both HTTP and HTTPS
       });
 
       this.refreshTokenPromise = null;
@@ -331,13 +333,15 @@ class ApiClient {
       const { access_token, refresh_token } = response.data;
       setCookie('access_token', access_token, {
         maxAge: 60 * 15,
+        path: '/',
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Set to false to work with both HTTP and HTTPS
       });
       setCookie('refresh_token', refresh_token, {
         maxAge: 60 * 60 * 24 * 7,
+        path: '/',
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Set to false to work with both HTTP and HTTPS
       });
 
       return response.data;
@@ -366,13 +370,15 @@ class ApiClient {
       const { access_token, refresh_token } = response.data;
       setCookie('access_token', access_token, {
         maxAge: 60 * 15,
+        path: '/',
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Set to false to work with both HTTP and HTTPS
       });
       setCookie('refresh_token', refresh_token, {
         maxAge: 60 * 60 * 24 * 7,
+        path: '/',
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Set to false to work with both HTTP and HTTPS
       });
 
       return response.data;
