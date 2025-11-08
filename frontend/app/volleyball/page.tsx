@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Users,
@@ -9,14 +8,11 @@ import {
   Newspaper,
   CreditCard,
   CheckCircle,
-  ArrowRight,
   Zap,
   BarChart3,
-  Bell,
   MessageSquare,
   Trophy,
   Calendar,
-  Play,
   DollarSign
 } from 'lucide-react';
 
@@ -50,29 +46,6 @@ export default function VolleyballPage() {
                 Манай платформ нь таны фэнүүдэд мэдээ, шууд дамжуулалт болон эксклюзив контентыг
                 хүргэх, мөн автомат төлбөрийн системээр орлого олох бүрэн боломжийг танд олгоно.
               </p>
-
-              <div className="mt-10 flex items-center justify-center gap-x-6">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-white text-orange-600 hover:bg-orange-50 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg px-8 py-6 h-auto"
-                >
-                  <Link href="/register" className="flex items-center gap-2">
-                    Эхлэх
-                    <ArrowRight className="h-5 w-5" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm text-lg px-8 py-6 h-auto"
-                >
-                  <a href="mailto:info@telegramgroups.mn">
-                    Дэлгэрэнгүй мэдэх
-                  </a>
-                </Button>
-              </div>
             </div>
           </div>
         </div>
@@ -112,20 +85,13 @@ export default function VolleyballPage() {
                   хурдан шуурхай хүргэх вэбсайт.
                 </p>
 
-                {/* Image Placeholder */}
-                <div className="relative rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 p-8 text-center mb-6">
-                  <Newspaper className="w-16 h-16 text-blue-300 mx-auto mb-3" />
-                  <div className="space-y-2">
-                    <div className="h-3 bg-blue-200 rounded"></div>
-                    <div className="h-3 bg-blue-200 rounded w-3/4 mx-auto"></div>
-                    <div className="h-20 bg-blue-100 rounded mt-4"></div>
-                  </div>
-                  <div className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
-                    Screenshot
-                  </div>
-                  <p className="mt-4 text-xs text-gray-600 font-medium">
-                    📸 NEEDED: News website homepage with volleyball articles, match results, team standings
-                  </p>
+                {/* News Website Image */}
+                <div className="relative rounded-xl overflow-hidden border border-gray-200 mb-6 shadow-lg">
+                  <img
+                    src="/images/website.png"
+                    alt="News website homepage with volleyball articles, match results, and team standings"
+                    className="w-full h-auto"
+                  />
                 </div>
 
                 <ul className="space-y-3">
@@ -140,10 +106,6 @@ export default function VolleyballPage() {
                   <li className="flex items-start text-sm text-gray-600">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                     Мэдээ, зураг, видео контент
-                  </li>
-                  <li className="flex items-start text-sm text-gray-600">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                    Монгол хэл дээр бүрэн дэмжлэг
                   </li>
                 </ul>
               </CardContent>
@@ -166,25 +128,13 @@ export default function VolleyballPage() {
                   тоглолтын цаад талын мэдээлэл.
                 </p>
 
-                {/* Image Placeholder */}
-                <div className="relative rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 p-8 text-center mb-6">
-                  <MessageSquare className="w-16 h-16 text-orange-300 mx-auto mb-3" />
-                  <div className="space-y-2">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center space-x-2 bg-white p-2 rounded">
-                        <div className="w-8 h-8 rounded-full bg-orange-200"></div>
-                        <div className="flex-1">
-                          <div className="h-2 bg-orange-100 rounded"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="absolute top-2 right-2 bg-orange-100 text-orange-800 text-xs font-semibold px-2 py-1 rounded">
-                    Screenshot
-                  </div>
-                  <p className="mt-4 text-xs text-gray-600 font-medium">
-                    📸 NEEDED: Telegram group with volleyball discussions, exclusive content, member interactions
-                  </p>
+                {/* Telegram Group Image */}
+                <div className="relative rounded-xl overflow-hidden border border-gray-200 mb-6 shadow-lg">
+                  <img
+                    src="/images/telegram.png"
+                    alt="Telegram group with volleyball discussions, exclusive content, and member interactions"
+                    className="w-full h-auto"
+                  />
                 </div>
 
                 <ul className="space-y-3">
@@ -222,18 +172,13 @@ export default function VolleyballPage() {
                   дээр монетизаци хийх боломж.
                 </p>
 
-                {/* Image Placeholder */}
-                <div className="relative rounded-xl border-2 border-dashed border-purple-300 bg-purple-50 p-8 text-center mb-6">
-                  <Play className="w-16 h-16 text-purple-300 mx-auto mb-3" />
-                  <div className="h-32 bg-gradient-to-br from-purple-200 to-purple-300 rounded-lg flex items-center justify-center">
-                    <Video className="w-12 h-12 text-white" />
-                  </div>
-                  <div className="absolute top-2 right-2 bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded">
-                    Screenshot
-                  </div>
-                  <p className="mt-4 text-xs text-gray-600 font-medium">
-                    📸 NEEDED: Live volleyball match streaming interface with viewer count, chat
-                  </p>
+                {/* Live Streaming Image */}
+                <div className="relative rounded-xl overflow-hidden border border-gray-200 mb-6 shadow-lg">
+                  <img
+                    src="/images/live.png"
+                    alt="Live volleyball match streaming interface with viewer count and chat"
+                    className="w-full h-auto"
+                  />
                 </div>
 
                 <ul className="space-y-3">
@@ -243,11 +188,7 @@ export default function VolleyballPage() {
                   </li>
                   <li className="flex items-start text-sm text-gray-600">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                    Premium гишүүдэд зориулсан давуу эрх
-                  </li>
-                  <li className="flex items-start text-sm text-gray-600">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                    HD чанар, шууд чат
+                    HD чанар
                   </li>
                   <li className="flex items-start text-sm text-gray-600">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -432,19 +373,6 @@ export default function VolleyballPage() {
               </p>
             </div>
 
-            {/* Notifications */}
-            <div className="flex flex-col items-center text-center p-6 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100/50 hover:shadow-lg transition-all">
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center mb-4">
-                <Bell className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                Автомат сануулга
-              </h3>
-              <p className="text-gray-600 text-sm">
-                Тоглолтын өмнө, эрх дуусахын өмнө автоматаар сануулга явна
-              </p>
-            </div>
-
             {/* Content Management */}
             <div className="flex flex-col items-center text-center p-6 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 hover:shadow-lg transition-all">
               <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4">
@@ -599,16 +527,10 @@ export default function VolleyballPage() {
                 <BarChart3 className="h-8 w-8 text-orange-500 flex-shrink-0" />
                 <div className="text-left">
                   <p className="font-semibold text-gray-900">Статистик</p>
-                  <p className="text-sm text-gray-600">Хэдэн үзэгч байсан, орлого хэд болсон гэдгийг бодит цагт харна</p>
+                  <p className="text-sm text-gray-600">Хэдэн үзэгч байсан гэдгийг бодит цагт харна</p>
                 </div>
               </div>
             </div>
-            <div className="absolute top-4 right-4 bg-orange-100 text-orange-800 text-xs font-semibold px-3 py-1 rounded-full">
-              Illustration needed
-            </div>
-            <p className="mt-8 text-sm text-gray-600 font-medium">
-              📸 NEEDED: Timeline infographic showing match day workflow from announcement to post-match analysis
-            </p>
           </div>
         </div>
       </div>
@@ -626,29 +548,6 @@ export default function VolleyballPage() {
             Таны фэнүүдэд мэдээ, шууд дамжуулалт болон эксклюзив контент хүргэх
             бүрэн платформыг бэлэн болгоё. Бид танд туслахад бэлэн байна.
           </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-12">
-            <Button
-              asChild
-              size="lg"
-              className="bg-white text-orange-600 hover:bg-orange-50 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg px-10 py-7 h-auto w-full sm:w-auto"
-            >
-              <a href="mailto:info@telegramgroups.mn" className="flex items-center gap-2">
-                Холбогдож ярилцах
-                <MessageSquare className="h-5 w-5" />
-              </a>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm text-lg px-10 py-7 h-auto w-full sm:w-auto"
-            >
-              <Link href="/register">
-                Туршилт эхлүүлэх
-              </Link>
-            </Button>
-          </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-orange-100 text-sm">
             <div className="flex items-center gap-2">
