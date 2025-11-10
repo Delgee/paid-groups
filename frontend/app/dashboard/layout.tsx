@@ -15,7 +15,8 @@ import {
   UserPlus,
   MessageSquare,
   FolderKanban,
-  Wallet
+  Wallet,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -42,6 +43,7 @@ const navigation = [
   { name: 'Хэрэглэгч удирдлага', href: '/dashboard/users', icon: UserPlus },
   { name: 'Багцууд', href: '/dashboard/plans', icon: CreditCard },
   { name: 'Төлбөр', href: '/dashboard/payments', icon: Wallet },
+  { name: 'Бизнесийн шинжилгээ', href: '/dashboard/business-analytics', icon: TrendingUp },
   { name: 'Тайлан', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Тохиргоо', href: '/dashboard/settings', icon: Settings },
 ];
