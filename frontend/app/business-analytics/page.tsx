@@ -616,7 +616,7 @@ export default function PublicBusinessAnalyticsPage() {
                   <div>
                     <h3 className="text-xl font-bold mb-2">Тооцоолол жишээ</h3>
                     <p className="mb-4">
-                      Tenant сард 20 сая ₮ орлого олно, 70% ашигтай (14 сая ₮ ашиг):
+                      Tenant сард 10 сая ₮ орлого олно, 70% ашигтай (7 сая ₮ ашиг):
                     </p>
                     <div className="space-y-2 bg-green-700 p-4 rounded-lg">
                       <div className="flex justify-between">
@@ -624,16 +624,16 @@ export default function PublicBusinessAnalyticsPage() {
                         <span className="font-bold">50,000 ₮</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Хувь хураамж (5% × 14M):</span>
-                        <span className="font-bold">700,000 ₮</span>
+                        <span>Хувь хураамж (5% × 7M):</span>
+                        <span className="font-bold">350,000 ₮</span>
                       </div>
                       <div className="flex justify-between border-t border-green-500 pt-2">
                         <span className="font-bold">Нийт сарын төлбөр:</span>
-                        <span className="font-bold text-xl">750,000 ₮</span>
+                        <span className="font-bold text-xl">400,000 ₮</span>
                       </div>
                       <div className="flex justify-between text-sm text-green-200">
                         <span>Ашгийн хувь:</span>
-                        <span>5.4% (маш шударга!)</span>
+                        <span>5.7% (маш шударга!)</span>
                       </div>
                     </div>
                   </div>
