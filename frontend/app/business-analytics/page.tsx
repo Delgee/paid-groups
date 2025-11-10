@@ -4,13 +4,6 @@ import React, { useState } from 'react';
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
   RadarChart,
   Radar,
   PolarGrid,
@@ -24,23 +17,17 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   TrendingUp,
   Users,
   DollarSign,
-  Target,
   CheckCircle2,
   Star,
   Award,
-  Percent,
   Calculator,
 } from 'lucide-react';
-
-// Exchange rate: 1 USD = 3,425 MNT
-const EXCHANGE_RATE = 3425;
 
 // Pricing Model Calculations
 // Assuming average tenant makes 10M MNT/month from their paid groups
@@ -339,7 +326,6 @@ export default function PublicBusinessAnalyticsPage() {
                   }`}
                   style={{
                     borderTop: `4px solid ${model.color}`,
-                    ringColor: selectedModel.name === model.name ? model.color : undefined,
                   }}
                   onClick={() => setSelectedModel(model)}
                 >

@@ -26,28 +26,12 @@ import {
   Users,
   DollarSign,
   Target,
-  PieChart as PieChartIcon,
-  BarChart3,
   TrendingDown,
   CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
 import { mn } from '@/lib/translations/mn';
 
 const t = mn.businessAnalytics;
-
-// Exchange rate: 1 USD = 3,425 MNT
-const EXCHANGE_RATE = 3425;
-
-// Market Data
-const marketData = {
-  population: 3530000,
-  internetUsers: 2930000,
-  socialMediaUsers: 2700000,
-  qpayUsers: 3200000,
-  telegramGlobal: 1000000000,
-  potentialCustomers: 12500, // mid-point of 10K-15K
-};
 
 const marketPenetrationData = [
   { name: 'Нийт хүн ам', value: 3530000, percentage: 100, color: '#94a3b8' },
