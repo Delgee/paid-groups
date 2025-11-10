@@ -616,7 +616,7 @@ export default function PublicBusinessAnalyticsPage() {
                   <div>
                     <h3 className="text-xl font-bold mb-2">Тооцоолол жишээ</h3>
                     <p className="mb-4">
-                      Tenant сард 20 сая ₮ орлого олно, 70% ашигтай (14 сая ₮ ашиг):
+                      Tenant сард 10 сая ₮ орлого олно, 70% ашигтай (7 сая ₮ ашиг):
                     </p>
                     <div className="space-y-2 bg-green-700 p-4 rounded-lg">
                       <div className="flex justify-between">
@@ -624,16 +624,319 @@ export default function PublicBusinessAnalyticsPage() {
                         <span className="font-bold">50,000 ₮</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Хувь хураамж (5% × 14M):</span>
-                        <span className="font-bold">700,000 ₮</span>
+                        <span>Хувь хураамж (5% × 7M):</span>
+                        <span className="font-bold">350,000 ₮</span>
                       </div>
                       <div className="flex justify-between border-t border-green-500 pt-2">
                         <span className="font-bold">Нийт сарын төлбөр:</span>
-                        <span className="font-bold text-xl">750,000 ₮</span>
+                        <span className="font-bold text-xl">400,000 ₮</span>
                       </div>
                       <div className="flex justify-between text-sm text-green-200">
                         <span>Ашгийн хувь:</span>
-                        <span>5.4% (маш шударга!)</span>
+                        <span>5.7% (маш шударга!)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Current Solutions Comparison */}
+      <section className="py-16 bg-slate-50">
+        <div className="container mx-auto px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <Badge className="mb-4 bg-blue-100 text-blue-700 border-blue-200">
+                Өрсөлдөгч шинжилгээ
+              </Badge>
+              <h2 className="text-4xl font-bold mb-4">Одоогийн шийдлүүд vs Бидний платформ</h2>
+              <p className="text-xl text-muted-foreground">
+                Монголын контент бүтээгчид одоо юу ашиглаж байна? Бидний давуу тал юу вэ?
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3 mb-12">
+              {/* Manual Telegram Management */}
+              <Card className="relative border-2 border-red-200">
+                <div className="absolute top-4 right-4">
+                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                    Хуучин арга
+                  </Badge>
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-xl">Гараар удирдах</CardTitle>
+                  <CardDescription>Telegram группийг гараар удирдах</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-bold text-green-600">0 ₮</span>
+                      <span className="text-muted-foreground">/сар</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Үнэгүй боловч цаг зарцуулна</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-red-700">❌ Асуудлууд:</p>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      <li>• Төлбөрийг гараар шалгах хэрэгтэй</li>
+                      <li>• Гишүүнийг гараар нэмэх/хасах</li>
+                      <li>• Хугацаа дуусахыг санах хэрэгтэй</li>
+                      <li>• Алдаа гарах магадлал өндөр</li>
+                      <li>• Их цаг зарцуулна (өдөрт 2-3 цаг)</li>
+                      <li>• Өсөхөд хэцүү (100+ гишүүнтэй)</li>
+                    </ul>
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <p className="text-xs text-muted-foreground italic">
+                      "Өдөр бүр төлбөр шалгаж, гишүүн нэмж байна. Өсөх тусам удирдах боломжгүй болж
+                      байна."
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Skool.com */}
+              <Card className="relative border-2 border-orange-200">
+                <div className="absolute top-4 right-4">
+                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+                    Олон улсын
+                  </Badge>
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-xl">Skool.com</CardTitle>
+                  <CardDescription>Олон улсын community платформ</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-bold text-orange-600">339K ₮</span>
+                      <span className="text-muted-foreground">/сар</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">$99/сар + 2.9% хураамж</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-orange-700">⚠️ Монголд саад:</p>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      <li>• Англи хэл заавал шаардлагатай</li>
+                      <li>• Олон улсын дебит карт хэрэгтэй</li>
+                      <li>• Монголын төлбөрийн систем дэмждэггүй</li>
+                      <li>• Үнэ үнэхээр өндөр (339K vs 50K)</li>
+                      <li>• Telegram-аас шилжих хэрэгтэй</li>
+                      <li>• Хэрэглэгчид шинэ платформ сурах</li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-green-700">✓ Давуу тал:</p>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      <li>• Олон функц (courses, gamification)</li>
+                      <li>• Дэлхий даяар алдартай</li>
+                      <li>• Video hosting орсон</li>
+                    </ul>
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <p className="text-xs text-muted-foreground italic">
+                      "Бүртгүүлэх гэтэл англиар бөглөх хэрэгтэй. Олон улсын карт байхгүй учраас
+                      бүртгүүлж чадсангүй."
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Our Platform */}
+              <Card className="relative border-2 border-green-300 shadow-lg">
+                <div className="absolute top-4 right-4">
+                  <Badge className="bg-green-600 text-white">
+                    <Star className="h-3 w-3 mr-1" />
+                    Шилдэг сонголт
+                  </Badge>
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-xl text-green-700">Бидний платформ</CardTitle>
+                  <CardDescription>Монголд зориулсан Telegram автоматжуулалт</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-bold text-green-600">50K ₮</span>
+                      <span className="text-muted-foreground">/сар</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">+ 5% ашгаас (маш шударга!)</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-green-700">✅ Бидний давуу тал:</p>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      <li>• Монгол хэл дээр бүхэлдээ</li>
+                      <li>• QPay интеграци (3.2M хэрэглэгч)</li>
+                      <li>• Telegram-д шууд ажиллана</li>
+                      <li>• Шилжих шаардлагагүй</li>
+                      <li>• Бүх зүйл автомат (төлбөр, гишүүн)</li>
+                      <li>• 85% хямд (50K vs 339K)</li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-blue-700">🚀 Функцууд:</p>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      <li>• Автомат гишүүн удирдлага</li>
+                      <li>• Төлбөрийн автоматжуулалт</li>
+                      <li>• Хугацаа дуусах мэдэгдэл</li>
+                      <li>• Багц төлөвлөгөө (сар/жил)</li>
+                      <li>• Тайлан, статистик</li>
+                    </ul>
+                  </div>
+
+                  <div className="pt-4 border-t bg-green-50 -mx-6 -mb-6 px-6 pb-6 rounded-b-lg">
+                    <p className="text-sm font-semibold text-green-800 mb-2">
+                      💡 Жишээ тооцоолол:
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      10 сая ₮ ашигтай tenant → 50K + 350K = 400K төлнө
+                      <br />
+                      <span className="font-semibold text-green-700">
+                        Skool-оос 7.5 дахин хямд!
+                      </span>
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Detailed Feature Comparison Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Дэлгэрэнгүй харьцуулалт</CardTitle>
+                <CardDescription>Функц бүрийн харьцуулалт</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b-2">
+                        <th className="text-left p-3 font-semibold">Функц</th>
+                        <th className="text-center p-3 font-semibold">Гараар удирдах</th>
+                        <th className="text-center p-3 font-semibold">Skool.com</th>
+                        <th className="text-center p-3 font-semibold text-green-700">
+                          Бидний платформ
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b hover:bg-slate-50">
+                        <td className="p-3">Монгол хэл</td>
+                        <td className="text-center p-3">✅</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3 font-semibold text-green-600">✅</td>
+                      </tr>
+                      <tr className="border-b hover:bg-slate-50">
+                        <td className="p-3">QPay төлбөр</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3 font-semibold text-green-600">✅</td>
+                      </tr>
+                      <tr className="border-b hover:bg-slate-50">
+                        <td className="p-3">Олон улсын карт шаардлага</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3 text-red-600">✅ (саад)</td>
+                        <td className="text-center p-3 font-semibold text-green-600">❌</td>
+                      </tr>
+                      <tr className="border-b hover:bg-slate-50">
+                        <td className="p-3">Telegram-д шууд ажиллах</td>
+                        <td className="text-center p-3">✅</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3 font-semibold text-green-600">✅</td>
+                      </tr>
+                      <tr className="border-b hover:bg-slate-50">
+                        <td className="p-3">Автомат гишүүн удирдлага</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3">✅</td>
+                        <td className="text-center p-3 font-semibold text-green-600">✅</td>
+                      </tr>
+                      <tr className="border-b hover:bg-slate-50">
+                        <td className="p-3">Автомат төлбөр баталгаажуулалт</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3">✅</td>
+                        <td className="text-center p-3 font-semibold text-green-600">✅</td>
+                      </tr>
+                      <tr className="border-b hover:bg-slate-50">
+                        <td className="p-3">Хугацаа дуусах мэдэгдэл</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3">✅</td>
+                        <td className="text-center p-3 font-semibold text-green-600">✅</td>
+                      </tr>
+                      <tr className="border-b hover:bg-slate-50">
+                        <td className="p-3">Багц төлөвлөгөө (сар/жил)</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3">✅</td>
+                        <td className="text-center p-3 font-semibold text-green-600">✅</td>
+                      </tr>
+                      <tr className="border-b hover:bg-slate-50">
+                        <td className="p-3">Тайлан, статистик</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3">✅</td>
+                        <td className="text-center p-3 font-semibold text-green-600">✅</td>
+                      </tr>
+                      <tr className="border-b hover:bg-slate-50">
+                        <td className="p-3">Хэрэглэгчид шилжих хэрэгтэй</td>
+                        <td className="text-center p-3">❌</td>
+                        <td className="text-center p-3 text-red-600">✅ (саад)</td>
+                        <td className="text-center p-3 font-semibold text-green-600">❌</td>
+                      </tr>
+                      <tr className="border-b-2 hover:bg-slate-50 bg-blue-50">
+                        <td className="p-3 font-bold">Сарын зардал (10M ашигтай tenant)</td>
+                        <td className="text-center p-3 font-bold">0 ₮<br/><span className="text-xs text-muted-foreground">(+2-3 цаг/өдөр)</span></td>
+                        <td className="text-center p-3 font-bold text-orange-600">~639K ₮<br/><span className="text-xs text-muted-foreground">(339K+300K хураамж)</span></td>
+                        <td className="text-center p-3 font-bold text-green-600">400K ₮<br/><span className="text-xs text-muted-foreground">(50K+350K)</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Key Insight Card */}
+            <Card className="mt-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white border-none">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <CheckCircle2 className="h-12 w-12 flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="text-2xl font-bold mb-3">Яагаад бид онцгой вэ?</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="font-semibold mb-2">🇲🇳 Монголд зориулсан</p>
+                        <p className="text-sm text-blue-100">
+                          Англи хэл шаардлагагүй. Олон улсын карт хэрэггүй. QPay-ээр хялбархан
+                          төлнө. Бүх зүйл монголоор.
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-semibold mb-2">💰 Хямд үнэ</p>
+                        <p className="text-sm text-blue-100">
+                          Skool-оос 7.5 дахин хямд (50K vs 339K). Гараар удирдахаас 2-3 цаг/өдөр
+                          хэмнэнэ.
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-semibold mb-2">🚀 Telegram-native</p>
+                        <p className="text-sm text-blue-100">
+                          Хэрэглэгчид шилжих шаардлагагүй. Telegram дээр л үлдэнэ. Контент
+                          бүтээгч ч амар.
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-semibold mb-2">🤖 Бүрэн автомат</p>
+                        <p className="text-sm text-blue-100">
+                          Төлбөр, гишүүн удирдлага, хугацаа дуусах - бүгд автомат. Та контент
+                          бүтээхэд л анхаар.
+                        </p>
                       </div>
                     </div>
                   </div>
