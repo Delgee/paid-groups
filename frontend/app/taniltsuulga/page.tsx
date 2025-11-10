@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -16,11 +17,9 @@ import {
   MessageSquare,
   Lock,
   Bell,
-  DollarSign,
   Target,
   Gauge,
   ChevronRight,
-  Settings,
   Database,
   Cloud
 } from 'lucide-react';
@@ -69,7 +68,7 @@ export default function ProductIntroPage() {
                   asChild
                   variant="outline"
                   size="lg"
-                  className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm text-lg px-8 py-6 h-auto"
+                  className="border-2 border-white text-gray-700 hover:bg-white/10 backdrop-blur-sm text-lg px-8 py-6 h-auto"
                 >
                   <a href="mailto:info@telegramgroups.mn">
                     Холбогдох
@@ -133,23 +132,16 @@ export default function ProductIntroPage() {
             </div>
 
             <div className="relative">
-              {/* Screenshot Placeholder: Problem Illustration */}
-              <div className="relative rounded-2xl border-4 border-dashed border-gray-300 bg-gray-50 p-12 text-center">
-                <div className="flex flex-col items-center justify-center space-y-4">
-                  <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse"></div>
-                  <div className="space-y-2 w-full">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6 mx-auto"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-4/6 mx-auto"></div>
-                  </div>
-                </div>
-                <div className="absolute top-4 right-4 bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
-                  Screenshot needed
-                </div>
-                <p className="mt-6 text-sm text-gray-600 font-medium">
-                  📸 REPLACE WITH: Telegram admin manually managing payments<br/>
-                  (Show cluttered chat with payment confirmations, confused admin)
-                </p>
+              {/* Screenshot: Problem Illustration */}
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                <Image
+                  src="/images/telegram admin.png"
+                  alt="Telegram admin manually managing payments - showing cluttered chat with payment confirmations"
+                  width={800}
+                  height={600}
+                  className="w-full h-auto"
+                  priority
+                />
               </div>
             </div>
           </div>
@@ -170,27 +162,15 @@ export default function ProductIntroPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
             <div className="relative order-2 lg:order-1">
-              {/* Screenshot Placeholder: Dashboard Overview */}
-              <div className="relative rounded-2xl border-4 border-dashed border-blue-300 bg-gradient-to-br from-blue-50 to-white p-12 text-center shadow-xl">
-                <div className="flex flex-col items-center justify-center space-y-4">
-                  <BarChart3 className="w-20 h-20 text-blue-400" />
-                  <div className="space-y-2 w-full">
-                    <div className="h-6 bg-blue-200 rounded animate-pulse"></div>
-                    <div className="h-6 bg-blue-200 rounded animate-pulse w-5/6 mx-auto"></div>
-                    <div className="grid grid-cols-3 gap-4 mt-6">
-                      <div className="h-20 bg-blue-100 rounded"></div>
-                      <div className="h-20 bg-green-100 rounded"></div>
-                      <div className="h-20 bg-purple-100 rounded"></div>
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute top-4 right-4 bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
-                  Screenshot needed
-                </div>
-                <p className="mt-6 text-sm text-gray-600 font-medium">
-                  📸 REPLACE WITH: Main dashboard screenshot<br/>
-                  (Show revenue chart, member stats, payment overview, analytics)
-                </p>
+              {/* Screenshot: Dashboard Overview */}
+              <div className="relative rounded-2xl overflow-hidden shadow-xl">
+                <Image
+                  src="/images/dashboard.png"
+                  alt="Main dashboard showing revenue chart, member stats, payment overview, and analytics"
+                  width={800}
+                  height={600}
+                  className="w-full h-auto"
+                />
               </div>
             </div>
 
@@ -258,21 +238,39 @@ export default function ProductIntroPage() {
                   Төлбөр төлмөгцөө гишүүд автоматаар бүлэгт нэмэгдэнэ.
                 </p>
 
-                {/* Screenshot Placeholder: Payment Flow */}
-                <div className="relative rounded-xl border-2 border-dashed border-green-300 bg-green-50 p-8 text-center">
-                  <div className="flex items-center justify-center space-x-4">
-                    <div className="w-16 h-16 rounded bg-green-200 animate-pulse"></div>
-                    <ChevronRight className="text-green-400 h-8 w-8" />
-                    <div className="w-16 h-16 rounded bg-green-200 animate-pulse"></div>
-                    <ChevronRight className="text-green-400 h-8 w-8" />
-                    <div className="w-16 h-16 rounded bg-green-200 animate-pulse"></div>
+                {/* Screenshot: Payment Flow */}
+                <div className="relative rounded-xl bg-green-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 rounded-lg overflow-hidden shadow-md">
+                      <Image
+                        src="/images/1.avif"
+                        alt="Step 1: User clicks payment link"
+                        width={200}
+                        height={200}
+                        className="w-full h-auto object-cover"
+                      />
+                    </div>
+                    <ChevronRight className="text-green-500 h-8 w-8 flex-shrink-0 mx-2" />
+                    <div className="flex-1 rounded-lg overflow-hidden shadow-md">
+                      <Image
+                        src="/images/2.avif"
+                        alt="Step 2: QPay QR code displayed"
+                        width={200}
+                        height={200}
+                        className="w-full h-auto object-cover"
+                      />
+                    </div>
+                    <ChevronRight className="text-green-500 h-8 w-8 flex-shrink-0 mx-2" />
+                    <div className="flex-1 rounded-lg overflow-hidden shadow-md">
+                      <Image
+                        src="/images/3.avif"
+                        alt="Step 3: User auto-added to group"
+                        width={200}
+                        height={200}
+                        className="w-full h-auto object-cover"
+                      />
+                    </div>
                   </div>
-                  <div className="absolute top-2 right-2 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
-                    Screenshot
-                  </div>
-                  <p className="mt-4 text-xs text-gray-600 font-medium">
-                    📸 QPay payment flow: User clicks → QPay QR → Auto-added to group
-                  </p>
                 </div>
 
                 <ul className="mt-6 space-y-2">
@@ -308,25 +306,15 @@ export default function ProductIntroPage() {
                   Бүх мэдээлэл нэг дороос харагдана.
                 </p>
 
-                {/* Screenshot Placeholder: Members List */}
-                <div className="relative rounded-xl border-2 border-dashed border-purple-300 bg-purple-50 p-8 text-center">
-                  <div className="space-y-2">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center space-x-3 bg-white p-3 rounded">
-                        <div className="w-10 h-10 rounded-full bg-purple-200"></div>
-                        <div className="flex-1">
-                          <div className="h-3 bg-purple-100 rounded w-3/4"></div>
-                          <div className="h-2 bg-purple-50 rounded w-1/2 mt-1"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="absolute top-2 right-2 bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded">
-                    Screenshot
-                  </div>
-                  <p className="mt-4 text-xs text-gray-600 font-medium">
-                    📸 Members list with status, expiry date, payment history
-                  </p>
+                {/* Screenshot: Members List */}
+                <div className="relative rounded-xl overflow-hidden shadow-md">
+                  <Image
+                    src="/images/members.png"
+                    alt="Members list with status, expiry date, and payment history"
+                    width={600}
+                    height={400}
+                    className="w-full h-auto"
+                  />
                 </div>
 
                 <ul className="mt-6 space-y-2">
@@ -362,24 +350,15 @@ export default function ProductIntroPage() {
                   Шийдвэр гаргахад тань туслана.
                 </p>
 
-                {/* Screenshot Placeholder: Analytics Dashboard */}
-                <div className="relative rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 p-8 text-center">
-                  <div className="space-y-4">
-                    <div className="h-32 bg-white rounded p-4">
-                      <div className="h-full bg-gradient-to-r from-orange-200 to-orange-300 rounded"></div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="h-16 bg-white rounded"></div>
-                      <div className="h-16 bg-white rounded"></div>
-                      <div className="h-16 bg-white rounded"></div>
-                    </div>
-                  </div>
-                  <div className="absolute top-2 right-2 bg-orange-100 text-orange-800 text-xs font-semibold px-2 py-1 rounded">
-                    Screenshot
-                  </div>
-                  <p className="mt-4 text-xs text-gray-600 font-medium">
-                    📸 Analytics dashboard: Revenue chart, member growth, KPIs
-                  </p>
+                {/* Screenshot: Analytics Dashboard */}
+                <div className="relative rounded-xl overflow-hidden shadow-md">
+                  <Image
+                    src="/images/analytic.png"
+                    alt="Analytics dashboard showing revenue chart, member growth, and KPIs"
+                    width={600}
+                    height={400}
+                    className="w-full h-auto"
+                  />
                 </div>
 
                 <ul className="mt-6 space-y-2">
@@ -415,30 +394,15 @@ export default function ProductIntroPage() {
                   нэг дороос удирдаарай.
                 </p>
 
-                {/* Screenshot Placeholder: Bot Settings */}
-                <div className="relative rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 p-8 text-center">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between bg-white p-4 rounded">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 rounded-full bg-blue-200"></div>
-                        <div className="text-left">
-                          <div className="h-3 bg-blue-200 rounded w-24"></div>
-                          <div className="h-2 bg-blue-100 rounded w-16 mt-1"></div>
-                        </div>
-                      </div>
-                      <Settings className="text-blue-300 h-6 w-6" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="h-12 bg-white rounded"></div>
-                      <div className="h-12 bg-white rounded"></div>
-                    </div>
-                  </div>
-                  <div className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
-                    Screenshot
-                  </div>
-                  <p className="mt-4 text-xs text-gray-600 font-medium">
-                    📸 Bot configuration page: Bot token, commands, groups list
-                  </p>
+                {/* Screenshot: Bot Settings */}
+                <div className="relative rounded-xl overflow-hidden shadow-md">
+                  <Image
+                    src="/images/bot.png"
+                    alt="Bot configuration page showing bot token, commands, and groups list"
+                    width={600}
+                    height={400}
+                    className="w-full h-auto"
+                  />
                 </div>
 
                 <ul className="mt-6 space-y-2">
@@ -510,20 +474,17 @@ export default function ProductIntroPage() {
               </div>
 
               <div className="relative">
-                {/* Screenshot Placeholder: Bot Setup */}
-                <div className="relative rounded-2xl border-4 border-dashed border-blue-300 bg-gradient-to-br from-blue-50 to-white p-12 text-center shadow-xl">
-                  <Bot className="w-24 h-24 text-blue-400 mx-auto mb-6" />
-                  <div className="space-y-3">
-                    <div className="h-12 bg-blue-100 rounded"></div>
-                    <div className="h-12 bg-blue-100 rounded"></div>
-                    <div className="h-16 bg-gradient-to-r from-blue-200 to-blue-300 rounded"></div>
+                {/* Screenshot: Bot Setup */}
+                <div className="relative rounded-2xl border-4 border-dashed border-blue-300 p-4 shadow-xl bg-gradient-to-br from-blue-50 to-white">
+                  <div className="rounded-xl overflow-hidden">
+                    <Image
+                      src="/images/registration.png"
+                      alt="Bot registration form showing token input, bot info, and verification"
+                      width={800}
+                      height={600}
+                      className="w-full h-auto"
+                    />
                   </div>
-                  <div className="absolute top-4 right-4 bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
-                    Screenshot needed
-                  </div>
-                  <p className="mt-6 text-sm text-gray-600 font-medium">
-                    📸 Bot registration form: Token input, bot info, verification
-                  </p>
                 </div>
               </div>
             </div>
@@ -531,27 +492,17 @@ export default function ProductIntroPage() {
             {/* Step 2 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div className="order-2 lg:order-1 relative">
-                {/* Screenshot Placeholder: Payment Plans */}
-                <div className="relative rounded-2xl border-4 border-dashed border-green-300 bg-gradient-to-br from-green-50 to-white p-12 text-center shadow-xl">
-                  <DollarSign className="w-24 h-24 text-green-400 mx-auto mb-6" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white p-6 rounded-xl border-2 border-green-200">
-                      <div className="h-4 bg-green-100 rounded mb-2"></div>
-                      <div className="h-8 bg-green-200 rounded mb-2"></div>
-                      <div className="h-3 bg-green-100 rounded"></div>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl border-2 border-green-200">
-                      <div className="h-4 bg-green-100 rounded mb-2"></div>
-                      <div className="h-8 bg-green-200 rounded mb-2"></div>
-                      <div className="h-3 bg-green-100 rounded"></div>
-                    </div>
+                {/* Screenshot: Payment Plans */}
+                <div className="relative rounded-2xl border-4 border-dashed border-green-300 p-4 shadow-xl bg-gradient-to-br from-green-50 to-white">
+                  <div className="rounded-xl overflow-hidden">
+                    <Image
+                      src="/images/bank info.png"
+                      alt="Payment plans setup showing monthly/yearly plans, pricing, and QPay configuration"
+                      width={800}
+                      height={600}
+                      className="w-full h-auto"
+                    />
                   </div>
-                  <div className="absolute top-4 right-4 bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
-                    Screenshot needed
-                  </div>
-                  <p className="mt-6 text-sm text-gray-600 font-medium">
-                    📸 Payment plans setup: Monthly/Yearly plans, pricing, QPay config
-                  </p>
                 </div>
               </div>
 
@@ -625,27 +576,17 @@ export default function ProductIntroPage() {
               </div>
 
               <div className="relative">
-                {/* Screenshot Placeholder: Group Connection */}
-                <div className="relative rounded-2xl border-4 border-dashed border-purple-300 bg-gradient-to-br from-purple-50 to-white p-12 text-center shadow-xl">
-                  <MessageSquare className="w-24 h-24 text-purple-400 mx-auto mb-6" />
-                  <div className="space-y-3">
-                    <div className="bg-white p-4 rounded-xl border-2 border-purple-200">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 rounded-full bg-purple-200"></div>
-                        <div className="flex-1 text-left">
-                          <div className="h-3 bg-purple-200 rounded w-3/4"></div>
-                          <div className="h-2 bg-purple-100 rounded w-1/2 mt-1"></div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="h-12 bg-purple-100 rounded"></div>
+                {/* Screenshot: Group Connection */}
+                <div className="relative rounded-2xl border-4 border-dashed border-purple-300 p-4 shadow-xl bg-gradient-to-br from-purple-50 to-white">
+                  <div className="rounded-xl overflow-hidden">
+                    <Image
+                      src="/images/group.png"
+                      alt="Group connection showing chat ID input, plan selection, and activation"
+                      width={800}
+                      height={600}
+                      className="w-full h-auto"
+                    />
                   </div>
-                  <div className="absolute top-4 right-4 bg-purple-100 text-purple-800 text-xs font-semibold px-3 py-1 rounded-full">
-                    Screenshot needed
-                  </div>
-                  <p className="mt-6 text-sm text-gray-600 font-medium">
-                    📸 Group connection: Chat ID input, plan selection, activation
-                  </p>
                 </div>
               </div>
             </div>
@@ -670,12 +611,6 @@ export default function ProductIntroPage() {
                       <Bell className="h-5 w-5 text-purple-500" />
                     </div>
                   </div>
-                  <div className="absolute top-4 right-4 bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1 rounded-full">
-                    Screenshot needed
-                  </div>
-                  <p className="mt-6 text-sm text-gray-600 font-medium">
-                    📸 Real-time activity feed: Payment notifications, member joins, alerts
-                  </p>
                 </div>
               </div>
 
@@ -1045,7 +980,7 @@ export default function ProductIntroPage() {
               asChild
               size="lg"
               variant="outline"
-              className="border-2 border-white text-white hover:bg-white/10 backdrop-blur-sm text-lg px-10 py-7 h-auto w-full sm:w-auto"
+              className="border-2 border-white text-gray-700 hover:bg-white/10 backdrop-blur-sm text-lg px-10 py-7 h-auto w-full sm:w-auto"
             >
               <a href="mailto:info@telegramgroups.mn" className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
