@@ -13,7 +13,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'owner' | 'admin' | 'moderator';
+  role: 'super_admin' | 'owner' | 'admin' | 'moderator';
   tenant_id: string;
   is_active: boolean;
   permissions: string[];
@@ -62,7 +62,7 @@ export interface UserSummary {
   id: string;
   email: string;
   name: string;
-  role: 'owner' | 'admin' | 'moderator';
+  role: 'super_admin' | 'owner' | 'admin' | 'moderator';
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;
@@ -85,14 +85,14 @@ export interface GetUsersResponse {
 export interface GetUsersQuery {
   page?: number;
   limit?: number;
-  role?: 'owner' | 'admin' | 'moderator';
+  role?: 'super_admin' | 'owner' | 'admin' | 'moderator';
 }
 
 // Zod schemas for validation
 export const UserRoleSchema = z.enum(['admin', 'moderator']);
 export type UserRole = z.infer<typeof UserRoleSchema>;
 
-export const AllUserRolesSchema = z.enum(['owner', 'admin', 'moderator']);
+export const AllUserRolesSchema = z.enum(['super_admin', 'owner', 'admin', 'moderator']);
 export type AllUserRoles = z.infer<typeof AllUserRolesSchema>;
 
 export const CreateUserRequestSchema = z.object({
