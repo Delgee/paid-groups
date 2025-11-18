@@ -8,6 +8,14 @@ import { Member } from '../membership/entities/member.entity';
 import { Membership, MembershipStatus } from '../membership/entities/membership.entity';
 import { Payment, PaymentStatus } from '../payment/entities/payment.entity';
 
+// Constants for date calculations and limits
+const DAYS_IN_MONTH = 30;
+const DAYS_IN_YEAR = 365;
+const DEFAULT_ACTIVITY_LIMIT = 10;
+const MAX_ACTIVITY_LIMIT = 100;
+const DEFAULT_REVENUE_DAYS = 30;
+const MAX_REVENUE_DAYS = 365;
+
 export interface SystemStats {
   total_tenants: number;
   active_tenants: number;
@@ -70,6 +78,7 @@ export class AdminService {
   async getSystemStats(): Promise<SystemStats> {
     this.logger.log('Fetching system-wide statistics');
 
+    // Use aggregation queries to avoid loading all data into memory
     const [
       totalTenants,
       activeTenants,
@@ -80,7 +89,9 @@ export class AdminService {
       totalMembers,
       totalMemberships,
       activeMemberships,
-      payments,
+      totalPayments,
+      successfulPayments,
+      revenueResult,
     ] = await Promise.all([
       this.tenantRepository.count(),
       this.tenantRepository.count({
@@ -95,16 +106,16 @@ export class AdminService {
       this.memberRepository.count(),
       this.membershipRepository.count(),
       this.membershipRepository.count({ where: { status: MembershipStatus.ACTIVE } }),
-      this.paymentRepository.find(),
+      this.paymentRepository.count(),
+      this.paymentRepository.count({ where: { status: PaymentStatus.COMPLETED } }),
+      this.paymentRepository
+        .createQueryBuilder('payment')
+        .select('COALESCE(SUM(payment.amount_mnt), 0)', 'total')
+        .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+        .getRawOne(),
     ]);
 
-    const totalRevenue = payments
-      .filter((p) => p.status === PaymentStatus.COMPLETED)
-      .reduce((sum, payment) => sum + Number(payment.amount_mnt), 0);
-
-    const successfulPayments = payments.filter(
-      (p) => p.status === PaymentStatus.COMPLETED,
-    ).length;
+    const totalRevenue = Number(revenueResult?.total || 0);
 
     return {
       total_tenants: totalTenants,
@@ -117,125 +128,171 @@ export class AdminService {
       total_memberships: totalMemberships,
       active_memberships: activeMemberships,
       total_revenue: totalRevenue,
-      total_payments: payments.length,
+      total_payments: totalPayments,
       successful_payments: successfulPayments,
     };
   }
 
-  async getRevenueStats(days: number = 30): Promise<RevenueStats> {
+  async getRevenueStats(days: number = DEFAULT_REVENUE_DAYS): Promise<RevenueStats> {
     this.logger.log(`Fetching revenue statistics for last ${days} days`);
 
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const payments = await this.paymentRepository
-      .createQueryBuilder('payment')
-      .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
-      .andWhere('payment.paid_at >= :startDate', { startDate })
-      .andWhere('payment.paid_at <= :endDate', { endDate })
-      .getMany();
-
-    const totalRevenue = payments.reduce(
-      (sum, p) => sum + Number(p.amount_mnt),
-      0,
-    );
-
-    // Monthly revenue (last 30 days)
     const monthStart = new Date();
-    monthStart.setDate(monthStart.getDate() - 30);
-    const monthlyRevenue = payments
-      .filter((p) => new Date(p.paid_at) >= monthStart)
-      .reduce((sum, p) => sum + Number(p.amount_mnt), 0);
+    monthStart.setDate(monthStart.getDate() - DAYS_IN_MONTH);
 
-    // Yearly revenue (last 365 days)
     const yearStart = new Date();
-    yearStart.setDate(yearStart.getDate() - 365);
-    const yearlyPayments = await this.paymentRepository
-      .createQueryBuilder('payment')
-      .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
-      .andWhere('payment.paid_at >= :yearStart', { yearStart })
-      .getMany();
-    const yearlyRevenue = yearlyPayments.reduce(
-      (sum, p) => sum + Number(p.amount_mnt),
-      0,
-    );
+    yearStart.setDate(yearStart.getDate() - DAYS_IN_YEAR);
 
-    const averageTransaction =
-      payments.length > 0 ? totalRevenue / payments.length : 0;
+    // Fetch all revenue data in parallel using aggregation
+    const [totalRevenueResult, monthlyRevenueResult, yearlyRevenueResult, paymentCount, dailyTrends] = await Promise.all([
+      // Total revenue for requested period
+      this.paymentRepository
+        .createQueryBuilder('payment')
+        .select('COALESCE(SUM(payment.amount_mnt), 0)', 'total')
+        .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+        .andWhere('payment.paid_at >= :startDate', { startDate })
+        .andWhere('payment.paid_at <= :endDate', { endDate })
+        .getRawOne(),
 
-    // Payment trends by day
-    const trendMap = new Map<string, { revenue: number; count: number }>();
-    payments.forEach((payment) => {
-      const date = new Date(payment.paid_at).toISOString().split('T')[0];
-      const existing = trendMap.get(date) || { revenue: 0, count: 0 };
-      trendMap.set(date, {
-        revenue: existing.revenue + Number(payment.amount_mnt),
-        count: existing.count + 1,
-      });
-    });
+      // Monthly revenue (last 30 days)
+      this.paymentRepository
+        .createQueryBuilder('payment')
+        .select('COALESCE(SUM(payment.amount_mnt), 0)', 'total')
+        .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+        .andWhere('payment.paid_at >= :monthStart', { monthStart })
+        .getRawOne(),
 
-    const paymentTrends = Array.from(trendMap.entries())
-      .map(([date, data]) => ({
-        date,
-        revenue: data.revenue,
-        payment_count: data.count,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+      // Yearly revenue (last 365 days)
+      this.paymentRepository
+        .createQueryBuilder('payment')
+        .select('COALESCE(SUM(payment.amount_mnt), 0)', 'total')
+        .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+        .andWhere('payment.paid_at >= :yearStart', { yearStart })
+        .getRawOne(),
+
+      // Payment count for average calculation
+      this.paymentRepository
+        .createQueryBuilder('payment')
+        .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+        .andWhere('payment.paid_at >= :startDate', { startDate })
+        .andWhere('payment.paid_at <= :endDate', { endDate })
+        .getCount(),
+
+      // Daily trends using GROUP BY
+      this.paymentRepository
+        .createQueryBuilder('payment')
+        .select('DATE(payment.paid_at)', 'date')
+        .addSelect('SUM(payment.amount_mnt)', 'revenue')
+        .addSelect('COUNT(*)', 'payment_count')
+        .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+        .andWhere('payment.paid_at >= :startDate', { startDate })
+        .andWhere('payment.paid_at <= :endDate', { endDate })
+        .groupBy('DATE(payment.paid_at)')
+        .orderBy('DATE(payment.paid_at)', 'ASC')
+        .getRawMany(),
+    ]);
+
+    const totalRevenue = Number(totalRevenueResult?.total || 0);
+    const monthlyRevenue = Number(monthlyRevenueResult?.total || 0);
+    const yearlyRevenue = Number(yearlyRevenueResult?.total || 0);
+    const averageTransaction = paymentCount > 0 ? Math.round(totalRevenue / paymentCount) : 0;
+
+    const paymentTrends = dailyTrends.map((trend) => ({
+      date: trend.date,
+      revenue: Number(trend.revenue),
+      payment_count: Number(trend.payment_count),
+    }));
 
     return {
       total_revenue: totalRevenue,
       monthly_revenue: monthlyRevenue,
       yearly_revenue: yearlyRevenue,
-      average_transaction: Math.round(averageTransaction),
+      average_transaction: averageTransaction,
       payment_trends: paymentTrends,
     };
   }
 
-  async getTenantActivity(limit: number = 10): Promise<TenantActivity[]> {
+  async getTenantActivity(limit: number = DEFAULT_ACTIVITY_LIMIT): Promise<TenantActivity[]> {
     this.logger.log(`Fetching tenant activity (limit: ${limit})`);
+
+    // Cap the limit to prevent excessive queries
+    const cappedLimit = Math.min(limit, MAX_ACTIVITY_LIMIT);
 
     const tenants = await this.tenantRepository.find({
       order: { created_at: 'DESC' },
-      take: limit,
+      take: cappedLimit,
     });
 
-    const activities = await Promise.all(
-      tenants.map(async (tenant) => {
-        const [projects, members, payments] = await Promise.all([
-          this.projectRepository.count({ where: { tenant_id: tenant.id } }),
-          this.memberRepository.count({ where: { tenant_id: tenant.id } }),
-          this.paymentRepository.find({
-            where: { tenant_id: tenant.id, status: PaymentStatus.COMPLETED },
-          }),
-        ]);
+    if (tenants.length === 0) {
+      return [];
+    }
 
-        const totalRevenue = payments.reduce(
-          (sum, p) => sum + Number(p.amount_mnt),
-          0,
-        );
+    const tenantIds = tenants.map(t => t.id);
 
-        // Get last activity (most recent payment or membership)
-        const lastPayment = await this.paymentRepository.findOne({
-          where: { tenant_id: tenant.id },
-          order: { paid_at: 'DESC' },
-        });
+    // Fetch all data in parallel with optimized queries to avoid N+1 problem
+    const [projectCounts, memberCounts, revenueSums, lastActivities] = await Promise.all([
+      // Get project counts for all tenants in one query
+      this.projectRepository
+        .createQueryBuilder('project')
+        .select('project.tenant_id', 'tenant_id')
+        .addSelect('COUNT(*)', 'count')
+        .where('project.tenant_id IN (:...tenantIds)', { tenantIds })
+        .groupBy('project.tenant_id')
+        .getRawMany(),
 
-        return {
-          tenant_id: tenant.id,
-          tenant_name: tenant.name,
-          company_name: tenant.company_name,
-          subscription_tier: tenant.subscription_tier,
-          subscription_status: tenant.subscription_status,
-          total_projects: projects,
-          total_members: members,
-          total_revenue: totalRevenue,
-          last_activity: lastPayment?.paid_at || tenant.updated_at,
-          created_at: tenant.created_at,
-        };
-      }),
-    );
+      // Get member counts for all tenants in one query
+      this.memberRepository
+        .createQueryBuilder('member')
+        .select('member.tenant_id', 'tenant_id')
+        .addSelect('COUNT(*)', 'count')
+        .where('member.tenant_id IN (:...tenantIds)', { tenantIds })
+        .groupBy('member.tenant_id')
+        .getRawMany(),
 
+      // Get revenue sums for all tenants in one query
+      this.paymentRepository
+        .createQueryBuilder('payment')
+        .select('payment.tenant_id', 'tenant_id')
+        .addSelect('COALESCE(SUM(payment.amount_mnt), 0)', 'total')
+        .where('payment.tenant_id IN (:...tenantIds)', { tenantIds })
+        .andWhere('payment.status = :status', { status: PaymentStatus.COMPLETED })
+        .groupBy('payment.tenant_id')
+        .getRawMany(),
+
+      // Get last payment date for all tenants in one query
+      this.paymentRepository
+        .createQueryBuilder('payment')
+        .select('payment.tenant_id', 'tenant_id')
+        .addSelect('MAX(payment.paid_at)', 'last_paid_at')
+        .where('payment.tenant_id IN (:...tenantIds)', { tenantIds })
+        .groupBy('payment.tenant_id')
+        .getRawMany(),
+    ]);
+
+    // Create lookup maps for O(1) access
+    const projectCountMap = new Map(projectCounts.map(p => [p.tenant_id, Number(p.count)]));
+    const memberCountMap = new Map(memberCounts.map(m => [m.tenant_id, Number(m.count)]));
+    const revenueMap = new Map(revenueSums.map(r => [r.tenant_id, Number(r.total)]));
+    const lastActivityMap = new Map(lastActivities.map(a => [a.tenant_id, a.last_paid_at]));
+
+    // Map tenants to activity records
+    const activities = tenants.map((tenant) => ({
+      tenant_id: tenant.id,
+      tenant_name: tenant.name,
+      company_name: tenant.company_name,
+      subscription_tier: tenant.subscription_tier,
+      subscription_status: tenant.subscription_status,
+      total_projects: projectCountMap.get(tenant.id) || 0,
+      total_members: memberCountMap.get(tenant.id) || 0,
+      total_revenue: revenueMap.get(tenant.id) || 0,
+      last_activity: lastActivityMap.get(tenant.id) || tenant.updated_at,
+      created_at: tenant.created_at,
+    }));
+
+    // Sort by last activity
     return activities.sort(
       (a, b) =>
         new Date(b.last_activity).getTime() -

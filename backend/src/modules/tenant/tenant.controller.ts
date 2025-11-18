@@ -12,7 +12,7 @@ import {
   ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { IsString, IsOptional, IsEnum, IsNumber } from 'class-validator';
 import { TenantService, CreateTenantDto, UpdateTenantDto } from './services/tenant.service';
 import { SubscriptionTier, SubscriptionStatus } from './entities/tenant.entity';
@@ -127,16 +127,48 @@ export class TenantController {
 
   @Get()
   @UseGuards(SuperAdminRoleGuard)
-  @ApiOperation({ summary: 'Get all tenants (Super Admin only)' })
-  @ApiResponse({ status: 200, description: 'List of all tenants' })
+  @ApiOperation({ summary: 'Get all tenants with pagination (Super Admin only)' })
+  @ApiResponse({ status: 200, description: 'Paginated list of tenants' })
   @ApiResponse({ status: 403, description: 'Forbidden - Super Admin access required' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 50, max: 100)',
+  })
+  @ApiQuery({
+    name: 'subscription_status',
+    required: false,
+    enum: SubscriptionStatus,
+    description: 'Filter by subscription status',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by name or company name',
+  })
   async findAll(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
     @Query('subscription_status') subscriptionStatus?: SubscriptionStatus,
+    @Query('search') search?: string,
   ) {
-    if (subscriptionStatus) {
-      return this.tenantService.findBySubscriptionStatus(subscriptionStatus);
-    }
-    return this.tenantService.findAll();
+    const pageNum = page && page > 0 ? page : 1;
+    const limitNum = limit && limit > 0 && limit <= 100 ? limit : 50;
+
+    return this.tenantService.findAllPaginated(
+      pageNum,
+      limitNum,
+      subscriptionStatus,
+      search,
+    );
   }
 
   @Get(':id')

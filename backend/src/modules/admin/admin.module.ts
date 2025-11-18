@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { Tenant } from '../tenant/entities/tenant.entity';
@@ -19,6 +20,10 @@ import { Payment } from '../payment/entities/payment.entity';
       Membership,
       Payment,
     ]),
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 60 seconds
+      limit: 20, // 20 requests
+    }]),
   ],
   controllers: [AdminController],
   providers: [AdminService],

@@ -35,9 +35,11 @@ export default function TenantsListPage() {
   async function fetchTenants() {
     try {
       setIsLoading(true);
-      const data = await adminApi.getAllTenants();
-      setTenants(data);
-      setFilteredTenants(data);
+      const response = await adminApi.getAllTenants();
+      // Extract data from paginated response
+      const tenantsData = response.data;
+      setTenants(tenantsData);
+      setFilteredTenants(tenantsData);
     } catch (err) {
       console.error('Failed to fetch tenants:', err);
       setError('Failed to load tenants');

@@ -78,9 +78,27 @@ export const adminApi = {
   },
 
   // Tenant management
-  async getAllTenants(subscriptionStatus?: string): Promise<Tenant[]> {
-    const params = subscriptionStatus ? `?subscription_status=${subscriptionStatus}` : '';
-    return apiClient.get<Tenant[]>(`/tenants${params}`);
+  async getAllTenants(
+    page: number = 1,
+    limit: number = 50,
+    subscriptionStatus?: string,
+    search?: string
+  ): Promise<{
+    data: Tenant[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  }> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    if (subscriptionStatus) params.append('subscription_status', subscriptionStatus);
+    if (search) params.append('search', search);
+
+    return apiClient.get<any>(`/tenants?${params.toString()}`);
   },
 
   async getTenant(id: string): Promise<Tenant> {
