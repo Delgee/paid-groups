@@ -18,54 +18,47 @@ import {
 
 export default function TenantsListPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [filteredTenants, setFilteredTenants] = useState<Tenant[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(50);
 
+  // Debounce search input to avoid too many API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput);
+      setCurrentPage(1); // Reset to first page on search
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Fetch tenants when filters or page changes
   useEffect(() => {
     fetchTenants();
-  }, []);
-
-  useEffect(() => {
-    filterTenants();
-  }, [searchTerm, statusFilter, tenants]);
+  }, [searchTerm, statusFilter, currentPage]);
 
   async function fetchTenants() {
     try {
       setIsLoading(true);
-      const response = await adminApi.getAllTenants();
-      // Extract data from paginated response
-      const tenantsData = response.data;
-      setTenants(tenantsData);
-      setFilteredTenants(tenantsData);
+      const response = await adminApi.getAllTenants(
+        currentPage,
+        pageSize,
+        statusFilter !== 'all' ? statusFilter : undefined,
+        searchTerm || undefined
+      );
+      setTenants(response.data);
+      setTotalCount(response.total);
     } catch (err) {
       console.error('Failed to fetch tenants:', err);
       setError('Failed to load tenants');
     } finally {
       setIsLoading(false);
     }
-  }
-
-  function filterTenants() {
-    let filtered = tenants;
-
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((t) => t.subscription_status === statusFilter);
-    }
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (t) =>
-          t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          t.company_name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredTenants(filtered);
   }
 
   async function handleDelete(id: string, name: string) {
@@ -123,8 +116,8 @@ export default function TenantsListPage() {
               <Input
                 type="text"
                 placeholder="Search by name or company..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -147,8 +140,10 @@ export default function TenantsListPage() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{tenants.length}</div>
-            <p className="text-sm text-gray-600">Total Tenants</p>
+            <div className="text-2xl font-bold">{totalCount}</div>
+            <p className="text-sm text-gray-600">
+              {statusFilter !== 'all' || searchTerm ? 'Filtered Results' : 'Total Tenants'}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -156,7 +151,7 @@ export default function TenantsListPage() {
             <div className="text-2xl font-bold text-green-600">
               {tenants.filter((t) => t.subscription_status === 'active').length}
             </div>
-            <p className="text-sm text-gray-600">Active</p>
+            <p className="text-sm text-gray-600">Active (this page)</p>
           </CardContent>
         </Card>
         <Card>
@@ -164,7 +159,7 @@ export default function TenantsListPage() {
             <div className="text-2xl font-bold text-yellow-600">
               {tenants.filter((t) => t.subscription_status === 'suspended').length}
             </div>
-            <p className="text-sm text-gray-600">Suspended</p>
+            <p className="text-sm text-gray-600">Suspended (this page)</p>
           </CardContent>
         </Card>
         <Card>
@@ -172,7 +167,7 @@ export default function TenantsListPage() {
             <div className="text-2xl font-bold text-red-600">
               {tenants.filter((t) => t.subscription_status === 'cancelled').length}
             </div>
-            <p className="text-sm text-gray-600">Cancelled</p>
+            <p className="text-sm text-gray-600">Cancelled (this page)</p>
           </CardContent>
         </Card>
       </div>
@@ -182,13 +177,14 @@ export default function TenantsListPage() {
         <CardHeader>
           <CardTitle>All Tenants</CardTitle>
           <CardDescription>
-            {filteredTenants.length} of {tenants.length} tenants
+            Showing {tenants.length} of {totalCount} tenants
+            {(statusFilter !== 'all' || searchTerm) && ' (filtered)'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {error ? (
             <div className="text-center py-6 text-red-600">{error}</div>
-          ) : filteredTenants.length === 0 ? (
+          ) : tenants.length === 0 ? (
             <div className="text-center py-12">
               <Building2 className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No tenants found</h3>
@@ -200,7 +196,7 @@ export default function TenantsListPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredTenants.map((tenant) => (
+              {tenants.map((tenant) => (
                 <div
                   key={tenant.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"

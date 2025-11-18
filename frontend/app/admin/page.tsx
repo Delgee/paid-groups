@@ -6,8 +6,6 @@ import { adminApi, type SystemStats, type TenantActivity } from '@/lib/api/admin
 import {
   Building2,
   Users,
-  Wallet,
-  TrendingUp,
   Activity,
   CheckCircle,
   XCircle,
