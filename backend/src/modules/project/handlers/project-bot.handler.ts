@@ -210,13 +210,21 @@ export class ProjectBotHandler implements OnModuleInit {
 
           if (allActive.length > 0) {
             const soonestExpiring = allActive[0];
-            const expiresAt = new Date(soonestExpiring.expires_at);
-            const daysRemaining = Math.ceil(
-              (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+            const timeRemaining = this.formatTimeRemaining(
+              new Date(soonestExpiring.expires_at),
             );
 
-            if (daysRemaining <= 3) {
-              message += `\n⚠️ Дуусах хугацаа: ${daysRemaining} хоног үлдсэн`;
+            // Only show warning if expiring within 3 days and not already expired
+            if (!timeRemaining.isExpired) {
+              const msRemaining =
+                new Date(soonestExpiring.expires_at).getTime() - Date.now();
+              const daysRemaining = Math.ceil(
+                msRemaining / (1000 * 60 * 60 * 24),
+              );
+
+              if (daysRemaining <= 3) {
+                message += `\n⚠️ Дуусах хугацаа: ${timeRemaining.text} үлдсэн`;
+              }
             }
           }
         }
@@ -263,8 +271,8 @@ export class ProjectBotHandler implements OnModuleInit {
         ? await this.membershipService.findByMember(project.tenant_id, member.id)
         : [];
 
-      // Build membership lookup map by plan_id
-      const membershipByPlanId = new Map<string, any>();
+      // Build membership lookup map by plan_id (FIX: Use proper type)
+      const membershipByPlanId = new Map<string, typeof existingMemberships[0]>();
       for (const membership of existingMemberships) {
         if (
           membership.project_id === project.id &&
@@ -274,6 +282,19 @@ export class ProjectBotHandler implements OnModuleInit {
           membershipByPlanId.set(membership.plan_id, membership);
         }
       }
+
+      // FIX: Batch query trial usage to avoid N+1 problem
+      const planIdsWithTrials = plans
+        .filter((p) => p.trial_enabled)
+        .map((p) => p.id);
+      const usedTrialPlanIds =
+        planIdsWithTrials.length > 0
+          ? await this.trialUsageService.getUsedTrialPlanIds(
+              project.tenant_id,
+              telegramUserId,
+              planIdsWithTrials,
+            )
+          : new Set<string>();
 
       // Build message with plan details
       let message = '🎯 *Багц сонгох:*\n\n';
@@ -292,18 +313,22 @@ export class ProjectBotHandler implements OnModuleInit {
 
         // Show status if user has this plan
         if (existingMembership) {
+          const timeRemaining = this.formatTimeRemaining(
+            new Date(existingMembership.expires_at),
+          );
+
           if (existingMembership.status === MembershipStatus.ACTIVE) {
-            const expiresAt = new Date(existingMembership.expires_at);
-            const daysRemaining = Math.ceil(
-              (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-            );
-            message += `✅ *Идэвхтэй* - ${daysRemaining} хоног үлдсэн\n`;
+            if (timeRemaining.isExpired) {
+              message += `⏰ *Дууссан* - шинээр сунгах шаардлагатай\n`;
+            } else {
+              message += `✅ *Идэвхтэй* - ${timeRemaining.text} үлдсэн\n`;
+            }
           } else if (existingMembership.status === MembershipStatus.TRIAL) {
-            const expiresAt = new Date(existingMembership.expires_at);
-            const hoursRemaining = Math.ceil(
-              (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60),
-            );
-            message += `🎁 *Туршилт* - ${hoursRemaining < 24 ? hoursRemaining + ' цаг' : Math.floor(hoursRemaining / 24) + ' хоног'} үлдсэн\n`;
+            if (timeRemaining.isExpired) {
+              message += `⏰ *Туршилт дууссан*\n`;
+            } else {
+              message += `🎁 *Туршилт* - ${timeRemaining.text} үлдсэн\n`;
+            }
           }
         }
 
@@ -321,27 +346,26 @@ export class ProjectBotHandler implements OnModuleInit {
         );
 
         // Trial button (only if trial is enabled, user hasn't used it, and doesn't have active membership)
-        if (plan.trial_enabled && !existingMembership) {
-          const hasUsedTrial = await this.trialUsageService.hasUsedTrial(
-            project.tenant_id,
-            telegramUserId,
-            plan.id,
+        // FIX: Use batch query result instead of individual query
+        if (
+          plan.trial_enabled &&
+          !existingMembership &&
+          !usedTrialPlanIds.has(plan.id)
+        ) {
+          const trialDurationMinutes = Math.floor(
+            plan.trial_duration_seconds / 60,
           );
+          const trialDurationText =
+            trialDurationMinutes < 60
+              ? `${trialDurationMinutes}мин`
+              : `${Math.floor(trialDurationMinutes / 60)}ц`;
 
-          if (!hasUsedTrial) {
-            const trialDurationMinutes = Math.floor(plan.trial_duration_seconds / 60);
-            const trialDurationText =
-              trialDurationMinutes < 60
-                ? `${trialDurationMinutes}мин`
-                : `${Math.floor(trialDurationMinutes / 60)}ц`;
-
-            planButtons.push(
-              Markup.button.callback(
-                `🎁 Үнэгүй (${trialDurationText})`,
-                `trial_plan_${plan.id}`,
-              ),
-            );
-          }
+          planButtons.push(
+            Markup.button.callback(
+              `🎁 Үнэгүй (${trialDurationText})`,
+              `trial_plan_${plan.id}`,
+            ),
+          );
         }
 
         keyboard.push(planButtons);
@@ -351,6 +375,9 @@ export class ProjectBotHandler implements OnModuleInit {
       message += '💳 *Худалдан авах* - Бүрэн эрх авах\n';
       message += '🔄 *Сунгах* - Идэвхтэй гишүүнчлэлээ сунгах\n';
       message += '🎁 *Үнэгүй* - Туршилт (ганцхан удаа)';
+
+      // FIX: Ensure message doesn't exceed Telegram limit
+      message = this.ensureMessageLength(message);
 
       await ctx.reply(message, {
         parse_mode: 'Markdown',
@@ -414,18 +441,23 @@ export class ProjectBotHandler implements OnModuleInit {
       // Active memberships
       if (activeMemberships.length > 0) {
         message += '✅ *Идэвхтэй гишүүнчлэл:*\n';
-        for (const membership of activeMemberships) {
-          const groupName = membership.group?.group_name || 'Unknown Group';
-          const planName = membership.plan?.name || 'Unknown Plan';
+        // FIX: Limit to first 10 to prevent message overflow
+        const displayedActive = activeMemberships.slice(0, 10);
+        for (const membership of displayedActive) {
+          // FIX: Better handling for deleted groups
+          const groupName =
+            membership.group?.group_name || '(Устгагдсан бүлэг)';
+          const planName = membership.plan?.name || '(Устгагдсан багц)';
           const expiresAt = new Date(membership.expires_at);
-          const daysRemaining = Math.ceil(
-            (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-          );
+          const timeRemaining = this.formatTimeRemaining(expiresAt);
 
           message += `\n• ${groupName}\n`;
           message += `  Багц: ${planName}\n`;
-          message += `  Дуусах хугацаа: ${expiresAt.toLocaleDateString('mn-MN')}\n`;
-          message += `  Үлдсэн: ${daysRemaining} хоног\n`;
+          message += `  Дуусах хугацаа: ${this.formatDate(expiresAt)}\n`;
+          message += `  Үлдсэн: ${timeRemaining.text}\n`;
+        }
+        if (activeMemberships.length > 10) {
+          message += `\n... ба ${activeMemberships.length - 10} бусад\n`;
         }
         message += '\n';
       }
@@ -433,18 +465,23 @@ export class ProjectBotHandler implements OnModuleInit {
       // Trial memberships
       if (trialMemberships.length > 0) {
         message += '🎁 *Туршилтын гишүүнчлэл:*\n';
-        for (const membership of trialMemberships) {
-          const groupName = membership.group?.group_name || 'Unknown Group';
-          const planName = membership.plan?.name || 'Unknown Plan';
+        // FIX: Limit to first 5 to prevent message overflow
+        const displayedTrial = trialMemberships.slice(0, 5);
+        for (const membership of displayedTrial) {
+          // FIX: Better handling for deleted groups
+          const groupName =
+            membership.group?.group_name || '(Устгагдсан бүлэг)';
+          const planName = membership.plan?.name || '(Устгагдсан багц)';
           const expiresAt = new Date(membership.expires_at);
-          const hoursRemaining = Math.ceil(
-            (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60),
-          );
+          const timeRemaining = this.formatTimeRemaining(expiresAt);
 
           message += `\n• ${groupName}\n`;
           message += `  Багц: ${planName}\n`;
-          message += `  Дуусах: ${expiresAt.toLocaleString('mn-MN')}\n`;
-          message += `  Үлдсэн: ${hoursRemaining < 24 ? hoursRemaining + ' цаг' : Math.floor(hoursRemaining / 24) + ' хоног'}\n`;
+          message += `  Дуусах: ${this.formatDateTime(expiresAt)}\n`;
+          message += `  Үлдсэн: ${timeRemaining.text}\n`;
+        }
+        if (trialMemberships.length > 5) {
+          message += `\n... ба ${trialMemberships.length - 5} бусад\n`;
         }
         message += '\n';
       }
@@ -454,7 +491,8 @@ export class ProjectBotHandler implements OnModuleInit {
         const recentExpired = expiredMemberships
           .filter((m) => {
             const expiredDaysAgo = Math.ceil(
-              (Date.now() - new Date(m.expires_at).getTime()) / (1000 * 60 * 60 * 24),
+              (Date.now() - new Date(m.expires_at).getTime()) /
+                (1000 * 60 * 60 * 24),
             );
             return expiredDaysAgo <= 30; // Show expired within last 30 days
           })
@@ -463,13 +501,15 @@ export class ProjectBotHandler implements OnModuleInit {
         if (recentExpired.length > 0) {
           message += '⏰ *Дууссан гишүүнчлэл:*\n';
           for (const membership of recentExpired) {
-            const groupName = membership.group?.group_name || 'Unknown Group';
-            const planName = membership.plan?.name || 'Unknown Plan';
+            // FIX: Better handling for deleted groups
+            const groupName =
+              membership.group?.group_name || '(Устгагдсан бүлэг)';
+            const planName = membership.plan?.name || '(Устгагдсан багц)';
             const expiresAt = new Date(membership.expires_at);
 
             message += `\n• ${groupName}\n`;
             message += `  Багц: ${planName}\n`;
-            message += `  Дууссан: ${expiresAt.toLocaleDateString('mn-MN')}\n`;
+            message += `  Дууссан: ${this.formatDate(expiresAt)}\n`;
           }
           message += '\n';
         }
@@ -489,6 +529,9 @@ export class ProjectBotHandler implements OnModuleInit {
 
       // Build action buttons
       const buttons = [[Markup.button.callback('🛒 Бүх багцууд', 'show_plans')]];
+
+      // FIX: Ensure message doesn't exceed Telegram limit
+      message = this.ensureMessageLength(message);
 
       await ctx.reply(message, {
         parse_mode: 'Markdown',
@@ -710,6 +753,88 @@ export class ProjectBotHandler implements OnModuleInit {
 
   getBotInstance(projectId: string) {
     return this.telegramBotHandler.getBotInstance(projectId);
+  }
+
+  /**
+   * Helper: Format date with locale fallback
+   * Prevents errors when mn-MN locale is not available
+   */
+  private formatDate(date: Date): string {
+    try {
+      return date.toLocaleDateString('mn-MN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+    } catch (error) {
+      // Fallback to ISO format if locale not available
+      const isoDate = date.toISOString().split('T')[0];
+      const [year, month, day] = isoDate.split('-');
+      return `${year}-${month}-${day}`;
+    }
+  }
+
+  /**
+   * Helper: Format datetime with locale fallback
+   */
+  private formatDateTime(date: Date): string {
+    try {
+      return date.toLocaleString('mn-MN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (error) {
+      // Fallback to ISO format
+      return date.toISOString().replace('T', ' ').substring(0, 16);
+    }
+  }
+
+  /**
+   * Helper: Calculate time remaining with consistent formatting
+   * Returns formatted string like "5 хоног" or "18 цаг"
+   * Never returns negative values
+   */
+  private formatTimeRemaining(expiresAt: Date): {
+    text: string;
+    isExpired: boolean;
+  } {
+    const msRemaining = expiresAt.getTime() - Date.now();
+
+    if (msRemaining <= 0) {
+      return { text: '0 цаг', isExpired: true };
+    }
+
+    const hoursRemaining = Math.ceil(msRemaining / (1000 * 60 * 60));
+
+    if (hoursRemaining < 24) {
+      return { text: `${hoursRemaining} цаг`, isExpired: false };
+    } else {
+      const daysRemaining = Math.ceil(hoursRemaining / 24);
+      return { text: `${daysRemaining} хоног`, isExpired: false };
+    }
+  }
+
+  /**
+   * Helper: Ensure message doesn't exceed Telegram's 4096 character limit
+   * Truncates with warning if too long
+   */
+  private ensureMessageLength(message: string, maxLength: number = 4000): string {
+    if (message.length <= maxLength) {
+      return message;
+    }
+
+    const truncated = message.substring(0, maxLength - 100);
+    const lastNewline = truncated.lastIndexOf('\n');
+
+    // Try to truncate at last newline for cleaner cut
+    if (lastNewline > maxLength - 200) {
+      return truncated.substring(0, lastNewline) + '\n\n... (бүрэн мэдээлэл харахын тулд /status командыг ашиглана уу)';
+    }
+
+    return truncated + '\n\n... (үргэлжлэлийг харахын тулд /status)';
   }
 
   /**
