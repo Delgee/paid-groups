@@ -91,11 +91,11 @@ export class MembershipService {
 
   async findByMember(tenantId: string, memberId: string): Promise<Membership[]> {
     return this.membershipRepository.find({
-      where: { 
-        member_id: memberId, 
-        tenant_id: tenantId 
+      where: {
+        member_id: memberId,
+        tenant_id: tenantId
       },
-      relations: ['plan'],
+      relations: ['plan', 'group'],
       order: { created_at: 'DESC' },
     });
   }
