@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronRight, Home } from 'lucide-react';
@@ -13,8 +14,10 @@ interface BreadcrumbItem {
 export function Breadcrumbs() {
   const pathname = usePathname();
 
-  const generateBreadcrumbs = (): BreadcrumbItem[] => {
-    const paths = pathname.split('/').filter(Boolean);
+  const breadcrumbs = useMemo(() => {
+    // Strip query parameters
+    const cleanPath = pathname.split('?')[0];
+    const paths = cleanPath.split('/').filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [];
 
     // Always start with home
@@ -24,15 +27,21 @@ export function Breadcrumbs() {
     });
 
     // Skip if we're on the dashboard home
-    if (pathname === '/dashboard') {
+    if (cleanPath === '/dashboard') {
       return breadcrumbs;
     }
 
     let currentPath = '';
+    const MAX_BREADCRUMB_DEPTH = 5; // Limit to prevent overflow
 
     paths.forEach((path, index) => {
       // Skip 'dashboard' as it's the home
       if (path === 'dashboard') {
+        return;
+      }
+
+      // Limit breadcrumb depth
+      if (breadcrumbs.length >= MAX_BREADCRUMB_DEPTH) {
         return;
       }
 
@@ -50,6 +59,7 @@ export function Breadcrumbs() {
       } else {
         // Handle dynamic routes like [id], create, edit
         let label = path;
+        let href = fullPath;
 
         if (path === 'create') {
           label = 'Шинэ';
@@ -57,7 +67,9 @@ export function Breadcrumbs() {
           label = 'Засах';
         } else if (path.match(/^[0-9a-f-]{36}$/i)) {
           // UUID pattern - show as "Дэлгэрэнгүй"
+          // Don't make it clickable (same page)
           label = 'Дэлгэрэнгүй';
+          href = ''; // Empty href means non-clickable
         } else {
           // Capitalize first letter
           label = path.charAt(0).toUpperCase() + path.slice(1);
@@ -65,15 +77,13 @@ export function Breadcrumbs() {
 
         breadcrumbs.push({
           label,
-          href: fullPath,
+          href,
         });
       }
     });
 
     return breadcrumbs;
-  };
-
-  const breadcrumbs = generateBreadcrumbs();
+  }, [pathname]);
 
   // Don't show breadcrumbs if only home
   if (breadcrumbs.length <= 1) {
@@ -95,8 +105,8 @@ export function Breadcrumbs() {
               <Home className="h-4 w-4 mr-1" />
             )}
 
-            {isLast ? (
-              <span className="font-medium text-gray-900">
+            {isLast || !breadcrumb.href ? (
+              <span className="font-medium text-gray-900" aria-current={isLast ? 'page' : undefined}>
                 {breadcrumb.label}
               </span>
             ) : (

@@ -19,14 +19,14 @@ interface Shortcut {
 }
 
 const shortcuts: Shortcut[] = [
-  { key: '?', description: 'Show keyboard shortcuts' },
-  { key: 'H', ctrl: true, description: 'Go to dashboard home' },
-  { key: 'P', ctrl: true, description: 'Go to projects' },
-  { key: 'N', ctrl: true, description: 'Create new project' },
-  { key: 'G', ctrl: true, description: 'Go to Telegram groups' },
-  { key: 'U', ctrl: true, description: 'Go to user management' },
-  { key: 'M', ctrl: true, description: 'Go to members' },
-  { key: ',', ctrl: true, description: 'Go to settings' },
+  { key: '?', description: 'Гарын товчлууруудыг харуулах' },
+  { key: 'H', ctrl: true, description: 'Нүүр хуудас руу очих' },
+  { key: 'P', ctrl: true, description: 'Төслүүд рүү очих' },
+  { key: 'N', ctrl: true, description: 'Шинэ төсөл үүсгэх' },
+  { key: 'G', ctrl: true, description: 'Telegram группүүд рүү очих' },
+  { key: 'U', ctrl: true, description: 'Хэрэглэгч удирдлага руу очих' },
+  { key: 'M', ctrl: true, description: 'Гишүүд рүү очих' },
+  { key: ',', ctrl: true, description: 'Тохиргоо руу очих' },
 ];
 
 export function KeyboardShortcutsHelp() {
@@ -107,8 +107,10 @@ export function KeyboardShortcutsHelp() {
       {/* Help Button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
+        className="fixed bottom-4 right-4 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50 md:block hidden"
         title="Keyboard shortcuts (?)"
+        aria-label="Show keyboard shortcuts (Press ?)"
+        aria-expanded={open}
       >
         <Keyboard className="h-5 w-5" />
       </button>

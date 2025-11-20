@@ -100,6 +100,7 @@ export default function DashboardPage() {
       trend: `${projects.filter(p => p.is_active).length} идэвхитэй`,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
+      borderColor: 'border-l-blue-600',
     },
     {
       title: 'Шилдэг группүүд',
@@ -109,6 +110,7 @@ export default function DashboardPage() {
       trend: `${dashboardMetrics?.active_members || 0} идэвхитэй гишүүн`,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
+      borderColor: 'border-l-green-600',
     },
     {
       title: 'Сарын орлого',
@@ -118,6 +120,7 @@ export default function DashboardPage() {
       trend: `${(revenueMetrics?.growth_percentage || 0).toFixed(1)}% өсөлт`,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
+      borderColor: 'border-l-purple-600',
     },
     {
       title: 'Идэвхитэй гишүүнчлэл',
@@ -127,6 +130,7 @@ export default function DashboardPage() {
       trend: `${membershipMetrics?.trial_memberships || 0} турших`,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
+      borderColor: 'border-l-orange-600',
     },
   ];
 
@@ -154,8 +158,7 @@ export default function DashboardPage() {
         {statCards.map((stat) => (
           <Card
             key={stat.title}
-            className="hover:shadow-lg transition-all duration-200 hover:-translate-y-1 cursor-pointer border-l-4"
-            style={{ borderLeftColor: stat.color.replace('text-', '#') }}
+            className={`hover:shadow-lg transition-all duration-200 hover:-translate-y-1 cursor-pointer border-l-4 ${stat.borderColor}`}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">

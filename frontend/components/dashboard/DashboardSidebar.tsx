@@ -14,6 +14,7 @@ import {
   Wallet,
   LucideIcon,
 } from 'lucide-react';
+import packageJson from '@/../package.json';
 
 export interface NavigationItem {
   name: string;
@@ -70,6 +71,7 @@ export function DashboardSidebar({ onNavigate, isMobile = false }: DashboardSide
                 key={item.name}
                 href={item.href}
                 data-testid={item.testId}
+                aria-current={isActive ? 'page' : undefined}
                 className={`
                   group flex items-center px-3 py-2.5 rounded-lg transition-all duration-150
                   ${isMobile ? 'text-base font-medium' : 'text-sm font-medium'}
@@ -99,7 +101,7 @@ export function DashboardSidebar({ onNavigate, isMobile = false }: DashboardSide
         {/* Footer - Version or Help Info */}
         <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
-            v1.0.0 • Telegram Groups SaaS
+            v{packageJson.version} • Telegram Groups SaaS
           </p>
         </div>
       </div>
