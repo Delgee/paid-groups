@@ -117,6 +117,10 @@ docker-compose -f docker-compose.prod.yml logs -f
 # Test endpoints
 curl https://yourdomain.com/health
 curl https://yourdomain.com
+
+# Expected services:
+# - Frontend: http://localhost:3000 (internal) / https://yourdomain.com (external)
+# - Backend API: http://localhost:3001 (internal) / https://yourdomain.com/api (external)
 ```
 
 ## 6. Post-Deployment

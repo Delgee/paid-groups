@@ -48,17 +48,16 @@ You're working on a multi-tenant SaaS platform for managing paid Telegram groups
 
 ### Current Feature Branch
 ```bash
-# You're on branch: 002-if-saas-user
-# Spec location: /specs/002-if-saas-user/spec.md
-# Plan location: /specs/002-if-saas-user/plan.md
-# Contracts: /specs/002-if-saas-user/contracts/
+# You're on branch: main
+# Active specs location: .specify/specs/
+# Legacy specs location: specs/ (archived features)
 
 # Run tests first (TDD)
 npm run test:watch
 
 # Start development servers
-npm run dev          # Backend on :3001
-cd frontend && npm run dev  # Frontend on :3000
+npm run dev          # Backend on http://localhost:3001
+cd frontend && npm run dev  # Frontend on http://localhost:3000
 ```
 
 ### Testing Strategy
@@ -130,7 +129,7 @@ const users = await this.userRepository.find({
 
 ```
 backend/src/modules/
-├── user-management/          # NEW: Owner user management
+├── user-management/          # Owner user management
 │   ├── user-management.controller.ts
 │   ├── user-management.service.ts
 │   ├── dto/
@@ -139,17 +138,43 @@ backend/src/modules/
 │   └── __tests__/
 │       ├── user-management.controller.spec.ts
 │       └── user-management.service.spec.ts
+├── telegram-groups/          # Telegram group CRUD
+├── bot-configuration/        # Bot management (legacy)
+├── project/                  # Project management (current)
+├── membership/               # Membership plans & lifecycle
+├── payment/                  # Payment processing
+└── onboarding-bot/           # Telegram onboarding bot
 
-frontend
-├── app/dashboard/users/    # NEW: User management pages
-│   ├── page.tsx             # User list page
-│   └── create/page.tsx      # Create user page
-├── components/user-management/  # NEW: User UI components
-│   ├── CreateUserForm.tsx
-│   ├── UserList.tsx
-│   └── UserManagementCard.tsx
-└── lib/api/
-    └── users.ts             # User API client methods
+backend/src/integrations/
+└── telegram/                 # Centralized Telegram API integration
+    ├── telegram-integration.module.ts
+    ├── telegram-api.service.ts
+    ├── telegram-bot-handler.service.ts
+    └── telegram-channel.service.ts
+
+frontend/
+├── app/dashboard/
+│   ├── users/                # User management pages
+│   ├── telegram-groups/      # Telegram groups pages
+│   ├── plans/                # Membership plans pages
+│   ├── members/              # Member management pages
+│   └── bots/                 # Bot configuration pages
+├── components/               # Reusable UI components
+└── lib/api/                  # API client methods
+
+worker/                       # Background job processor
+├── src/
+│   ├── jobs/                 # Job handlers (expiration, reminders)
+│   └── queues/               # Queue configuration
+
+packages/                     # Shared packages
+└── shared-types/             # Shared TypeScript types
+
+.specify/                     # Active feature specifications
+└── specs/                    # Current feature specs (002-if-saas-user, 003-create-telegram-group)
+
+specs/                        # Legacy feature specifications (archived)
+└── 001-create-bot-configuration/  # Archived feature
 ```
 
 ## API Contracts
@@ -192,29 +217,16 @@ frontend
 
 🎉 **Feature 003-create-telegram-group is COMPLETE and PRODUCTION-READY!**
 
-### 7. Telegram Bot Onboarding (Current Feature: 002-in-this-app)
+### 7. Telegram Bot Onboarding (Feature: 002-in-this-app)
 - SaaS users can register and configure projects entirely through Telegram bot
 - Multi-step conversational flows for registration, project setup, group connection
 - Redis-based session management with 1-hour timeout
 - Rate limiting (20 commands/minute) and audit logging
 - Multi-tenant isolation via RLS policies
 
-**ONBOARDING BOT FEATURE - CORE IMPLEMENTATION COMPLETE ✅ (2025-01-14)**
+**ONBOARDING BOT FEATURE - CORE IMPLEMENTATION COMPLETE ✅**
 
-🎉 **Feature 002-in-this-app CORE FUNCTIONALITY IMPLEMENTED!**
-
-✅ **Backend Implementation (79% Complete - 42/53 tasks)**:
-- **T001-T003**: Database migrations (telegram_user_accounts, bot_commands) with RLS ✅
-- **T004-T008**: Contract tests for webhook and services ✅
-- **T009-T012**: Entities (TelegramUserAccount, BotCommand) + DTOs ✅
-- **T013-T016**: Core services (Session, UserAccount, Logger, OnboardingBot) ✅
-- **T017, T023-T024**: Bot handlers (Registration, Help, Cancel) ✅
-- **T025**: Rate limiting middleware (token bucket, Redis) ✅
-- **T027**: Webhook controller (POST /v1/onboarding-bot/webhook/:botToken) ✅
-- **T038**: Error response formatters (constitutional format) ✅
-- **T041-T042**: Module registration in app.module.ts ✅
-
-✅ **Working Features**:
+✅ **Implemented Features**:
 - User registration via Telegram bot (/start command)
 - Multi-step conversation flow with session state
 - Email/name/company collection
@@ -225,11 +237,7 @@ frontend
 - Audit logging for all commands
 - Multi-tenant isolation
 
-⚠️ **Remaining Work (11 tasks)**:
-- Integration tests (T030-T037) - validation of complete flows
-- Additional handlers (T018-T022) - project/group/plan creation
-- Observability enhancements (T045-T048) - metrics and monitoring
-- Final validation (T049-T053) - performance testing and cleanup
+**Status**: Core functionality complete, enhancement features in backlog
 
 ✅ **Backend Implementation (100% Complete)**:
 - **T015-T018**: TelegramGroup entity + comprehensive DTOs ✅

@@ -72,14 +72,16 @@ telegram-groups-saas/
 │   ├── app/              # App router pages
 │   ├── components/       # Reusable components
 │   └── lib/              # Utilities and API client
-├── worker/               # Background job processor
+├── worker/               # Background job processor (if exists)
 │   ├── src/
 │   │   ├── jobs/         # Job handlers
 │   │   ├── queues/       # Queue configuration
 │   └── schedulers/       # Cron jobs
-├── packages/
+├── packages/             # Shared packages (if exists)
 │   └── shared-types/     # Shared TypeScript types
-└── specs/                # Feature specifications
+├── .specify/             # Active feature specifications (new workflow)
+│   └── specs/            # Current feature specs
+└── specs/                # Legacy feature specifications (archived)
 ```
 
 ## Development
@@ -164,13 +166,18 @@ For running integration and E2E tests that involve Telegram Bot API:
 
 ### Environment Variables
 
-Key environment variables (see `.env.example`):
+**Development**: Use `.env` file (copy from `.env.example`)
+**Production**: Use `.env.production` file (see [DEPLOYMENT.md](DEPLOYMENT.md) for setup)
+
+Key environment variables:
 
 - `DATABASE_URL`: PostgreSQL connection
 - `REDIS_URL`: Redis connection
 - `JWT_SECRET`: JWT signing secret
 - `QPAY_*`: QPay Mongolia configuration
 - `TELEGRAM_BOT_TOKEN`: Bot token from BotFather
+- `FRONTEND_URL`: Frontend application URL
+- `NEXT_PUBLIC_API_URL`: Backend API URL (accessible from browser)
 
 ## Features
 

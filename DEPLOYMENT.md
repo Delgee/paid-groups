@@ -794,5 +794,5 @@ Refer to LICENSE file in repository root.
 
 ---
 
-**Last Updated**: 2025-01-06
-**Version**: 1.0.0
+**Last Updated**: 2025-01-21
+**Version**: 1.0.1
