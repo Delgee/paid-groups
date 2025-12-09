@@ -194,4 +194,51 @@ export class TrialUsageService {
       },
     });
   }
+
+  /**
+   * Batch check trial usage for multiple plans (performance optimization)
+   *
+   * @param tenantId - Tenant ID for multi-tenant isolation
+   * @param telegramUserId - Telegram user ID
+   * @param planIds - Array of membership plan IDs to check
+   * @returns Set of plan IDs where trial was already used
+   */
+  async getUsedTrialPlanIds(
+    tenantId: string,
+    telegramUserId: number,
+    planIds: string[],
+  ): Promise<Set<string>> {
+    if (planIds.length === 0) {
+      return new Set();
+    }
+
+    // Find member by telegram_user_id
+    const member = await this.memberRepository.findOne({
+      where: {
+        tenant_id: tenantId,
+        telegram_user_id: telegramUserId,
+      },
+    });
+
+    if (!member) {
+      // If member doesn't exist yet, they haven't used any trials
+      return new Set();
+    }
+
+    // Batch query all trial usage records for this member and these plans
+    const trialUsages = await this.trialUsageRepository.find({
+      where: {
+        tenant_id: tenantId,
+        member_id: member.id,
+      },
+      select: ['membership_plan_id'],
+    });
+
+    // Filter to only the requested plan IDs and return as Set
+    const usedPlanIds = trialUsages
+      .map((usage) => usage.membership_plan_id)
+      .filter((planId) => planIds.includes(planId));
+
+    return new Set(usedPlanIds);
+  }
 }
