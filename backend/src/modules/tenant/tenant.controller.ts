@@ -10,12 +10,14 @@ import {
   Request,
   ValidationPipe,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { IsString, IsOptional, IsEnum, IsNumber } from 'class-validator';
 import { TenantService, CreateTenantDto, UpdateTenantDto } from './services/tenant.service';
 import { SubscriptionTier, SubscriptionStatus } from './entities/tenant.entity';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { SuperAdminRoleGuard } from '../../common/guards/super-admin-role.guard';
 
 class CreateTenantRequestDto implements CreateTenantDto {
   @IsString()
@@ -89,18 +91,13 @@ export class TenantController {
   constructor(private readonly tenantService: TenantService) {}
 
   @Post()
+  @UseGuards(SuperAdminRoleGuard)
   @ApiOperation({ summary: 'Create new tenant (Super Admin only)' })
   @ApiResponse({ status: 201, description: 'Tenant created successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden - Super Admin access required' })
   async create(
     @Body(ValidationPipe) createTenantDto: CreateTenantRequestDto,
-    @Request() req,
   ) {
-    // Only super admins can create tenants
-    if (req.user.role !== 'super_admin') {
-      throw new Error('Only super admins can create tenants');
-    }
-    
     return this.tenantService.create(createTenantDto);
   }
 
@@ -129,36 +126,73 @@ export class TenantController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all tenants (Super Admin only)' })
-  @ApiResponse({ status: 200, description: 'List of all tenants' })
+  @UseGuards(SuperAdminRoleGuard)
+  @ApiOperation({ summary: 'Get all tenants with pagination (Super Admin only)' })
+  @ApiResponse({ status: 200, description: 'Paginated list of tenants' })
   @ApiResponse({ status: 403, description: 'Forbidden - Super Admin access required' })
-  async findAll(@Request() req) {
-    // Only super admins can list all tenants
-    if (req.user.role !== 'super_admin') {
-      throw new Error('Only super admins can list all tenants');
-    }
-    
-    return this.tenantService.findAll();
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 50, max: 100)',
+  })
+  @ApiQuery({
+    name: 'subscription_status',
+    required: false,
+    enum: SubscriptionStatus,
+    description: 'Filter by subscription status',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by name or company name',
+  })
+  async findAll(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('subscription_status') subscriptionStatus?: SubscriptionStatus,
+    @Query('search') search?: string,
+  ) {
+    const pageNum = page && page > 0 ? page : 1;
+    const limitNum = limit && limit > 0 && limit <= 100 ? limit : 50;
+
+    return this.tenantService.findAllPaginated(
+      pageNum,
+      limitNum,
+      subscriptionStatus,
+      search,
+    );
   }
 
   @Get(':id')
+  @UseGuards(SuperAdminRoleGuard)
   @ApiOperation({ summary: 'Get tenant by ID (Super Admin only)' })
   @ApiResponse({ status: 200, description: 'Tenant found' })
   @ApiResponse({ status: 404, description: 'Tenant not found' })
   @ApiResponse({ status: 403, description: 'Forbidden - Super Admin access required' })
-  async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Request() req,
-  ) {
-    // Only super admins can access any tenant
-    if (req.user.role !== 'super_admin') {
-      throw new Error('Only super admins can access tenant details');
-    }
-    
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.tenantService.findById(id);
   }
 
+  @Get(':id/stats')
+  @UseGuards(SuperAdminRoleGuard)
+  @ApiOperation({ summary: 'Get tenant statistics by ID (Super Admin only)' })
+  @ApiResponse({ status: 200, description: 'Tenant statistics' })
+  @ApiResponse({ status: 404, description: 'Tenant not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Super Admin access required' })
+  async getTenantStats(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tenantService.getTenantStats(id);
+  }
+
   @Put(':id')
+  @UseGuards(SuperAdminRoleGuard)
   @ApiOperation({ summary: 'Update tenant by ID (Super Admin only)' })
   @ApiResponse({ status: 200, description: 'Tenant updated successfully' })
   @ApiResponse({ status: 404, description: 'Tenant not found' })
@@ -166,30 +200,17 @@ export class TenantController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(ValidationPipe) updateTenantDto: UpdateTenantRequestDto,
-    @Request() req,
   ) {
-    // Only super admins can update any tenant
-    if (req.user.role !== 'super_admin') {
-      throw new Error('Only super admins can update tenants');
-    }
-    
     return this.tenantService.update(id, updateTenantDto);
   }
 
   @Delete(':id')
+  @UseGuards(SuperAdminRoleGuard)
   @ApiOperation({ summary: 'Delete tenant by ID (Super Admin only)' })
   @ApiResponse({ status: 200, description: 'Tenant deleted successfully' })
   @ApiResponse({ status: 404, description: 'Tenant not found' })
   @ApiResponse({ status: 403, description: 'Forbidden - Super Admin access required' })
-  async remove(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Request() req,
-  ) {
-    // Only super admins can delete tenants
-    if (req.user.role !== 'super_admin') {
-      throw new Error('Only super admins can delete tenants');
-    }
-    
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.tenantService.delete(id);
     return { success: true };
   }

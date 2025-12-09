@@ -15,8 +15,7 @@ import {
   UserPlus,
   MessageSquare,
   FolderKanban,
-  Wallet,
-  TrendingUp
+  Wallet
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';

@@ -15,6 +15,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { HealthModule } from './modules/health/health.module';
 import { UserManagementModule } from './modules/user-management/user-management.module';
 import { TelegramGroupsModule } from './modules/telegram-groups/telegram-groups.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { MembershipPlanModule } from './modules/membership-plan/membership-plan.module';
 import { ProjectModule } from './modules/project/project.module';
@@ -89,6 +90,7 @@ import { GlobalBotWebhookService } from './common/services/global-bot-webhook.se
     UserManagementModule,
     TelegramGroupsModule,
     AnalyticsModule,
+    AdminModule,
     OnboardingBotModule,
     ChannelIdBotModule,
     TelegramIntegrationModule,

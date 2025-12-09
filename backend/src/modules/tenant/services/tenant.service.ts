@@ -29,6 +29,16 @@ export interface UpdateTenantDto {
   settings?: Record<string, any>;
 }
 
+export interface PaginatedTenantsResponse {
+  data: Tenant[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 @Injectable()
 export class TenantService {
   constructor(
@@ -83,11 +93,59 @@ export class TenantService {
     });
   }
 
+  async findAllPaginated(
+    page: number = 1,
+    limit: number = 50,
+    subscriptionStatus?: SubscriptionStatus,
+    search?: string,
+  ): Promise<PaginatedTenantsResponse> {
+    const queryBuilder = this.tenantRepository
+      .createQueryBuilder('tenant')
+      .orderBy('tenant.created_at', 'DESC');
+
+    // Apply filters
+    if (subscriptionStatus) {
+      queryBuilder.andWhere('tenant.subscription_status = :status', {
+        status: subscriptionStatus,
+      });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(tenant.name ILIKE :search OR tenant.company_name ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Get total count
+    const total = await queryBuilder.getCount();
+
+    // Apply pagination
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    // Get data
+    const data = await queryBuilder.getMany();
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
   async findBySubscriptionStatus(
     status: SubscriptionStatus,
   ): Promise<Tenant[]> {
     return this.tenantRepository.find({
       where: { subscription_status: status },
+      order: { created_at: 'DESC' },
     });
   }
 
