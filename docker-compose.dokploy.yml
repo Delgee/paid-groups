@@ -1,0 +1,221 @@
+# =============================================================================
+# Dokploy deployment compose
+# =============================================================================
+# Deploy target for Dokploy "Compose" service. Differences from
+# docker-compose.prod.yml:
+#   - nginx removed  -> Dokploy's Traefik does reverse-proxy + Let's Encrypt SSL
+#   - no host `ports:` on any service -> nothing exposed to the host directly;
+#     Traefik reaches web services over the external `dokploy-network`
+#   - Postgres/Redis are internal-only (never publicly reachable)
+#   - backend/frontend get Traefik labels -> subdomains + auto HTTPS
+#   - worker added
+#   - backend auto-runs TypeORM migrations (compiled JS) before starting
+#   - backend healthcheck fixed to /v1/health (global prefix is `v1`)
+#   - broken init.sql mount removed (schema comes from migrations)
+#
+# Set these in Dokploy -> your Compose service -> Environment:
+#   APP_DOMAIN=app.yourdomain.com
+#   API_DOMAIN=api.yourdomain.com
+#   ...plus everything in .env.dokploy.example
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-telegram_saas}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-telegram_saas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    # Run pending migrations (compiled JS data-source) then boot the API.
+    # migration:run is idempotent -> safe on every restart (single replica).
+    command: >
+      sh -c "npx typeorm migration:run -d dist/database/data-source.js && node dist/main.js"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-telegram_saas}
+      DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-telegram_saas}
+      TYPEORM_SYNCHRONIZE: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      QPAY_USERNAME: ${QPAY_USERNAME}
+      QPAY_PASSWORD: ${QPAY_PASSWORD}
+      QPAY_TERMINAL_ID: ${QPAY_TERMINAL_ID}
+      QPAY_BASE_URL: ${QPAY_BASE_URL}
+      QPAY_WEBHOOK_SECRET: ${QPAY_WEBHOOK_SECRET}
+      QPAY_CALLBACK_BASE_URL: https://${API_DOMAIN}
+      QPAY_ENV: ${QPAY_ENV:-production}
+      FRONTEND_URL: https://${APP_DOMAIN}
+      TELEGRAM_ONBOARDING_BOT_TOKEN: ${TELEGRAM_ONBOARDING_BOT_TOKEN}
+      TELEGRAM_CHANNEL_ID_BOT_TOKEN: ${TELEGRAM_CHANNEL_ID_BOT_TOKEN}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_DIR: logs
+      RATE_LIMIT_TTL: ${RATE_LIMIT_TTL:-60}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      BASE_URL: https://${API_DOMAIN}
+      WEBHOOK_HEALTH_CHECK_ON_STARTUP: ${WEBHOOK_HEALTH_CHECK_ON_STARTUP:-true}
+      WEBHOOK_AUTO_FIX_ON_STARTUP: ${WEBHOOK_AUTO_FIX_ON_STARTUP:-true}
+    volumes:
+      - backend_logs:/app/logs
+    networks:
+      - internal
+      - dokploy-network
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/v1/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.pgroups-api.rule=Host(`${API_DOMAIN}`)
+      - traefik.http.routers.pgroups-api.entrypoints=websecure
+      - traefik.http.routers.pgroups-api.tls.certresolver=letsencrypt
+      - traefik.http.services.pgroups-api.loadbalancer.server.port=3001
+      - traefik.http.routers.pgroups-api-web.rule=Host(`${API_DOMAIN}`)
+      - traefik.http.routers.pgroups-api-web.entrypoints=web
+      - traefik.http.routers.pgroups-api-web.middlewares=pgroups-https
+      - traefik.http.middlewares.pgroups-https.redirectscheme.scheme=https
+    logging:
+      driver: "json-file"
+      options: { max-size: "50m", max-file: "5" }
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      NODE_ENV: production
+      # Browser calls stay same-origin: /api/* -> Next rewrite -> backend /v1/*
+      NEXT_PUBLIC_API_URL: https://${APP_DOMAIN}/api
+      API_URL: http://backend:3001
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Telegram Groups SaaS}
+      NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-1.0.0}
+      NEXT_PUBLIC_ENABLE_ANALYTICS: ${NEXT_PUBLIC_ENABLE_ANALYTICS:-true}
+      NEXT_PUBLIC_ENABLE_NOTIFICATIONS: ${NEXT_PUBLIC_ENABLE_NOTIFICATIONS:-true}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+    networks:
+      - internal
+      - dokploy-network
+    depends_on:
+      backend: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.pgroups-web.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.pgroups-web.entrypoints=websecure
+      - traefik.http.routers.pgroups-web.tls.certresolver=letsencrypt
+      - traefik.http.services.pgroups-web.loadbalancer.server.port=3000
+      - traefik.http.routers.pgroups-web-http.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.pgroups-web-http.entrypoints=web
+      - traefik.http.routers.pgroups-web-http.middlewares=pgroups-https
+    logging:
+      driver: "json-file"
+      options: { max-size: "50m", max-file: "5" }
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-telegram_saas}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MAX_JOB_ATTEMPTS: ${MAX_JOB_ATTEMPTS:-3}
+      JOB_BACKOFF_TYPE: ${JOB_BACKOFF_TYPE:-exponential}
+      JOB_BACKOFF_DELAY: ${JOB_BACKOFF_DELAY:-2000}
+      MEMBERSHIP_CHECK_CRON: ${MEMBERSHIP_CHECK_CRON:-0 * * * *}
+      ANALYTICS_CRON: ${ANALYTICS_CRON:-0 */6 * * *}
+      CLEANUP_CRON: ${CLEANUP_CRON:-0 2 * * *}
+      TELEGRAM_ONBOARDING_BOT_TOKEN: ${TELEGRAM_ONBOARDING_BOT_TOKEN}
+      TELEGRAM_CHANNEL_ID_BOT_TOKEN: ${TELEGRAM_CHANNEL_ID_BOT_TOKEN}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_DIR: logs
+    networks:
+      - internal
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    logging:
+      driver: "json-file"
+      options: { max-size: "50m", max-file: "5" }
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_logs:
+
+networks:
+  # External network created by Dokploy; Traefik lives here.
+  dokploy-network:
+    external: true
+  # Private network for app <-> db/redis traffic. Never exposed.
+  internal:
+    driver: bridge
