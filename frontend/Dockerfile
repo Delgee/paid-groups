@@ -22,6 +22,12 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy source code
 COPY . .
 
+# next.config.js bakes the /api -> API_URL/v1 rewrite destination at BUILD time,
+# so API_URL must be present now (not just at runtime) or it defaults to
+# http://localhost:3001 and the server-side proxy breaks in containers.
+ARG API_URL=http://backend:3001
+ENV API_URL=$API_URL
+
 # Build Next.js application
 RUN npm run build
 
