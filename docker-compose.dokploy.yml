@@ -143,6 +143,11 @@ services:
     restart: always
     environment:
       NODE_ENV: production
+      # Next.js standalone binds to $HOSTNAME, which Docker sets to the container
+      # ID -> it listens only on that interface, breaking the healthcheck and
+      # Traefik reachability. Force bind on all interfaces.
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
       # Browser calls stay same-origin: /api/* -> Next rewrite -> backend /v1/*
       NEXT_PUBLIC_API_URL: https://${APP_DOMAIN}/api
       API_URL: http://backend:3001
