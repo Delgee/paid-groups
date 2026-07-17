@@ -80,11 +80,16 @@ export class AuthService {
     // Auto-generate company name if not provided
     const companyName = registerDto.company_name || `${registerDto.name}'s Business`;
 
-    // Create QPay merchant FIRST - if this fails, registration fails
-    this.logger.log(`Creating QPay merchant before tenant creation`);
+    // By design each tenant gets a QPay merchant account at signup, created
+    // BEFORE the tenant. Set QPAY_MERCHANT_REQUIRED=false to let registration
+    // proceed when QPay is unavailable/unconfigured (tenant.qpay_merchant_id
+    // stays null; the merchant can be created later). Defaults to required.
+    const merchantRequired =
+      this.configService.get('QPAY_MERCHANT_REQUIRED') !== 'false';
 
-    let merchantResponse;
+    let merchantResponse: { id: string } | null = null;
     try {
+      this.logger.log(`Creating QPay merchant before tenant creation`);
       merchantResponse =
         await this.qpayMerchantService.createMerchantFromTenant({
           register_number: registerDto.register_number,
@@ -99,13 +104,20 @@ export class AuthService {
         `QPay merchant created successfully: ${merchantResponse.id}`,
       );
     } catch (error) {
-      // QPay merchant creation failed - don't create tenant
-      this.logger.error(
-        `QPay merchant creation failed, aborting registration: ${error.message}`,
-        error.stack,
+      if (merchantRequired) {
+        // QPay merchant creation failed - don't create tenant
+        this.logger.error(
+          `QPay merchant creation failed, aborting registration: ${error.message}`,
+          error.stack,
+        );
+        // Re-throw the error so user sees QPay validation error
+        throw error;
+      }
+      // Bypass enabled: proceed without a merchant account.
+      this.logger.warn(
+        `QPay merchant creation failed but QPAY_MERCHANT_REQUIRED=false; ` +
+          `continuing without merchant (qpay_merchant_id=null): ${error.message}`,
       );
-      // Re-throw the error so user sees QPay validation error
-      throw error;
     }
 
     // Create tenant AFTER successful QPay merchant creation
@@ -114,7 +126,7 @@ export class AuthService {
       company_name: companyName,
       subscription_tier: SubscriptionTier.FREE,
       subscription_status: SubscriptionStatus.ACTIVE,
-      qpay_merchant_id: merchantResponse.id, // Set immediately
+      qpay_merchant_id: merchantResponse?.id ?? null, // null if merchant skipped
     });
     const savedTenant = await this.tenantRepository.save(tenant);
 

@@ -96,6 +96,9 @@ services:
       QPAY_WEBHOOK_SECRET: ${QPAY_WEBHOOK_SECRET}
       QPAY_CALLBACK_BASE_URL: https://${API_DOMAIN}
       QPAY_ENV: ${QPAY_ENV:-production}
+      # Set to false to let signups proceed when QPay merchant creation fails
+      # (e.g. QPay not configured yet). Defaults to required for production.
+      QPAY_MERCHANT_REQUIRED: ${QPAY_MERCHANT_REQUIRED:-true}
       FRONTEND_URL: https://${APP_DOMAIN}
       TELEGRAM_ONBOARDING_BOT_TOKEN: ${TELEGRAM_ONBOARDING_BOT_TOKEN}
       TELEGRAM_CHANNEL_ID_BOT_TOKEN: ${TELEGRAM_CHANNEL_ID_BOT_TOKEN}
