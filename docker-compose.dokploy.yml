@@ -9,7 +9,9 @@
 #   - Postgres/Redis are internal-only (never publicly reachable)
 #   - backend/frontend get Traefik labels -> subdomains + auto HTTPS
 #   - worker added
-#   - backend auto-runs TypeORM migrations (compiled JS) before starting
+#   - backend bootstraps schema via TypeORM synchronize (this app has always
+#     created its schema from entities; the InitialSchema migration is an empty
+#     baseline, so migration:run on a blank DB cannot build the tables)
 #   - backend healthcheck fixed to /v1/health (global prefix is `v1`)
 #   - broken init.sql mount removed (schema comes from migrations)
 #
@@ -65,10 +67,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: always
-    # Run pending migrations (compiled JS data-source) then boot the API.
-    # migration:run is idempotent -> safe on every restart (single replica).
-    command: >
-      sh -c "npx typeorm migration:run -d dist/database/data-source.js && node dist/main.js"
+    # Uses the image's default CMD (node dist/main.js). On boot the app creates
+    # the schema from entities via TypeORM synchronize (see TYPEORM_SYNCHRONIZE).
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -78,7 +78,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME:-telegram_saas}
       DATABASE_URL: postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-telegram_saas}
-      TYPEORM_SYNCHRONIZE: "false"
+      # This project bootstraps its schema from entities. Keep true so a fresh
+      # DB gets all tables. The incremental migrations are NOT run (they assume
+      # a pre-existing base schema and would conflict with synchronize).
+      TYPEORM_SYNCHRONIZE: "true"
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
